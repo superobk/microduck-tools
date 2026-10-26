@@ -19,13 +19,14 @@ import time
 import tomllib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'common'))
 import duck_calibrate as cal
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 import camera_config
+import servo_health
 
 PREVIEW_TEMPLATE=Path(__file__).with_name('index.html')
 MAX_POST=48_000
@@ -82,13 +83,14 @@ def valid_active_file(data, *, demo=False):
 
 class Monitor:
     """Read-only stream: actual gyro values already converted to rad/s by robotd."""
-    def __init__(self,robotctl='robotctl',enable=True):
+    def __init__(self,robotctl='robotctl',enable=True,observer=None):
         self.last={}
         self.lock=threading.Lock()
         self.robotctl=robotctl
         self.enable=enable
         self.stop_event=threading.Event()
         self.proc=None
+        self.observer=observer
         if enable:
             threading.Thread(target=self._loop,name='cal-web-telemetry',daemon=True).start()
 
@@ -114,6 +116,9 @@ class Monitor:
                          'loop_hz':(s.get('loop') or {}).get('hz'),
                          'bus_tick':s.get('t')}
                     with self.lock:self.last=sample
+                    if self.observer is not None:
+                        try:self.observer(s)
+                        except Exception:pass  # Optional observer must never interrupt calibration telemetry.
             except (OSError,ValueError):pass
             finally:
                 if proc is not None and proc.poll() is None:
@@ -144,7 +149,16 @@ class Context:
         self.demo=args.demo
         self.allow_inactive=args.allow_inactive
         self.csrf=secrets.token_urlsafe(32)
-        self.monitor=Monitor(args.robotctl,enable=not args.no_telemetry and not args.demo)
+        observer_dir=getattr(args,'servo_health_dir','/var/lib/robot/diagnostics/servo-health')
+        try:
+            self.servo=servo_health.Plugin(observer_dir,enabled=getattr(args,'enable_servo_health',False),
+                live=not args.no_telemetry and not args.demo,
+                robot_socket=getattr(args,'robot_socket','/run/robotd.sock'))
+        except Exception as e:
+            self.servo=servo_health.Plugin(observer_dir)
+            self.servo.startup_error='舵机插件启动失败，校准服务继续可用：'+str(e)[:200]
+        self.monitor=Monitor(args.robotctl,enable=not args.no_telemetry and not args.demo,
+                             observer=self.servo.submit if self.servo.enabled else None)
         self.lock=threading.RLock()
         self.camera=camera_config.Camera(self.config,
             getattr(args,'camera_runtime','/run/mediad/camera-effective.json'),
@@ -246,6 +260,28 @@ def new_handler(ctx:Context):
         def do_GET(self):
             if not self._host_ok():return self._reply(403,{'error':'Host not allowed; use localhost / SSH tunnel'})
             path=urlsplit(self.path).path
+            if path=='/servo-health.js':
+                data=PREVIEW_TEMPLATE.with_name('servo-health.js').read_bytes()
+                self.send_response(200);self.send_header('Content-Type','text/javascript; charset=utf-8')
+                self.send_header('Content-Length',str(len(data)));self.send_header('Cache-Control','no-store')
+                self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(data);return
+            if path.startswith('/api/servo-health/'):
+                route=path.rsplit('/',1)[-1]
+                try:
+                    if route=='status':return self._reply(200,ctx.servo.status())
+                    if not ctx.servo.enabled:return self._reply(409,{'error':'servo health plugin disabled'})
+                    query=parse_qs(urlsplit(self.path).query)
+                    if route=='history':return self._reply(200,ctx.servo.engine.series(int(query.get('id',['20'])[0])))
+                    if route=='export':
+                        fmt=query.get('format',['json'])[0];raw,mime=ctx.servo.engine.export(fmt)
+                        self.send_response(200);self.send_header('Content-Type',mime)
+                        self.send_header('Content-Length',str(len(raw)))
+                        self.send_header('Content-Disposition',f'attachment; filename="servo-health.{fmt}"')
+                        self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff')
+                        self.end_headers();self.wfile.write(raw);return
+                except (ValueError,TypeError) as e:return self._reply(400,{'error':str(e)})
+                except Exception as e:return self._reply(503,{'error':'observer unavailable: '+str(e)})
+                return self._reply(404,{'error':'unknown observer route'})
             if path=='/api/status':return self._reply(200,ctx.status())
             if path=='/api/camera/frame':
                 try:
@@ -294,11 +330,20 @@ def new_handler(ctx:Context):
                 return self._reply(415,{'error':'application/json required'})
             try:
                 n=int(self.headers.get('Content-Length','0'))
-                if not 0<n<=MAX_POST:return self._reply(413,{'error':'invalid request length'})
-                payload=json.loads(self.rfile.read(n))
+                path=urlsplit(self.path).path
+                limit=1_048_576 if path=='/api/servo-health/maintenance' else MAX_POST
+                if not 0<n<=limit:return self._reply(413,{'error':'invalid request length'})
+                payload=json.loads(self.rfile.read(n),parse_constant=lambda x:(_ for _ in ()).throw(ValueError('non-finite JSON')))
                 if not isinstance(payload,dict):
                     raise cal.CalibrationError('request body must be an object')
-                path=urlsplit(self.path).path
+                if path.startswith('/api/servo-health/'):
+                    if not ctx.servo.enabled:return self._reply(409,{'error':'servo health plugin disabled'})
+                    action={'config':ctx.servo.engine.configure,'baseline':ctx.servo.engine.baseline,
+                            'maintenance':ctx.servo.engine.import_maintenance}.get(path.rsplit('/',1)[-1])
+                    if action is None:return self._reply(404,{'error':'unknown observer route'})
+                    try:return self._reply(200,action(payload))
+                    except (ValueError,TypeError) as e:return self._reply(400,{'error':str(e)})
+                    except Exception as e:return self._reply(503,{'error':'observer unavailable: '+str(e)})
                 if path=='/api/camera/preview':
                     result=ctx.camera.preview(payload)
                     return self._reply(200,{k:v for k,v in result.items() if k!='config'})
@@ -335,6 +380,9 @@ def parser():
     p.add_argument('--enable-camera-apply',action='store_true',
                    help='allow explicit camera-only mediad restart; briefly interrupts media sessions')
     p.add_argument('--robotctl',default='robotctl')
+    p.add_argument('--enable-servo-health',action='store_true',help='read-only observer; no serial access or control changes')
+    p.add_argument('--servo-health-dir',default='/var/lib/robot/diagnostics/servo-health')
+    p.add_argument('--robot-socket',default='/run/robotd.sock',help='existing read-only health RPC socket')
     p.add_argument('--no-telemetry',action='store_true')
     p.add_argument('--allow-inactive',action='store_true',help='explicit dev-only file editing without verified live daemon')
     p.add_argument('--demo',action='store_true',help='visually show simulated telemetry, never claim real runtime active')
@@ -357,6 +405,7 @@ def main():
     except KeyboardInterrupt:pass
     finally:
         ctx.monitor.close()
+        ctx.servo.close()
         server.server_close()
 
 

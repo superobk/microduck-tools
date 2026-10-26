@@ -1,0 +1,3 @@
+# Optional, one-shot Linux maintenance collector only. The Web/plugin uses stdlib.
+dynamixel-sdk==3.8.4
+pyserial==3.5

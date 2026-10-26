@@ -1,6 +1,6 @@
 {
   "date_local": "2026-10-26",
-  "stage": "pre-servo-health-code-baseline",
+  "stage": "servo-health-local-implementation",
   "files": [
     {
       "path": "calibration/common/apply_source_patch.py",
@@ -215,8 +215,24 @@
       "sha256": "51e286c3ccc027f9b92f920b39a85b18e39e347387fe4c24e275cc228151d154"
     },
     {
+      "path": "calibration/integration-0.16.3/evidence/servo-demo.py",
+      "sha256": "2a85ec4476277a7087bcdc8daebbb655bd6011d1df0bcdaf59083c32caf096c5"
+    },
+    {
+      "path": "calibration/integration-0.16.3/evidence/servo-maintenance-synthetic.json",
+      "sha256": "d86fb49fc30ac8c26458eb4683390eed643dd129fe09fd4c43bf5baebe5dac7b"
+    },
+    {
+      "path": "calibration/integration-0.16.3/requirements-maintenance.txt",
+      "sha256": "4296a008c5143f7e6e4c3245e8754e079388c3768ebafae07169f4c4da717464"
+    },
+    {
+      "path": "calibration/integration-0.16.3/servo-maintenance.py",
+      "sha256": "02524f4c999f8feed99b87d4434af99465438a85e73066032c9c50d24eb45b57"
+    },
+    {
       "path": "calibration/integration-0.16.3/web/calibration_web.py",
-      "sha256": "d1af47cb488d1a992de1ae19a1639e3c56b470db7cdadbf405159beae0f65d64"
+      "sha256": "5a638f8214902460629cfd18fce39bd55dade66d88d336f81dc08350db1f683a"
     },
     {
       "path": "calibration/integration-0.16.3/web/camera_config.py",
@@ -224,7 +240,15 @@
     },
     {
       "path": "calibration/integration-0.16.3/web/index.html",
-      "sha256": "f31ad10dae590682244542ef556d74121a93f216ea903b6d40e508d8fb3f52dd"
+      "sha256": "93cceec258eec767a2eafb0e4c2151a14e35d6c26a43e729459383e5feae10b6"
+    },
+    {
+      "path": "calibration/integration-0.16.3/web/servo-health.js",
+      "sha256": "76cbc7b64d9ed5f08999b7257fa2a2cbfddaedca6d76980bd5f904c63f00edae"
+    },
+    {
+      "path": "calibration/integration-0.16.3/web/servo_health.py",
+      "sha256": "73b9b2646fb7f46b78f6d3a062b49c5e332c76cc2c253a0f7600d89a933b58f1"
     },
     {
       "path": "calibration/tests/test_calibration.py",
@@ -239,6 +263,18 @@
       "sha256": "14f3e12ec05e2498d54c8ce8b2bc83fc028325338e10df0c181bb6901bfb8675"
     },
     {
+      "path": "calibration/tests/test_servo_health.py",
+      "sha256": "7ead05faff392618b195c5f5e18aae158b006a6ad207797f1398789c265060cf"
+    },
+    {
+      "path": "calibration/tests/test_servo_health_http.py",
+      "sha256": "36dd68a2446ec36cd0c3a4b4ee2ff17cd7a8f2ac9f36a4b5efe8152442ce1d03"
+    },
+    {
+      "path": "calibration/tests/test_servo_sdk_transport.py",
+      "sha256": "7212263a788b530b9305f5d41b98b286149e46e315501d55368c5db193e61942"
+    },
+    {
       "path": "calibration/tests/test_source_patcher.py",
       "sha256": "18bf1478c23670a7394e406e34273e100de3206f12bb30f60a9ff62544f9d0fe"
     },
@@ -251,5 +287,7 @@
       "sha256": "e727925e15f50ec02bdc39d6ef0298bc216366c590730e4296c2ccd73033d934"
     }
   ],
-  "scope": "Source code, source patches, synthetic fixtures only. No screenshots, historical deployment documents, local execution evidence, binaries or caches."
+  "scope": "Source code, source patches, synthetic fixtures only. No screenshots, historical deployment documents, local execution evidence, binaries or caches.",
+  "baseline_commit": "2b93cb3afc32fa343cc612ee060e94c5bdd7b01d",
+  "hardware_deployed": false
 }

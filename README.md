@@ -33,4 +33,18 @@ python3 -m unittest discover -s calibration/tests -v
 
 本仓库只同步源码、源码补丁和合成测试数据。既有部署文档、截图、完整构建日志、候选程序、原始 ZIP 和历史归档保留在本地交付目录，不在本次公开代码同步范围内。真实部署前需另行核对完整操作指南与目标环境。
 
-舵机健康插件尚未包含在本次基线提交，将在此基线同步后单独实现。
+## 可选只读舵机健康插件
+
+本地功能分支加入 `--enable-servo-health`，复用原有5Hz遥测和只读健康缓存，提供15关节电流、跟随误差、速度曲线、60秒人工参考、持续异常告警、JSON/CSV导出及历史维护报告导入。默认关闭，不修改robotd、不增加总线读取，不自动卸力或控制。规则初值未做实机标定，未发现规则异常不代表硬件完好。
+
+```bash
+python3 calibration/integration-0.16.3/web/calibration_web.py \
+  --target daemon-v0.16.3 --demo --no-telemetry --enable-servo-health \
+  --config calibration/integration-0.16.3/evidence/demo/robotd.toml \
+  --dest /tmp/microduck-tools-demo-calibration.toml \
+  --servo-health-dir /tmp/microduck-tools-demo-health --port 8765
+```
+
+普通DEMO没有真实遥测。需要合成曲线时运行 `python3 calibration/integration-0.16.3/evidence/servo-demo.py`。独立维护CLI为 `calibration/integration-0.16.3/servo-maintenance.py`，只支持Linux root、人工先停robotd及串口独占后的PING/READ；网页不能执行采集。其可选依赖锁定在同目录 `requirements-maintenance.txt`，Web不依赖SDK。
+
+已推送的 `main` 基线为 `2b93cb3`，新增插件在本地 `feat/servo-health-plugin` 分支单独保留，尚未推送。完整部署/维护指南与验证记录保留本地交付目录，实际设备操作仍待用户另行通知。
