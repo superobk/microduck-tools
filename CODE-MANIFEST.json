@@ -1,7 +1,21 @@
 {
-  "date_local": "2026-10-26",
-  "stage": "servo-health-local-implementation",
+  "date_local": "2026-10-28",
+  "tool_version": "0.2.0",
+  "stage": "compatibility-implementation",
+  "scope": "source, synthetic tests, generic deployment templates and documentation only",
   "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "e8b5d5bf4d73f067b04f393d5fd85f29673a92e5c4d49d2c73f290c4f8542096"
+    },
+    {
+      "path": "README.md",
+      "sha256": "fc6702bb1bda8958870ae874bf3a9b111b65dd9a00811ab8290b1c711c686c4f"
+    },
+    {
+      "path": "VERSION",
+      "sha256": "1f930dd1f133c1f97a94fe3acb8db34372cf4c01ffdb2b3ff4ca72f9494121e9"
+    },
     {
       "path": "calibration/common/apply_source_patch.py",
       "sha256": "924219cbcc3a1f591d7721295cf7051c3b8cc362efd116d8e3bef35a92b271c3"
@@ -232,23 +246,35 @@
     },
     {
       "path": "calibration/integration-0.16.3/web/calibration_web.py",
-      "sha256": "5a638f8214902460629cfd18fce39bd55dade66d88d336f81dc08350db1f683a"
+      "sha256": "17cc4d36a376e37ab967b9b2a3cc8bdd7a5e0d68a9575215a143ca92e59f4138"
     },
     {
       "path": "calibration/integration-0.16.3/web/camera_config.py",
-      "sha256": "cf577e00078e937b769016505635884637332b32a14402b285ee95bc1080f4be"
+      "sha256": "cffd420532be32b5ffea4b989fbbb3b9d9e5c29de057650a6d040ab594ae4de5"
+    },
+    {
+      "path": "calibration/integration-0.16.3/web/config_store.py",
+      "sha256": "073fe98d30cadd9173db3eb1aa0a30003efdb3ba64cf47cecada0fd3b36ac18d"
+    },
+    {
+      "path": "calibration/integration-0.16.3/web/daemon_adapter.py",
+      "sha256": "d86c4483f0b364a248250252a0bcc9af940aa7d358e159f246729995d4b828aa"
     },
     {
       "path": "calibration/integration-0.16.3/web/index.html",
-      "sha256": "93cceec258eec767a2eafb0e4c2151a14e35d6c26a43e729459383e5feae10b6"
+      "sha256": "a3c9496b7e90ae4f2f522e1bfb0ece1bbc3a0ccb6f93d1489b7f4d3938a8ccda"
+    },
+    {
+      "path": "calibration/integration-0.16.3/web/native_camera.py",
+      "sha256": "3fad02f3066de5e7cc44d912557438319cea84c53b1e6727dc185f1f46c10dd0"
     },
     {
       "path": "calibration/integration-0.16.3/web/servo-health.js",
-      "sha256": "76cbc7b64d9ed5f08999b7257fa2a2cbfddaedca6d76980bd5f904c63f00edae"
+      "sha256": "5cfae4e7dd2e335be89c36c06a53abf1629e877cf743769e917870c972a7407d"
     },
     {
       "path": "calibration/integration-0.16.3/web/servo_health.py",
-      "sha256": "73b9b2646fb7f46b78f6d3a062b49c5e332c76cc2c253a0f7600d89a933b58f1"
+      "sha256": "6698017f3a55f4d514a4302ebed7351538628356623de378bf3ec80a8d3c4318"
     },
     {
       "path": "calibration/tests/test_calibration.py",
@@ -259,8 +285,16 @@
       "sha256": "b99222bb72f4f46f72b7fd4c46c0245d0bd813cffcb25d311ec59619320bd727"
     },
     {
+      "path": "calibration/tests/test_compatibility.py",
+      "sha256": "91aeb16f4f9aad8dade1dbfe0c62f4d8cc0c96cca0e5e8abab90dfc0a76ded4e"
+    },
+    {
       "path": "calibration/tests/test_gyro_v2_web.py",
       "sha256": "14f3e12ec05e2498d54c8ce8b2bc83fc028325338e10df0c181bb6901bfb8675"
+    },
+    {
+      "path": "calibration/tests/test_runtime_release.py",
+      "sha256": "dd99ed78a72ef88789ac8ea3ee3be3f277ac24c946cd7179805872993e0fa161"
     },
     {
       "path": "calibration/tests/test_servo_health.py",
@@ -268,7 +302,7 @@
     },
     {
       "path": "calibration/tests/test_servo_health_http.py",
-      "sha256": "36dd68a2446ec36cd0c3a4b4ee2ff17cd7a8f2ac9f36a4b5efe8152442ce1d03"
+      "sha256": "1131c1a7ca9564dc6f3f8edc0b58a5b3d7faf2ea095f96fe833d844dbe20a854"
     },
     {
       "path": "calibration/tests/test_servo_sdk_transport.py",
@@ -285,9 +319,22 @@
     {
       "path": "calibration/web/index.html",
       "sha256": "e727925e15f50ec02bdc39d6ef0298bc216366c590730e4296c2ccd73033d934"
+    },
+    {
+      "path": "deploy/microduck-tools.service",
+      "sha256": "64e2e767f94cd7531d290ece86370788be79526cb1651d597b4b37c6db6e595a"
+    },
+    {
+      "path": "deploy/plugins.example.json",
+      "sha256": "1d69cb8910f68c6a33b0a7494fdae96f6ca73f6b5606ff411275b475e6b2c4a3"
+    },
+    {
+      "path": "docs/compatibility.zh-CN.md",
+      "sha256": "7d7fc807bfd093a128d384c8f600ad919b5c731f46ece69954d1892cb9cb2184"
+    },
+    {
+      "path": "tools/build-release.py",
+      "sha256": "246cab999d9a7b4d31385787086a138c04163dbffcfb760975af4e35638ef5f5"
     }
-  ],
-  "scope": "Source code, source patches, synthetic fixtures only. No screenshots, historical deployment documents, local execution evidence, binaries or caches.",
-  "baseline_commit": "2b93cb3afc32fa343cc612ee060e94c5bdd7b01d",
-  "hardware_deployed": false
+  ]
 }

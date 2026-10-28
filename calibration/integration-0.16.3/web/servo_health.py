@@ -16,6 +16,8 @@ import socket
 import tempfile
 import threading
 import time
+import uuid
+import daemon_adapter
 
 IDS = [20,21,22,23,24,30,31,32,33,34,10,11,12,13,14]
 NAMES = ['left_hip_yaw','left_hip_roll','left_hip_pitch','left_knee','left_ankle',
@@ -50,8 +52,11 @@ def atomic_json(path, value):
     name=None
     try:
         with tempfile.NamedTemporaryFile(mode='w',encoding='utf-8',dir=path.parent,delete=False) as f:
-            name=f.name;json.dump(value,f,ensure_ascii=False,allow_nan=False,indent=2);f.write('\n')
+            name=f.name;json.dump(value,f,ensure_ascii=False,allow_nan=False,indent=2);f.write('\n');f.flush();os.fsync(f.fileno())
         Path(name).replace(path)
+        fd=os.open(path.parent,os.O_RDONLY)
+        try:os.fsync(fd)
+        finally:os.close(fd)
     finally:
         if name:Path(name).unlink(missing_ok=True)
 
@@ -120,13 +125,15 @@ def validate_report(report):
 
 class Engine:
     """Deterministic reducer; feed recorded frames with the same monotonic clock as t_ns."""
-    def __init__(self, directory, clock=time.monotonic, emit=None):
+    def __init__(self, directory, clock=time.monotonic, emit=None, require_identity=False):
         self.directory=Path(directory);self.clock=clock;self.emit=emit or (lambda e:None)
         self.lock=threading.RLock();self.config=rules({});self.config_version=1
         self.baselines={};self.capture=None;self.maintenance=None;self.errors=deque(maxlen=12)
         self.history=deque(maxlen=1600);self.events=deque(maxlen=100);self.pending=deque(maxlen=100)
         self.conditions={};self.active={};self.latest=None;self.last_ns=None;self.policy=None
         self.health=None;self.health_received=None;self.frames=0;self.repeats=0;self.capture_result=None
+        self.identity=None;self.identity_verified=False;self.require_identity=require_identity
+        self.stream_epoch=uuid.uuid4().hex;self.maintenance_version=None
         for file,attr in [('rules.json','config'),('baselines.json','baselines'),('maintenance.json','maintenance')]:
             try:
                 value=json.loads((self.directory/file).read_text())
@@ -136,11 +143,31 @@ class Engine:
                     for p,b in value.items():
                         if not isinstance(p,str) or vector(b.get('p95_ma'),True) is None:raise ValueError('invalid stored baseline')
                     self.baselines=value
-                else:self.maintenance=validate_report(value)
+                else:self.maintenance=validate_report(value);self.maintenance_version=daemon_adapter.fingerprint(self.maintenance)
             except FileNotFoundError:pass
             except (OSError,ValueError,TypeError,KeyError,AttributeError) as e:self.errors.append(f'{file}: {e}')
 
     def _error(self,e):self.errors.append(str(e)[:300])
+
+    def reset_continuity(self,reason='transport interrupted'):
+        with self.lock:
+            self.conditions.clear()
+            if self.capture:self.capture=None;self.capture_result='cancelled: '+reason
+            self._flush_evidence(self.clock(),force=True)
+            self.history.clear();self.latest=None;self.last_ns=None
+            self.stream_epoch=uuid.uuid4().hex
+
+    def set_identity(self,identity,verified):
+        with self.lock:
+            if identity!=self.identity or verified!=self.identity_verified:
+                self.reset_continuity('device/software/calibration identity changed')
+            self.identity=deepcopy(identity);self.identity_verified=bool(verified)
+
+    def _base(self,policy):
+        base=self.baselines.get(policy)
+        if not self.require_identity:return base
+        return base if base and self.identity_verified and base.get('identity')==self.identity else None
+
 
     def configure(self,body):
         with self.lock:
@@ -157,6 +184,7 @@ class Engine:
             if body.get('action')!='start' or body.get('confirm_normal') is not True:
                 raise ValueError('confirm_normal=true required after manually checking a normal operating condition')
             status=self.status()
+            if self.require_identity and not self.identity_verified:raise ValueError('verified device/software/calibration identity required')
             if status['stale'] or not self.latest or self.latest['currents_ma'] is None:
                 raise ValueError('fresh measured currents required')
             if self._paused(self.latest):raise ValueError('baseline unavailable while held/fallen/limp/picked_up')
@@ -168,6 +196,7 @@ class Engine:
         report=validate_report(body.get('report'))
         with self.lock:
             atomic_json(self.directory/'maintenance.json',report);self.maintenance=report
+            self.maintenance_version=daemon_adapter.fingerprint(report)
         return {'ok':True,'report':report}
 
     @staticmethod
@@ -177,7 +206,7 @@ class Engine:
 
     def _event(self,key,phase,details,now):
         event=dict(key=key,phase=phase,at=utc(),monotonic_s=now,rule_version=self.config_version,
-                   source='robot.state' if details.get('id') is not None else 'robot.health_or_stream',**deepcopy(details))
+                   source='robot.state' if details.get('id') is not None else 'robot.health_or_stream',identity=deepcopy(self.identity),**deepcopy(details))
         self.events.append(event)
         before=[deepcopy(s) for s in self.history if now-5<=s['sensor_s']<=now]
         times=[now-5]+[s['sensor_s'] for s in before]+[now]
@@ -258,13 +287,13 @@ class Engine:
                         if len(rows)>=120:
                             previous=self.baselines.get(policy,{})
                             b=dict(p95_ma=p95,version=previous.get('version',0)+1,created_at=utc(),
-                                   samples=len(rows),duration_s=t-self.capture['start'],source=self.capture['source'])
+                                   samples=len(rows),duration_s=t-self.capture['start'],source=self.capture['source'],identity=deepcopy(self.identity))
                             updated={**self.baselines,policy:b}
                             try:atomic_json(self.directory/'baselines.json',updated);self.baselines=updated;self.capture_result='saved'
                             except OSError as e:self._error(e);self.capture_result='failed to persist baseline'
                         else:self.capture_result='insufficient samples'
                         self.capture=None
-            base=self.baselines.get(policy);cfg=self.config;recent=[x for x in self.history if t-x['sensor_s']<=1.000001]
+            base=self._base(policy);cfg=self.config;recent=[x for x in self.history if t-x['sensor_s']<=1.000001]
             for i,ident in enumerate(IDS):
                 current=sample['currents_ma'][i] if sample['currents_ma'] is not None else None
                 threshold=max(cfg['current_multiplier']*base['p95_ma'][i],base['p95_ma'][i]+cfg['current_margin_ma']) if base else None
@@ -291,11 +320,11 @@ class Engine:
             now=self.clock();self.health=deepcopy(health);self.health_received=now
             motors=health.get('motors') or {};battery=health.get('battery') or {};bus=health.get('bus') or {};cfg=self.config
             temp=motors.get('max_c');volts=battery.get('volts')
-            self._condition('temperature',None if not finite(temp) else temp>=cfg['temp_warn_c'],dict(rule='temperature',
+            self._condition('temperature',True if finite(temp) and temp>=cfg['temp_warn_c'] else None,dict(rule='temperature',
                  severity='alarm' if finite(temp) and temp>=cfg['temp_alarm_c'] else 'warning',message='最近报告温度偏高，原始采样新鲜度未知',
                  value=temp if finite(temp) else None,threshold=cfg['temp_warn_c'],alarm_threshold=cfg['temp_alarm_c'],unit='°C',
                  hottest=motors.get('hottest'),sample_freshness='unverifiable'),now)
-            self._condition('voltage',None if not finite(volts) else not cfg['voltage_min_v']<=volts<=cfg['voltage_max_v'],
+            self._condition('voltage',True if finite(volts) and not cfg['voltage_min_v']<=volts<=cfg['voltage_max_v'] else None,
                  dict(rule='voltage',severity='warning',message='汇总平滑电压超出监测参考范围，原始采样新鲜度未知',
                       value=volts if finite(volts) else None,threshold=[cfg['voltage_min_v'],cfg['voltage_max_v']],unit='V',
                       manufacturer_range_v=[3.7,6.0],sample_freshness='unverifiable'),now)
@@ -303,10 +332,10 @@ class Engine:
             self._condition('bus',None if type(failures)!=int else failures>0 or bool(missing),dict(rule='bus',severity='warning',
                  message='总线读取异常；不据此推断某个关节损坏',value=failures,threshold=0,missing=missing),now)
 
-    def status(self):
+    def status(self, compact=False):
         with self.lock:
             now=self.clock();age=None if self.last_ns is None else max(0.,now-self.last_ns/1e9)
-            stale=age is None or age>1;sample=self.latest or {};rows=[];base=self.baselines.get(self.policy)
+            stale=age is None or age>1;sample=self.latest or {};rows=[];base=self._base(self.policy)
             for i,ident in enumerate(IDS):
                 def at(key):return sample[key][i] if sample.get(key) is not None else None
                 pos,target,vel=at('joints'),at('targets'),at('velocities')
@@ -327,24 +356,28 @@ class Engine:
                     comparable=comparable and self.policy==value.get('policy') and sample.get('currents_ma') is not None and base is not None
                     if key.startswith('stall:'):comparable=comparable and all(coverage.values()) and not self._paused(sample)
                 else:comparable=self.health_received is not None and now-self.health_received<=2
-                alerts.append(dict(key=key,evidence_status='comparable' if comparable else 'awaiting_comparable_evidence',**value))
+                alerts.append(dict(key=key,evidence_status=('awaiting_fresh_sensor_evidence' if key in ('temperature','voltage') else 'comparable' if comparable else 'awaiting_comparable_evidence'),**value))
             return deepcopy(dict(enabled=True,mode='read_only',stale=stale,sensor_age_ms=None if age is None else age*1000,
                policy=self.policy,frames=self.frames,repeated_or_reordered_frames=self.repeats,rows=rows,coverage=coverage,
                overall='stale' if stale else 'alarm' if any(a['severity']=='alarm' for a in self.active.values()) else
                        'warning' if self.active else 'insufficient' if not all(coverage.values()) or not base else 'observing',
-               alerts=alerts,events=list(self.events),rules=self.config,rule_version=self.config_version,
+               alerts=alerts,events=list(self.events)[-15:] if compact else list(self.events),rules=self.config,rule_version=self.config_version,
                baseline_capture=capture,baseline_result=self.capture_result,baselines=self.baselines,
+               baseline_valid=bool(base),identity_verified=self.identity_verified,identity=self.identity,stream_epoch=self.stream_epoch,
                health=self.health,health_rpc_age_ms=None if self.health_received is None else (now-self.health_received)*1000,
-               slow_sensor_freshness='unverifiable',maintenance=self.maintenance,errors=list(self.errors),
+               slow_sensor_freshness='unverifiable',maintenance=None if compact else self.maintenance,maintenance_version=self.maintenance_version,errors=list(self.errors),
                unavailable_live=['per_servo_temperature','per_servo_voltage','torque_enable','hardware_error','pwm'],
                inference='No rule violation is not proof of healthy hardware; current is supply-side magnitude, not torque.'))
 
-    def series(self,ident):
+    def series(self,ident,after_t_ns=None,epoch=None):
         if type(ident)!=int or ident not in IDS:raise ValueError('unknown joint ID')
+        if after_t_ns is not None and (not isinstance(after_t_ns,str) or not after_t_ns.isdigit() or len(after_t_ns)>24):raise ValueError('invalid history cursor')
         i=IDS.index(ident)
         with self.lock:
-            return dict(id=ident,name=NAMES[i],samples=[dict(t_ns=s['t_ns'],t=s['sensor_s'],policy=s['policy'],
-                **{key:None if s[key] is None else s[key][i] for key in ('currents_ma','velocities','joints','targets')}) for s in self.history])
+            reset=after_t_ns is None or epoch!=self.stream_epoch or bool(self.history and not int(self.history[0]['t_ns'])<=int(after_t_ns)<=int(self.history[-1]['t_ns']))
+            rows=list(self.history) if reset else [s for s in self.history if int(s['t_ns'])>int(after_t_ns)]
+            return dict(id=ident,name=NAMES[i],epoch=self.stream_epoch,reset=reset,cursor=self.history[-1]['t_ns'] if self.history else None,samples=[dict(t_ns=s['t_ns'],t=s['sensor_s'],policy=s['policy'],
+                **{key:None if s[key] is None else s[key][i] for key in ('currents_ma','velocities','joints','targets')}) for s in rows])
 
     def export(self,fmt='json'):
         with self.lock:
@@ -373,14 +406,15 @@ def read_health(path,timeout=.5):
 
 
 class Plugin:
-    def __init__(self,directory,*,robot_socket='/run/robotd.sock',enabled=False,live=False,clock=time.monotonic):
+    def __init__(self,directory,*,robot_socket='/run/robotd.sock',enabled=False,live=False,clock=time.monotonic,adapter=None):
         self.enabled=enabled;self.directory=Path(directory);self.socket=robot_socket;self.live=live;self.clock=clock
-        self.stop=threading.Event();self.frames=queue.Queue(maxsize=128);self.logs=queue.Queue(maxsize=100)
+        self.adapter=adapter;self.analysis_ready=not live;self.submit_lock=threading.Lock();self.gap=threading.Event()
+        self.stop=threading.Event();self.frames=queue.Queue(maxsize=5);self.logs=queue.Queue(maxsize=100)
         self.log_stop=threading.Event()
         self.dropped_frames=0;self.dropped_logs=0;self.threads=[];self.engine=None
         if not enabled:return
         try:
-            self.engine=Engine(directory,clock,self._emit)
+            self.engine=Engine(directory,clock,self._emit,require_identity=live)
             for name,target in [('servo-analysis',self._work),('servo-log',self._write_logs)]+([('servo-health-rpc',self._health)] if live else []):
                 thread=threading.Thread(name=name,target=target,daemon=True);thread.start();self.threads.append(thread)
         except Exception:
@@ -392,17 +426,33 @@ class Plugin:
         try:self.logs.put_nowait(event)
         except queue.Full:self.dropped_logs+=1
 
-    def submit(self,sample):
+    def disconnect(self):
         if not self.enabled:return
-        try:self.frames.put_nowait((deepcopy(sample),self.clock()))
-        except queue.Full:self.dropped_frames+=1
+        self.analysis_ready=not self.live
+        if self.adapter:self.adapter.invalidate('monitor disconnected; awaiting renewed identity')
+        self.engine.reset_continuity('monitor disconnected')
+
+    def submit(self,sample):
+        if not self.enabled or not self.analysis_ready:return
+        fields={key:deepcopy(sample.get(key)) for key in ('t_ns','policy','safety','currents_ma','velocities','joints','targets')}
+        with self.submit_lock:
+            if self.frames.full():
+                while True:
+                    try:self.frames.get_nowait();self.dropped_frames+=1
+                    except queue.Empty:break
+                self.gap.set()
+            self.frames.put_nowait((fields,self.clock()))
 
     def _work(self):
         while not self.stop.is_set():
             try:
                 try:sample,received=self.frames.get(timeout=.1)
                 except queue.Empty:sample=None
-                if sample is not None:self.engine.on_sample(sample,received)
+                if self.gap.is_set():
+                    self.gap.clear();self.engine.reset_continuity('telemetry queue overflow')
+                if sample is not None:
+                    if self.clock()-received>1:self.dropped_frames+=1;self.engine.reset_continuity('analysis backlog stale')
+                    elif self.analysis_ready:self.engine.on_sample(sample)
                 self.engine.tick()
             except Exception as e:
                 with self.engine.lock:self.engine._error(e)
@@ -410,10 +460,19 @@ class Plugin:
     def _health(self):
         while not self.stop.is_set():
             start=time.monotonic()
-            try:self.engine.on_health(read_health(self.socket))
+            try:
+                if self.adapter is not None:
+                    health,identity,capabilities=self.adapter.poll()
+                    self.analysis_ready=capabilities['read_contract_verified']
+                    self.engine.set_identity(identity,capabilities['baseline_identity_verified'])
+                    if self.analysis_ready:self.engine.on_health(health)
+                else:self.engine.on_health(read_health(self.socket))
             except Exception as e:
                 with self.engine.lock:
                     self.engine._error(f'robot.health: {e}')
+                    if self.adapter is not None:
+                        self.analysis_ready=False;self.engine.reset_continuity('health/identity unavailable')
+                        self.adapter.invalidate('health/identity unavailable: '+str(e)[:120])
                     for key in ('temperature','voltage','bus'):self.engine.conditions.pop(key,None)
             self.stop.wait(max(0,1-(time.monotonic()-start)))
 
@@ -441,10 +500,10 @@ class Plugin:
         finally:
             if handler:handler.close()
 
-    def status(self):
+    def status(self,compact=False):
         if not self.enabled:return dict(enabled=False,message=getattr(self,'startup_error',
             '插件关闭；以 --enable-servo-health 启动Web后启用，不修改robotd。'))
-        result=self.engine.status();result.update(live_transport=self.live,dropped_frames=self.dropped_frames,dropped_logs=self.dropped_logs)
+        result=self.engine.status(compact=compact);result.update(compatibility=self.adapter.status() if self.adapter else None,live_transport=self.live,dropped_frames=self.dropped_frames,dropped_logs=self.dropped_logs)
         return result
 
     def close(self):

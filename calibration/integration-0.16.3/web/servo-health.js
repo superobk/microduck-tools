@@ -3,7 +3,8 @@
   const el=id=>document.getElementById(id);
   const request=(path,body)=>fetchJson('/api/servo-health/'+path,body===undefined?undefined:{method:'POST',headers:{'Content-Type':'application/json','X-Calibration-CSRF':CSRF},body:JSON.stringify(body)});
   const labels={observing:'未发现已配置规则异常',insufficient:'数据或参考不足',stale:'数据过期 / 未连接',warning:'需要注意',alarm:'需要人工核查'};
-  let selected=20,filled=false,busy=false,last=null;
+  let selected=20,filled=false,busy=false,last=null,seriesCache={id:null,samples:[]},maintenanceVersion=undefined;
+  const rowNodes=new Map();
   const format=(n,d=1)=>typeof n==='number'&&Number.isFinite(n)?n.toFixed(d):'未知';
   function text(id,value){el(id).textContent=value;}
   function draw(id,samples,keys,colors,unit){
@@ -29,7 +30,11 @@
   }
   async function history(){
     if(!last?.enabled)return;
-    const data=await request('history?id='+selected),samples=data.samples;
+    const joint=selected;const cursor=seriesCache.id===joint&&seriesCache.cursor?`&after_t_ns=${seriesCache.cursor}&epoch=${encodeURIComponent(seriesCache.epoch)}`:'';
+    const data=await request('history?id='+joint+cursor);if(selected!==joint)return;
+    const samples=data.reset||seriesCache.id!==joint?data.samples:seriesCache.samples.concat(data.samples);
+    if(samples.length){const end=samples[samples.length-1].t;while(samples.length&&end-samples[0].t>300)samples.shift();}
+    seriesCache={id:joint,samples,cursor:data.cursor,epoch:data.epoch};
     text('servoSelected',data.id+' / '+data.name);
     draw('servoCurrentPlot',samples,['currents_ma'],['#ff702a'],'mA');
     draw('servoPositionPlot',samples.map(s=>({...s,actual:s.joints==null?null:s.joints*180/Math.PI,target:s.targets==null?null:s.targets*180/Math.PI})),['actual','target'],['#ece9df','#ff702a'],'°');
@@ -37,14 +42,12 @@
     draw('servoVelocityPlot',samples.map(s=>({...s,speed:s.velocities==null?null:s.velocities*180/Math.PI})),['speed'],['#86c8ad'],'°/s');
   }
   function table(rows){
-    const body=el('servoRows');body.replaceChildren();
+    const body=el('servoRows');
     for(const row of rows){
-      const tr=document.createElement('tr');tr.className=row.id===selected?'selected':'';
-      const td=document.createElement('td'),button=document.createElement('button');button.className='btn ghost';button.type='button';
-      button.textContent=row.id+' / '+row.name;button.onclick=()=>{selected=row.id;table(rows);history().catch(showError);};td.append(button);tr.append(td);
+      let tr=rowNodes.get(row.id);if(!tr){tr=document.createElement('tr');const td=document.createElement('td'),button=document.createElement('button');button.className='btn ghost';button.type='button';button.textContent=row.id+' / '+row.name;button.onclick=()=>{selected=row.id;table(last.rows);history().catch(showError);};td.append(button);tr.append(td);for(let i=0;i<7;i++)tr.append(document.createElement('td'));rowNodes.set(row.id,tr);body.append(tr)}tr.className=row.id===selected?'selected':'';let cellIndex=1;
       for(const value of [format(row.current_ma),format(row.threshold_ma),format(row.position_deg),format(row.target_deg),format(row.error_deg),format(row.velocity_deg_s),labels[row.state]+(row.stall_paused?' · 卡滞判断暂停':'')]){
-        const cell=document.createElement('td');cell.textContent=value;tr.append(cell);
-      }body.append(tr);
+        tr.children[cellIndex++].textContent=value;
+      }
     }
   }
   function showError(error){text('servoMessage','插件：'+error.message);}
@@ -69,18 +72,18 @@
     if(busy||!el('tab-servo').classList.contains('active'))return;
     busy=true;
     try{
-      const s=await request('status');last=s;
+      const s=await request('status?compact=1');last=s;
       el('servoContent').hidden=!s.enabled;el('servoDisabled').hidden=s.enabled;
       if(!s.enabled){text('servoDisabled',s.message);return;}
       text('servoConnection',s.live_transport?(s.stale?'传感器数据过期':'只读遥测已连接'):'离线 / 回放，无真实连接');
       text('servoOverall',labels[s.overall]);
-      text('servoCoverage',Object.values(s.coverage).filter(Boolean).length+'/4 项 · '+(s.baselines[s.policy]?'当前 policy 已有参考':'当前 policy 无参考'));
+      text('servoCoverage',Object.values(s.coverage).filter(Boolean).length+'/4 项 · '+(s.baseline_valid?'当前 policy 已有可比参考':'当前 policy 无可比参考'));
       text('servoAge',format(s.sensor_age_ms,0)+' ms · '+(s.policy||'未知 policy')+' · 已收 '+s.frames+' 帧');
-      text('servoMessage',`告警 ${s.alerts.length} · 重复/乱序 ${s.repeated_or_reordered_frames} · 丢弃样本 ${s.dropped_frames} / 日志 ${s.dropped_logs}。${s.errors.join('；')}`);
+      text('servoMessage',`告警 ${s.alerts.length} · 重复/乱序 ${s.repeated_or_reordered_frames} · 丢弃样本 ${s.dropped_frames} / 日志 ${s.dropped_logs}。${s.errors.join('；')} ${s.compatibility?.reason||''}`);
       const h=s.health||{},m=h.motors||{},b=h.battery||{};
       text('servoSlow',`最近报告：最高 ${format(m.max_c)}°C（${m.hottest||'未知关节'}），平均 ${format(m.mean_c)}°C，汇总平滑电压 ${format(b.volts,2)}V（XL330厂商规格3.7–6.0V；监测参考${s.rules.voltage_min_v}–${s.rules.voltage_max_v}V）。RPC 距今 ${format(s.health_rpc_age_ms,0)} ms；原始温度/电压采样新鲜度不可验证。`);
       text('servoBaselineState',s.baseline_capture?`正在采集 ${s.baseline_capture.policy} · ${format(s.baseline_capture.elapsed_s)} / 60 s · ${s.baseline_capture.samples} 个样本`:s.baseline_result||'人工确认当前工况正常后，才能采集参考。没有参考时不进行基于基线的电流告警。');
-      el('servoBaselineStart').disabled=s.stale||!!s.baseline_capture;el('servoBaselineCancel').disabled=!s.baseline_capture;
+      el('servoBaselineStart').disabled=s.stale||!!s.baseline_capture||s.live_transport&&!s.identity_verified;el('servoBaselineCancel').disabled=!s.baseline_capture;
       if(!filled){
         const fields=el('servoRuleFields');fields.replaceChildren();
         const names={current_multiplier:'电流 P95 倍数',current_margin_ma:'电流增量 (mA)',duration_s:'触发持续 (s)',error_deg:'卡滞误差 (°)',speed_deg_s:'卡滞速度上限 (°/s)',target_span_deg:'1秒目标变化上限 (°)',temp_warn_c:'温度提醒 (°C)',temp_alarm_c:'温度高等级 (°C)',voltage_min_v:'电压参考下限 (V)',voltage_max_v:'电压参考上限 (V)'};
@@ -89,7 +92,7 @@
           const input=document.createElement('input');input.type='number';input.step='any';input.id='servo-rule-'+key;input.dataset.rule=key;input.value=value;wrap.append(label,input);fields.append(wrap);
         }filled=true;
       }
-      table(s.rows);list('servoAlerts',s.alerts);list('servoEvents',s.events.slice(-15).reverse());maintenance(s.maintenance);await history();
+      table(s.rows);list('servoAlerts',s.alerts);list('servoEvents',s.events.slice(-15).reverse());if(s.maintenance_version!==maintenanceVersion){const report=await request('maintenance');maintenance(report.report);maintenanceVersion=s.maintenance_version;}await history();
     }catch(e){showError(e);}finally{busy=false;}
   }
   el('servoRefresh').onclick=refresh;

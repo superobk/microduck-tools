@@ -81,5 +81,26 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(popen.call_args.args[0],['mock-robotctl','monitor','--hz','5','--json'])
         self.assertEqual(monitor.sample()['policy'],'stand')
 
+    def test_capabilities_and_compact_incremental_routes(self):
+        status,raw=self.call('/api/capabilities');self.assertEqual(status,200)
+        self.assertIn('calibration',json.loads(raw))
+        self.assertEqual(self.call('/api/servo-health/status?compact=1')[0],200)
+        self.assertEqual(self.call('/api/servo-health/maintenance')[0],200)
+        self.assertEqual(self.call('/api/servo-health/history?id=20&after_t_ns=-1')[0],400)
+        connection=http.client.HTTPConnection('127.0.0.1',self.server.server_address[1],timeout=3)
+        connection.request('GET','/');response=connection.getresponse();response.read()
+        self.assertIn("img-src 'self' blob:",response.getheader('Content-Security-Policy'));connection.close()
+
+    def test_malformed_telemetry_does_not_kill_the_shared_monitor(self):
+        monitor=web.Monitor('mock-robotctl',enable=False)
+        def stream():
+            yield '[]'
+            yield '{"method":"robot.state","params":{"joints":[NaN]}}'
+            yield json.dumps({'method':'robot.state','params':{'policy':'stand','safety':['wrong-type'],'loop':'wrong-type'}})
+            monitor.stop_event.set()
+        process=Mock(stdout=stream());process.poll.return_value=0
+        with patch.object(web.subprocess,'Popen',return_value=process):monitor._loop()
+        self.assertEqual(monitor.sample()['policy'],'stand')
+
 
 if __name__=='__main__':unittest.main()

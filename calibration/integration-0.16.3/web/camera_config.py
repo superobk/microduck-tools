@@ -8,6 +8,7 @@ import tomllib
 import urllib.request
 
 import duck_calibrate as cal
+import config_store
 
 ANGLES = (0, 90, 180, 270)
 
@@ -100,7 +101,8 @@ class Camera:
         expected = None
         error = None
         try:
-            config = tomllib.loads(self.config.read_text('utf-8'))
+            raw_config = self.config.read_bytes()
+            config = tomllib.loads(raw_config.decode('utf-8'))
             saved = angle(config.get('media', {}).get('camera_rotate'))
             board = config.get('board', {}).get('version', 'zero3')
             if board not in ('zero3', 'beta'):
@@ -121,6 +123,7 @@ class Camera:
                                      or runtime.get('flip_in_pipeline') is True))
         writable = verified and not override and error is None and self.target == 'daemon-v0.16.3'
         return {'saved_rotation': saved, 'expected_rotation': expected, 'saved_error': error,
+                'config_revision': config_store.revision(raw_config) if error is None else None,
                 'runtime': runtime if verified else None, 'runtime_verified': verified,
                 'runtime_reason': reason, 'override': override, 'can_save': writable,
                 'can_apply': writable and self.enable_apply and not self.demo,
@@ -133,10 +136,11 @@ class Camera:
         if self.target != 'daemon-v0.16.3':
             raise cal.CalibrationError('camera extension is validated for daemon-v0.16.3 only')
         value = angle(body['rotation'])
-        text = self.config.read_text('utf-8')
+        text = self.config.read_bytes().decode('utf-8')
         updated = edit(text, value)
         snippet = '# follows board camera default' if value is None else f'[media]\ncamera_rotate = {value}\n'
-        return {'ok': True, 'rotation': value, 'snippet': snippet, 'config': updated}
+        return {'ok': True, 'rotation': value, 'snippet': snippet, 'config': updated,
+                'config_revision': config_store.revision(text.encode('utf-8'))}
 
     def save(self, body):
         if body.get('confirm_save') is not True:
@@ -146,11 +150,16 @@ class Camera:
             raise cal.CalibrationError('camera save requires verified patched mediad without CLI rotation overrides')
         if self.config.is_symlink():
             raise cal.CalibrationError('symlink config destinations are not supported')
-        preview = self.preview(body)
-        if preview['config'] == self.config.read_text('utf-8'):
-            return {'ok': True, 'changed': False, 'message': 'camera configuration already saved; no restart'}
-        backup = cal.make_backup(self.config)
-        cal.atomic_write(self.config, preview['config'].encode('utf-8'), self.config.stat().st_mode & 0o777)
+        with config_store.locked(self.config):
+            original = self.config.read_bytes()
+            preview = self.preview(body)
+            config_store.check(self.config,original)
+            expected = body.get('config_revision')
+            if expected is not None and expected != config_store.revision(original):
+                raise cal.CalibrationError('configuration conflict: preview revision differs; refresh and review again')
+            if preview['config'].encode('utf-8') == original:
+                return {'ok': True, 'changed': False, 'message': 'camera configuration already saved; no restart'}
+            backup = config_store.replace_checked(self.config,original,preview['config'].encode('utf-8'),expected)
         return {'ok': True, 'changed': True, 'backup': str(backup),
                 'message': 'camera configuration saved; mediad has not been restarted'}
 
