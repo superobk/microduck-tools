@@ -10,16 +10,18 @@ import re
 import subprocess
 from pathlib import Path
 
-SUPPORTED = {'daemon-v0.16.3', 'daemon-v0.17.8'}
+SUPPORTED = {'daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9'}
 EXPECTED_TAG_COMMITS = {
     'daemon-v0.16.3': '0b2b82f56ac1e32d69018837ac1cd7d4c687f5a0',
     'daemon-v0.17.8': '942e58e3aa6dbb28e7037203fff11866122c7567',
+    'daemon-v0.17.9': '96b89d8613f06722c1d64ce75ab0d7124fed9d8f',
 }
 PARAMS = 'robotd-params/src/lib.rs'
 REGISTRY = 'robotd-params/src/registry.rs'
 BUS = 'duck-control/src/bus.rs'
 MAIN = 'robotd/src/main.rs'
 IMU = 'duck-control/src/imu.rs'
+EDITOR = 'robotd-params/src/edit.rs'
 
 
 def replace_once(text: str, src: str, dst: str, where: str) -> str:
@@ -220,6 +222,35 @@ mod microduck_calibration_config_tests {
 '''
 
 
+# Tests run inside the actual patched crates, without opening any hardware.
+PARAMS_TESTS = PARAMS_TESTS.rsplit('}', 1)[0] + r"""
+    fn profile_file(profile: &str, counts: f64) -> String {
+        format!("schema = 2\ntarget_tag = \"__TARGET__\"\njoint_zero_rad = [{}]\njoint_direction = [{}]\nimu_mount_wxyz = [1.0,0.0,0.0,0.0]\ngyro_profile = \"{}\"\ngyro_raw_counts_per_dps = {}\n",
+            vec!["0.0"; 15].join(","), vec!["1"; 15].join(","), profile, counts)
+    }
+    #[test]
+    fn v2_16_4_is_explicit_and_defaults_remain_factory() {
+        let parsed = RobotCalibration::from_text(&profile_file("custom_raw_div_16_4", 16.4)).unwrap();
+        assert_eq!(parsed.gyro_raw_counts_per_dps, 16.4);
+        assert!(Bus::default().calibration_path.is_empty());
+        assert!(Bus::default().load_calibration().unwrap().is_none());
+        assert!((default_gyro_counts() - 1.0 / 0.0175).abs() < 1e-9);
+    }
+    #[test]
+    fn mismatched_profile_target_mount_and_limits_are_rejected() {
+        assert!(RobotCalibration::from_text(&profile_file("custom_raw_div_16_4", 57.0)).is_err());
+        assert!(RobotCalibration::from_text(&profile_file("manual", 0.0)).is_err());
+        assert!(RobotCalibration::from_text(&profile_file("manual", 301.0)).is_err());
+        let valid = profile_file("custom_raw_div_16_4", 16.4);
+        assert!(RobotCalibration::from_text(&valid.replace("__TARGET__", "daemon-v9.9.9")).is_err());
+        assert!(RobotCalibration::from_text(&valid.replace("[1.0,0.0,0.0,0.0]", "[0.0,0.0,0.0,0.0]")).is_err());
+        let bus = Bus { calibration_path: "relative.toml".to_owned(), ..Default::default() };
+        assert!(bus.load_calibration().is_err());
+    }
+}
+"""
+
+
 def patch_params(text: str, target: str) -> str:
     text = replace_once(text,
         '    pub fast_sync_read: bool,\n}',
@@ -251,6 +282,13 @@ def patch_registry(text: str) -> str:
         '    // ── [control] ────────────────────────────────────────────────────────────',
         '    entry("bus.calibration_path", Kind::Text, "Absolute path to robot-specific XL330/IMU calibration TOML"),\n'
         '    // ── [control] ────────────────────────────────────────────────────────────', REGISTRY)
+
+
+def patch_editor(text: str) -> str:
+    # An empty path deliberately means factory defaults, just as an empty pad binding
+    # means disabled. Keep the native editor's default-value invariant truthful.
+    return replace_once(text, '"pad.x" | "pad.y" | "pad.lb" | "pad.rb"',
+                        '"pad.x" | "pad.y" | "pad.lb" | "pad.rb" | "bus.calibration_path"', EDITOR)
 
 
 def patch_bus(text: str) -> str:
@@ -354,6 +392,38 @@ mod microduck_calibration_gyro_tests {
         let length = out.gyro.iter().map(|x| x*x).sum::<f64>().sqrt();
         assert!((length - 10f64.to_radians()).abs() < 1e-9);
     }
+    #[test]
+    fn signed_16_4_conversion_covers_all_axes() {
+        for axis in 0..3 {
+            for sign in [-1i16, 1] {
+                let mut d = SflpDecoder::new([1.0, 0.0, 0.0, 0.0]);
+                d.set_gyro_raw_counts_per_dps(16.4);
+                let mut raw = [0u8; IMU_BLOCK_LEN];
+                raw[axis*2..axis*2+2].copy_from_slice(&(sign*164).to_le_bytes());
+                d.decode(&raw); d.decode(&raw);
+                let out = d.decode(&raw);
+                for i in 0..3 {
+                    let expected = if i == axis { f64::from(sign)*10f64.to_radians() } else { 0.0 };
+                    assert!((out.gyro[i]-expected).abs() < 1e-9);
+                }
+            }
+        }
+    }
+    #[test]
+    fn changing_raw_scale_does_not_change_fused_quaternion_or_gravity() {
+        let mut factory = SflpDecoder::default();
+        let mut calibrated = SflpDecoder::default();
+        calibrated.set_gyro_raw_counts_per_dps(16.4);
+        let mut raw = [0u8; IMU_BLOCK_LEN];
+        raw[0..2].copy_from_slice(&164i16.to_le_bytes());
+        raw[6..8].copy_from_slice(&0x3800u16.to_le_bytes());
+        for _ in 0..3 {
+            let a = factory.decode(&raw); let b = calibrated.decode(&raw);
+            assert_eq!(a.gravity, b.gravity);
+            assert_eq!(a.quat, b.quat);
+        }
+        assert_eq!(factory.ready(), calibrated.ready());
+    }
 }
 """
     return text
@@ -422,6 +492,19 @@ fn write_effective_calibration(io: &duck_control::bus::DynamixelIo, bus: &params
 
 """
     snapshot = snapshot.replace('__TARGET__', tag)
+    if tag == 'daemon-v0.17.9':
+        text = replace_once(text, 'write_effective_calibration(&io, bus)',
+                            'write_effective_calibration(&io, bus, &state.config_path)', MAIN)
+        snapshot = snapshot.replace('bus: &params::Bus)',
+                                    'bus: &params::Bus, config_path: &std::path::Path)')
+        snapshot = snapshot.replace('        "bus_verified": true,', '''        "bus_verified": true,
+        "native_calibration_contract": "microduck-calibration/v2",
+        "base_revision": "96b89d8613f06722c1d64ce75ab0d7124fed9d8f",
+        "daemon_version": env!("CARGO_PKG_VERSION"),
+        "build_revision": option_env!("DUCK_REVISION"),
+        "executable": std::env::current_exe().ok().map(|p| p.display().to_string()),
+        "config_path": config_path.display().to_string(),
+        "calibration_active": !bus.calibration_path.is_empty(),''')
     return replace_once(text,marker,snapshot+marker,MAIN)
 
 
@@ -438,13 +521,14 @@ def run(repo: Path, tag: str, dry_run: bool) -> None:
         raise ValueError(f'{tag} does not point to verified upstream SHA {EXPECTED_TAG_COMMITS[tag]}')
     if head != head_tag:
         raise ValueError(f'HEAD {head[:12]} is not official {tag} at {head_tag[:12]}')
-    paths = [PARAMS, REGISTRY, BUS, IMU, MAIN]
+    paths = [PARAMS, REGISTRY, BUS, IMU, MAIN] + ([EDITOR] if tag == 'daemon-v0.17.9' else [])
     dirty = subprocess.run(['git', 'status', '--porcelain', '--', *paths], cwd=repo,
                            check=True, capture_output=True, text=True).stdout.strip()
     if dirty:
         raise ValueError('source files are already modified; commit/stash first:\n' + dirty)
     funcs = {PARAMS: lambda s: patch_params(s, tag), REGISTRY: patch_registry,
              BUS: patch_bus, IMU: patch_imu, MAIN: lambda s: patch_main(s, tag)}
+    if tag == 'daemon-v0.17.9':funcs[EDITOR] = patch_editor
     edits = {}
     for p in paths:
         f = repo / p

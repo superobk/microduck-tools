@@ -34,6 +34,28 @@ import native_camera
 
 PREVIEW_TEMPLATE=Path(__file__).with_name('index.html')
 MAX_POST=48_000
+NATIVE_0179_BASE='96b89d8613f06722c1d64ce75ab0d7124fed9d8f'
+NATIVE_0179_BUILD='96b89d86-calv3-f76915b8568d'
+
+
+def verify_0179_receipt(data, config):
+    """An official version string alone never enables native calibration writes."""
+    try:
+        if data.get('native_calibration_contract')!='microduck-calibration/v2':
+            raise ValueError('native calibration contract missing; official daemon remains read-only')
+        if data.get('base_revision')!=NATIVE_0179_BASE or data.get('daemon_version')!='0.17.9':
+            raise ValueError('native calibration base/version differs')
+        revision=data.get('build_revision')
+        if revision!=NATIVE_0179_BUILD:
+            raise ValueError('unverified calibration build revision')
+        if Path(data['config_path']).resolve()!=Path(config).resolve():raise ValueError('daemon uses another configuration path')
+        if data.get('executable')!=os.readlink(f"/proc/{data['pid']}/exe"):
+            raise ValueError('calibration executable identity differs')
+        values={key:data[key] for key in ('joint_zero_rad','joint_direction','imu_mount_wxyz','gyro_raw_counts_per_dps','imu_module')}
+        values.update(schema=2,target_tag='daemon-v0.17.9',gyro_profile='manual')
+        cal.check_calibration(values,'daemon-v0.17.9')
+    except (OSError,ValueError,KeyError,TypeError,cal.CalibrationError) as error:return False,str(error)
+    return True,'verified 0.17.9 native calibration contract and live decoder values'
 
 
 def make_default(target):
@@ -196,11 +218,27 @@ class Context:
             calibration=Path(pointer).read_bytes() if pointer else b'official-default-calibration'
             return daemon_adapter.fingerprint(dict(config_sha=config_store.revision(raw),calibration_sha=config_store.revision(calibration)))
         except (OSError,ValueError,TypeError):return None
+    def calibration_target(self, runtime=None, verified=False):
+        if self.target in cal.TARGETS:return self.target
+        if self.target=='auto':
+            if runtime is None:runtime,verified,_=self.runtime_read()
+            if verified:return runtime['target_tag']
+            candidate='daemon-v'+str(self.adapter.status().get('daemon_version',''))
+            if candidate in cal.TARGETS:return candidate
+        return None
+    def write_allowed(self, verified=None, target=None):
+        if verified is None:
+            runtime,verified,_=self.runtime_read();target=self.calibration_target(runtime,verified)
+        target=target or self.target
+        legacy_dev=self.allow_inactive and self.target in ('daemon-v0.16.3','daemon-v0.17.8')
+        permission=os.access(self.config,os.W_OK) and os.access(self.dest.parent,os.W_OK)
+        return bool(target in cal.TARGETS and (verified or legacy_dev) and permission and (not self.demo or legacy_dev))
     def capabilities(self):
+        runtime,verified,reason=self.runtime_read();target=self.calibration_target(runtime,verified)
         return dict(daemon=self.adapter.status(),plugins=[dict(id='servo_health',schema=1,enabled=self.servo.enabled)],
-            calibration=dict(supported_target=self.target in cal.TARGETS,
-                writable=self.target in cal.TARGETS and (self.runtime_read()[1] or self.allow_inactive),
-                reason='需要精确匹配的原生校正支持；官方新版尚无本工具使用的校正契约'))
+            calibration=dict(supported_target=target in cal.TARGETS,resolved_target=target,
+                native_verified=verified,writable=self.write_allowed(verified,target),
+                reason=reason if not verified else '原生校正已核验；保存仍需文件权限、工况与比例确认'))
     def configured(self):
         try:
             data=tomllib.loads(self.config.read_text('utf-8'))
@@ -212,15 +250,17 @@ class Context:
         ptr,err=self.configured()
         path=Path(ptr) if ptr else self.dest
         if path.exists():
-            try:return cal.parse_calibration(path,self.target),str(path),err,bool(ptr)
+            try:return cal.parse_calibration(path,self.calibration_target()),str(path),err,bool(ptr)
             except (OSError,cal.CalibrationError) as e:return None,str(path),str(e),bool(ptr)
         return None,str(path),err,bool(ptr)
     def runtime_read(self):
         try:
             obj=json.loads(self.runtime.read_text('utf-8'))
+            if not isinstance(obj,dict):return None,False,'runtime snapshot must be a JSON object'
             ok,reason=valid_active_file(obj,demo=self.demo)
-            if obj.get('target_tag')!=self.target:
+            if obj.get('target_tag') not in cal.TARGETS or self.target!='auto' and obj.get('target_tag')!=self.target:
                 ok=False;reason='active daemon tag differs from dashboard target'
+            if ok and obj.get('target_tag')=='daemon-v0.17.9':ok,reason=verify_0179_receipt(obj,self.config)
             return obj,ok,reason
         except (OSError,json.JSONDecodeError) as e:
             return None,False,f'no verified runtime snapshot: {e}'
@@ -232,38 +272,41 @@ class Context:
             normalized={**saved,**cal.effective_gyro(saved)}
         if runtime and verified:
             diffs=state_delta(normalized,runtime)
+            pointer,_=self.configured()
+            if (pointer or '')!=(runtime.get('calibration_path') or ''):diffs.append('calibration_path')
         else:diffs=[]
         telem=self.monitor.sample()
         if self.demo and not telem:
             telem={'stale':True,'policy':'SIMULATION','gravity':[0,0,-1],
                    'gyro_rad_s':[0,0,0],'joints':[0]*15,'loop_hz':50}
-        return {'target':self.target,'configured_file':str(self.config),
+        return {'target':self.target,'calibration_target':self.calibration_target(runtime,verified),'configured_file':str(self.config),
                 'install_dest':str(self.dest),'configured':installed,
                 'saved_path':sp,'saved_error':serr,'saved':normalized,
                 'runtime':runtime,'runtime_verified':verified,
                 'runtime_reason':reason,'differences':diffs,
                 'pending_restart':bool(diffs) if normalized and verified else None,
-                'telemetry':telem,'can_save':self.target in cal.TARGETS and (verified or self.allow_inactive),
+                'telemetry':telem,'can_save':self.write_allowed(verified,self.calibration_target(runtime,verified)),
                 'capabilities':self.capabilities(),
                 'allow_inactive':self.allow_inactive,'demo':self.demo,
                 'profiles':cal.GYRO_PROFILES,
                 'joint_names':cal.JOINT_NAMES,'joint_ids':cal.JOINT_IDS,
                 'camera':self.camera.status()}
     def validate_input(self,body):
-        if self.target not in cal.TARGETS:
+        target=self.calibration_target()
+        if target not in cal.TARGETS:
             raise cal.CalibrationError('native calibration unsupported for this target; read-only adapter cannot apply calibration')
         if not isinstance(body,dict) or not isinstance(body.get('calibration'),dict):
             raise cal.CalibrationError('missing calibration object')
         values=body['calibration']
-        if values.get('target_tag')!=self.target:raise cal.CalibrationError('target_tag does not match selected version')
-        cal.check_calibration(values,self.target)
+        if values.get('target_tag')!=target:raise cal.CalibrationError('target_tag does not match selected version')
+        cal.check_calibration(values,target)
         if values['schema'] !=2:
             raise cal.CalibrationError('web editor writes schema 2 only')
         return values
     def save(self,body):
         values=self.validate_input(body)
-        if not (self.runtime_read()[1] or self.allow_inactive):
-            raise cal.CalibrationError('no verified matching patched robotd; cannot write without --allow-inactive')
+        if not self.write_allowed():
+            raise cal.CalibrationError('no verified matching patched robotd or write permissions; 0.17.9 cannot bypass its native contract')
         g=cal.effective_gyro(values)
         if g['gyro_profile']!='st_500dps' and body.get('confirm_hardware') is not True:
             raise cal.CalibrationError('confirm firmware gyro raw value scale before saving custom profile')
@@ -271,9 +314,11 @@ class Context:
             raise cal.CalibrationError('confirm robot is supported and will not be restarted automatically')
         # Use same atomic install + backup path as CLI, no subprocess to mutate config.
         with self.lock, config_store.locked(self.config), tempfile.TemporaryDirectory(prefix='duck-cal-web-') as td:
+            if not self.write_allowed() or values['target_tag']!=self.calibration_target():
+                raise cal.CalibrationError('native identity or write permissions changed; refresh before saving')
             source=Path(td)/'generated.toml'
             source.write_text(cal.render_toml(values),'utf-8')
-            a=argparse.Namespace(generated=str(source),target=self.target,
+            a=argparse.Namespace(generated=str(source),target=values['target_tag'],
                  config=str(self.config),dest=str(self.dest),apply=True,
                  confirm_firmware_scale=body.get('confirm_hardware') is True)
             cal.cmd_install(a)
@@ -282,7 +327,7 @@ class Context:
 
 def new_handler(ctx:Context):
     class Handler(BaseHTTPRequestHandler):
-        server_version='DuckCalibration/2.0'
+        server_version='DuckCalibration/3.0'
         def log_message(self,fmt,*args):
             sys.stderr.write('CAL-WEB '+fmt%args+'\n')
         def _host_ok(self):
@@ -412,7 +457,7 @@ def new_handler(ctx:Context):
 
 def parser():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--target',required=True,choices=(*cal.TARGETS,'daemon-v0.17.9','auto'))
+    p.add_argument('--target',required=True,choices=(*cal.TARGETS,'auto'))
     p.add_argument('--plugin-config',help='independent JSON plugin-host schema 1; does not alter robotd.toml')
     p.add_argument('--listen',default='127.0.0.1')
     p.add_argument('--port',type=int,default=8765)

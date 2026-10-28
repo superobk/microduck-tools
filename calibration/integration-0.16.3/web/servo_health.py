@@ -52,6 +52,9 @@ def atomic_json(path, value):
     name=None
     try:
         with tempfile.NamedTemporaryFile(mode='w',encoding='utf-8',dir=path.parent,delete=False) as f:
+            if os.geteuid()==0:
+                owner=path.stat() if path.exists() else path.parent.stat()
+                os.fchown(f.fileno(),owner.st_uid,owner.st_gid)
             name=f.name;json.dump(value,f,ensure_ascii=False,allow_nan=False,indent=2);f.write('\n');f.flush();os.fsync(f.fileno())
         Path(name).replace(path)
         fd=os.open(path.parent,os.O_RDONLY)

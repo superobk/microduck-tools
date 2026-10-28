@@ -1,8 +1,8 @@
 # Microduck Tools
 
-Microduck 校准与配置工具 **0.2.0**。保留 daemon-v0.16.3 的 IMU、15 舵机软件映射、摄像头四向配置和黑橙统一 Web；增加官方新版只读能力适配、独立插件配置与相机 CLI 适配。
+Microduck 校准与配置工具 **0.3.0**。保留 daemon-v0.16.3 的 IMU、15 舵机软件映射、摄像头四向配置和黑橙统一 Web；增加官方新版只读能力适配、独立插件配置与相机 CLI 适配，并提供固定 0.17.9 基线的原生校正候选。
 
-这是软件准备和审阅版本，尚未执行实机回滚、部署或物理验收。Web 不自动重启 robotd；摄像头应用需单独启用并明确确认，只重启 mediad。旧版校正依赖配套原生补丁，新版监测不需要补丁；官方新版 IMU/关节校正写入保持禁用。
+这是软件准备和审阅版本，尚未执行实机回滚、部署或物理验收。Web 不自动重启 robotd；摄像头应用需单独启用并明确确认，只重启 mediad。IMU/关节校正依赖匹配的原生补丁；0.17.9-calv3 已实现加载、16.4 解码与真实回执。官方未打补丁的 0.17.9 仍禁止校正写入，监测与相机不需要原生校正补丁。
 
 ## 本地预览
 
@@ -29,7 +29,7 @@ python3 -m unittest discover -s calibration/tests -v
 - [0.16.3 完整源码补丁](calibration/integration-0.16.3/evidence/calibration-camera-v2-0.16.3.patch)
 - [同步代码哈希](CODE-MANIFEST.json)
 
-`calibration/web/`、`daemon-v0.16.3/`、`daemon-v0.17.8/` 保留原始输入包，当前统一入口为 `calibration/integration-0.16.3/web/`。0.17.8 原始文件不代表本次已适配或验证该版本。
+`calibration/web/`、`daemon-v0.16.3/`、`daemon-v0.17.8/` 保留原始输入包，当前统一入口为 `calibration/integration-0.16.3/web/`。0.17.8 原始文件不代表本次已适配或验证该版本。0.17.9 补丁、构建身份及合成示例位于 `calibration/daemon-v0.17.9/`。
 
 本仓库只同步源码、源码补丁和合成测试数据。既有部署文档、截图、完整构建日志、候选程序、原始 ZIP 和历史归档保留在本地交付目录，不在本次公开代码同步范围内。真实部署前需另行核对完整操作指南与目标环境。
 
@@ -55,6 +55,12 @@ python3 calibration/integration-0.16.3/web/calibration_web.py \
 
 - [兼容范围、部署与回滚说明](docs/compatibility.zh-CN.md)
 - [非root服务模板](deploy/microduck-tools.service) / [插件配置示例](deploy/plugins.example.json)
-- 运行包构建：`python3 tools/build-release.py --out /tmp/microduck-tools-0.2.0.tar.gz`
+- 运行包构建：`python3 tools/build-release.py --out /tmp/microduck-tools-0.3.0.tar.gz`
 
 软件回放、假daemon和本机浏览器验证不代表板端运行或硬件验收。完整现场部署审阅与验证记录保留本地deliverables，实际设备操作仍待用户另行通知。
+
+## 0.17.9 原生校正和 16.4
+
+[完整生效路径、迁移、重建与分层回滚](docs/daemon-0.17.9-calibration.zh-CN.md)。先升级官方 0.17.9 套件，再单独引入匹配的 robotd/robotctl 校正候选；保留官方 mediad。迁移保留实际零位、方向与安装四元数，16.4 需确认 MCU 输出比例。Web 保存只写配置；经现场批准重启 robotd 后核对实际内存回执，不能以保存文件代替生效证明。默认非 root 入口只读原生配置。
+
+`--target auto` 可解析可信原生回执中的目标版本；版本号、API 白名单或 `--allow-inactive` 均不能单独开放官方 0.17.9 写入。后续 native 版本须独立固定源码和扩展契约，不自动套用 0.17.9 补丁。

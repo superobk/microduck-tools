@@ -1,0 +1,2 @@
+# Preserve the single-space context marker in the generated unified diff.
+calibration/daemon-v0.17.9/native-calibration-v3.patch -whitespace

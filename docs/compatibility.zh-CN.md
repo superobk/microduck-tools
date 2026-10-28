@@ -1,4 +1,4 @@
-# 兼容性与部署：Microduck Tools 0.2.0
+# 兼容性与部署：Microduck Tools 0.3.0
 
 本版本完成软件缺陷修复与新版适配实现。所有硬件采集、部署、回滚及性能验收仍需独立执行与登记；本仓库的软件测试不代表实机已验证。
 
@@ -8,11 +8,11 @@
 |---|---|---|
 | `--target daemon-v0.16.3` | 保留既有校正、相机、监测流程 | 写入要求匹配的定制daemon生效快照；原有确认与备份保留 |
 | `--target daemon-v0.17.8` | 保留原有精确版本路径 | 此入口不等于官方原版支持校正；原生补丁仍单独验收 |
-| `--target daemon-v0.17.9` | 官方只读监测、相机CLI适配 | 不支持向官方robotd写入IMU/关节校正 |
-| `--target auto` | 实际hello/model能力探测 | 未知API、拓扑或目标不匹配时关闭规则分析，保留原始遥测及原因 |
+| `--target daemon-v0.17.9` | 官方监测/相机；配套 calv3 支持 IMU/关节校正 | 官方原版禁写；原生写入需匹配回执、文件权限及确认 |
+| `--target auto` | 实际hello/model能力探测、可信原生目标解析 | 未知API、拓扑或目标不匹配时关闭规则分析，保留原始遥测及原因 |
 | API 41/44/45 | 已评审的监测字段契约 | 45依据固定main快照，不代表所有后续版本；均待板端验收 |
 
-固定上游依据：0.17.9为`96b89d8613f06722c1d64ce75ab0d7124fed9d8f`；main为`5def2f3e66501f0f365d4fb1183020b8ee875443`。原生补丁未扩展到新版本。
+固定上游依据：0.17.9为`96b89d8613f06722c1d64ce75ab0d7124fed9d8f`；main为`5def2f3e66501f0f365d4fb1183020b8ee875443`。0.17.9 原生补丁已单独扩展，保持 API44。详见[原生校正部署指南](daemon-0.17.9-calibration.zh-CN.md)；官方未打补丁的 0.17.9 仍无此契约。
 
 插件运行后端须位于机器人本机，`t_ns`与本机monotonic属于相同时钟域。远程浏览器通过SSH隧道访问，不把机器人时间戳直接与另一台电脑时钟比较。
 
@@ -46,11 +46,11 @@
 
 ## 独立安装布局与待执行步骤
 
-以下为未来已批准维护窗口内的部署说明，本版本不自动执行。
+以下仅为工具宿主的独立安装；原生候选另按 0.17.9 指南分层安装。本版本不自动执行设备部署。
 
 ```text
-/opt/microduck-tools/releases/0.2.0/
-/opt/microduck-tools/current -> releases/0.2.0
+/opt/microduck-tools/releases/0.3.0/
+/opt/microduck-tools/current -> releases/0.3.0
 /etc/microduck-tools/plugins.json
 /var/lib/microduck-tools/
 ```
@@ -73,6 +73,6 @@ robot组可访问整个robotd控制socket，非root身份不提供方法级只�
 
 ## 验证
 
-运行`python3 -m unittest discover -s calibration/tests -v`。完整可选SDK测试应在单独venv安装固定requirements-maintenance.txt后运行；该测试拦截实际SDK内存数据包，不打开串口。浏览器需检查真实Blob图片加载、七页、三视口、表单草稿、维护详情保持及新版本禁写。
+运行`python3 -m unittest discover -s calibration/tests -v`。完整可选SDK测试应在单独venv安装固定requirements-maintenance.txt后运行；该测试拦截实际SDK内存数据包，不打开串口。浏览器需检查真实Blob图片加载、七页、三视口、表单草稿、维护详情保持及官方新版禁写、匹配 0.17.9 原生回执下的保存和待重启状态。
 
 板端CPU/RSS、控制环频率/抖动、媒体方向和真实采样验收尚未执行。插件异常、磁盘失败或浏览器断开不能改变原有控制路径。
