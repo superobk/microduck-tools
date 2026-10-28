@@ -246,7 +246,7 @@
     },
     {
       "path": "calibration/integration-0.16.3/web/calibration_web.py",
-      "sha256": "17cc4d36a376e37ab967b9b2a3cc8bdd7a5e0d68a9575215a143ca92e59f4138"
+      "sha256": "1b4018a98a9d7ce92b25cc5529036a0f6a6537fbb878660bdc3cd6baa719d825"
     },
     {
       "path": "calibration/integration-0.16.3/web/camera_config.py",
@@ -286,7 +286,7 @@
     },
     {
       "path": "calibration/tests/test_compatibility.py",
-      "sha256": "91aeb16f4f9aad8dade1dbfe0c62f4d8cc0c96cca0e5e8abab90dfc0a76ded4e"
+      "sha256": "86d5ac908d1dddd79268c5cc1087b8d1dd38cf2216332f08d4ba7ac3cc316c44"
     },
     {
       "path": "calibration/tests/test_gyro_v2_web.py",
@@ -330,7 +330,7 @@
     },
     {
       "path": "docs/compatibility.zh-CN.md",
-      "sha256": "7d7fc807bfd093a128d384c8f600ad919b5c731f46ece69954d1892cb9cb2184"
+      "sha256": "f1634994b4542a1f75922a961c35365621d2ab48603995db233ecabbed01d8db"
     },
     {
       "path": "tools/build-release.py",

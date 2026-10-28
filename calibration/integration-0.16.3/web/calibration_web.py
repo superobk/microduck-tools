@@ -163,14 +163,18 @@ class Context:
         self.demo=args.demo
         self.allow_inactive=args.allow_inactive
         self.csrf=secrets.token_urlsafe(32)
-        plugin_config=daemon_adapter.load_plugin_config(getattr(args,'plugin_config',None))
+        plugin_error=None
+        try:plugin_config=daemon_adapter.load_plugin_config(getattr(args,'plugin_config',None))
+        except (OSError,ValueError) as e:
+            plugin_config={};plugin_error='插件配置无效，已停用可选监测；原校准服务继续可用：'+str(e)[:200]
         self.adapter=daemon_adapter.Client(getattr(args,'robot_socket','/run/robotd.sock'),self.target,
             device_id=plugin_config.get('device_id'),calibration_hash=plugin_config.get('calibration_hash') or self.calibration_identity)
         observer_dir=getattr(args,'servo_health_dir','/var/lib/robot/diagnostics/servo-health')
         try:
-            self.servo=servo_health.Plugin(observer_dir,enabled=getattr(args,'enable_servo_health',False) or plugin_config.get('enabled',False),
+            self.servo=servo_health.Plugin(observer_dir,enabled=not plugin_error and (getattr(args,'enable_servo_health',False) or plugin_config.get('enabled',False)),
                 live=not args.no_telemetry and not args.demo,
                 robot_socket=getattr(args,'robot_socket','/run/robotd.sock'),adapter=self.adapter)
+            if plugin_error:self.servo.startup_error=plugin_error
         except Exception as e:
             self.servo=servo_health.Plugin(observer_dir)
             self.servo.startup_error='舵机插件启动失败，校准服务继续可用：'+str(e)[:200]

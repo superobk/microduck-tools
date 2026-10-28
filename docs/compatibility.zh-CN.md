@@ -24,7 +24,7 @@
 {"schema":1,"servo_health":{"enabled":true}}
 ```
 
-未知schema或插件键拒绝加载，原文件保持不动。命令行`--enable-servo-health`可显式启用；不提供配置且不传该参数时保持关闭，关闭不启动观察/RPC/日志任务。规则、基线及维护报告保持独立版本；本轮不会自动改写旧参考。
+未知schema或插件键拒绝加载，原文件保持不动；宿主会停用该可选监测并显示原因，原校正流程继续可用。命令行`--enable-servo-health`可显式启用；不提供配置且不传该参数时保持关闭，关闭不启动观察/RPC/日志任务。规则、基线及维护报告保持独立版本；本轮不会自动改写旧参考。
 
 后续增加适配器时，在`daemon_adapter.register_profile()`注册经过源码和契约测试的API；单位/字段语义变化时实现新的解析适配器，不仅扩大版本列表。RPC边界只允许hello、robot.model和robot.health。新的功能插件通过明确内置模块注册及host schema升级加入；不支持从网页安装或执行任意Python文件。
 

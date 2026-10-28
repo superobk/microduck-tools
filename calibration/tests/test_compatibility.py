@@ -99,6 +99,17 @@ class AdapterTests(unittest.TestCase):
                 finally:ctx.monitor.close();ctx.servo.close()
             self.assertNotIn('calibration_path',p.read_text())
 
+    def test_corrupt_optional_plugin_config_keeps_original_calibration_available(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'plugins.json';path.write_text('{"schema":999}')
+            args=web.parser().parse_args(['--target','daemon-v0.16.3','--no-telemetry','--enable-servo-health','--plugin-config',str(path)])
+            ctx=web.Context(args)
+            try:
+                self.assertFalse(ctx.servo.enabled);self.assertIn('继续可用',ctx.servo.status()['message'])
+                self.assertEqual(ctx.validate_input({'calibration':web.make_default('daemon-v0.16.3')})['schema'],2)
+                self.assertEqual(ctx.servo.threads,[])
+            finally:ctx.monitor.close();ctx.servo.close()
+
 
 class RegressionTests(unittest.TestCase):
     def test_camera_external_writer_between_preview_backup_and_replace_is_preserved(self):
