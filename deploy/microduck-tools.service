@@ -1,0 +1,26 @@
+[Unit]
+Description=Microduck Tools local Web and read-only diagnostics
+After=local-fs.target robotd.service
+
+[Service]
+Type=simple
+User=microduck-tools
+Group=microduck-tools
+SupplementaryGroups=robot
+ExecStart=/usr/bin/python3 /opt/microduck-tools/current/calibration/integration-0.16.3/web/calibration_web.py --target auto --listen 127.0.0.1 --port 8765 --plugin-config /etc/microduck-tools/plugins.json --servo-health-dir /var/lib/microduck-tools/servo-health --camera-settings /var/lib/microduck-tools/camera.json
+StateDirectory=microduck-tools
+UMask=0077
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=15s
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/microduck-tools
+
+[Install]
+WantedBy=multi-user.target
