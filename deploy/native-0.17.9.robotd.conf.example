@@ -1,0 +1,6 @@
+# REVIEW ONLY. Install as 90-microduck-tools-native.conf after board approval.
+# Keep all other unit settings and all foreign drop-ins. Review effective ExecStart first.
+# --no-policy suppresses policy inference; it does NOT disable torque or bus writes.
+[Service]
+ExecStart=
+ExecStart=/opt/microduck-tools/native/current/bin/robotd --socket /run/robotd.sock --params /etc/robot/robotd.toml --no-policy

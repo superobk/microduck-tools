@@ -12,12 +12,13 @@ def build(root,out):
     root=Path(root);out=Path(out)
     if out.exists():raise ValueError('output already exists; choose a new release path')
     version=(root/'VERSION').read_text().strip()
-    files=[root/'VERSION',root/'README.md',root/'docs/compatibility.zh-CN.md']
+    files=[root/'VERSION',root/'README.md']+list((root/'docs').glob('*.md'))
     files += list((root/'deploy').glob('*'))
     files += list((root/'calibration/common').glob('*.py'))
     files += [p for p in (root/'calibration/integration-0.16.3/web').iterdir() if p.suffix in ('.py','.html','.js')]
     files += [root/'calibration/integration-0.16.3/servo-maintenance.py',root/'calibration/integration-0.16.3/requirements-maintenance.txt']
     files += list((root/'calibration/integration-0.16.3/evidence/demo').glob('*.toml'))
+    files += [p for p in (root/'calibration/daemon-v0.17.9').iterdir() if p.is_file()]
     entries=[]
     for p in sorted(files):
         if not p.is_file() or p.is_symlink():raise ValueError('release inputs must be regular files')

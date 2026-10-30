@@ -29,7 +29,7 @@ JOINT_NAMES = (
 )
 JOINT_IDS = (20, 21, 22, 23, 24, 30, 31, 32, 33, 34, 10, 11, 12, 13, 14)
 IMU_STEPS = ('still', 'fwd', 'back', 'left', 'right')
-TARGETS = ('daemon-v0.16.3', 'daemon-v0.17.8')
+TARGETS = ('daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9')
 S = 2 ** -0.5
 MOUNT_DEFAULT = {'zero3': (S, 0., S, 0.), 'beta': (1., 0., 0., 0.)}
 MIN_SAMPLES = 15
@@ -392,10 +392,12 @@ def atomic_write(dst, data, mode):
     if dst.is_symlink():
         raise CalibrationError(f'symlink destination forbidden: {dst}')
     dst.parent.mkdir(parents=True, exist_ok=True)
+    owner=dst.stat() if dst.exists() else dst.parent.stat()
     tmp = None
     try:
         with tempfile.NamedTemporaryFile(prefix='.microduck-cal-',dir=dst.parent,delete=False) as f:
             tmp = Path(f.name)
+            if os.geteuid()==0:os.fchown(f.fileno(),owner.st_uid,owner.st_gid)
             f.write(data)
             f.flush(); os.fsync(f.fileno())
         os.chmod(tmp,mode)
@@ -590,9 +592,37 @@ def cmd_remove(args):
     print('NOT RESTARTED. Restart only when robot is secure and relaxed.')
 
 
+def cmd_migrate(args):
+    if not args.confirm_same_hardware:
+        raise CalibrationError('confirm the same joint mapping and IMU hardware before migrating calibration')
+    source=Path(args.source);out=Path(args.out)
+    if source.resolve()==out.resolve():raise CalibrationError('migration must preserve the original calibration file')
+    if out.exists() and not args.overwrite:raise CalibrationError('output exists; choose a new file or --overwrite')
+    old=parse_calibration(source);gyro=effective_gyro(old)
+    if args.gyro_raw_counts_per_dps is not None and not args.gyro_profile:
+        raise CalibrationError('--gyro-raw-counts-per-dps requires an explicit --gyro-profile')
+    profile=args.gyro_profile or gyro['gyro_profile']
+    counts=gyro_scale_counts(profile,args.gyro_raw_counts_per_dps) if args.gyro_profile else gyro['gyro_raw_counts_per_dps']
+    if profile!=DEFAULT_GYRO_PROFILE and not args.confirm_firmware_scale:
+        raise CalibrationError('non-default gyro scale migration requires --confirm-firmware-scale')
+    values={key:old[key] for key in ('joint_zero_rad','joint_direction','imu_mount_wxyz')}
+    values.update(schema=2,target_tag=args.target,imu_module=gyro['imu_module'],gyro_profile=profile,gyro_raw_counts_per_dps=counts)
+    check_calibration(values,args.target);atomic_write(out,render_toml(values).encode('utf-8'),0o644)
+    print(json.dumps(dict(source_target=old['target_tag'],target=args.target,gyro_profile=profile,
+        counts_per_dps=counts,preserved=['joint_zero_rad','joint_direction','imu_mount_wxyz'],
+        output=str(out),installed=False,hardware_verified=False),ensure_ascii=False,indent=2))
+
+
 def parser():
     ap=argparse.ArgumentParser(description=__doc__)
     sub=ap.add_subparsers(dest='cmd',required=True)
+    p=sub.add_parser('migrate',help='copy calibration to a new target without installing or changing joint/mount values')
+    p.add_argument('--source',required=True,type=Path);p.add_argument('--target',required=True,choices=TARGETS)
+    p.add_argument('--out',required=True,type=Path);p.add_argument('--confirm-same-hardware',action='store_true')
+    p.add_argument('--gyro-profile',choices=[*GYRO_PROFILES,'manual'])
+    p.add_argument('--gyro-raw-counts-per-dps',type=float)
+    p.add_argument('--confirm-firmware-scale',action='store_true');p.add_argument('--overwrite',action='store_true')
+    p.set_defaults(fn=cmd_migrate)
     p=sub.add_parser('record',help='capture robotctl monitor --json frames, no motion commands')
     p.add_argument('--out',required=True)
     p.add_argument('--seconds',type=float,default=3.0)
