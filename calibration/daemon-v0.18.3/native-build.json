@@ -1,0 +1,14 @@
+{
+  "schema": "microduck-native-candidate/v1",
+  "version": "0.18.3",
+  "base_revision": "b2b0d213a402caeac492dd662ea891faa17f67c0",
+  "patch_sha256": "30452a086d1ed14cafa4ebb22d6adfab746f74e1c679856c8c3f92c71a4b334d",
+  "build_revision": "b2b0d213-calv3-30452a086d1e",
+  "ipc_api": 47,
+  "changed_components": [
+    "robotd",
+    "robotctl"
+  ],
+  "mediad": "retain official 0.18.3 binary",
+  "hardware_acceptance": "NOT_RUN"
+}

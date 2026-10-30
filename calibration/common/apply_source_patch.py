@@ -10,11 +10,12 @@ import re
 import subprocess
 from pathlib import Path
 
-SUPPORTED = {'daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9'}
+SUPPORTED = {'daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9', 'daemon-v0.18.3'}
 EXPECTED_TAG_COMMITS = {
     'daemon-v0.16.3': '0b2b82f56ac1e32d69018837ac1cd7d4c687f5a0',
     'daemon-v0.17.8': '942e58e3aa6dbb28e7037203fff11866122c7567',
     'daemon-v0.17.9': '96b89d8613f06722c1d64ce75ab0d7124fed9d8f',
+    'daemon-v0.18.3': 'b2b0d213a402caeac492dd662ea891faa17f67c0',
 }
 PARAMS = 'robotd-params/src/lib.rs'
 REGISTRY = 'robotd-params/src/registry.rs'
@@ -274,7 +275,37 @@ def patch_params(text: str, target: str) -> str:
         '        self.bus.load_calibration().map_err(|reason| ParamsError::Calibration {\n'
         '            path: path.display().to_string(), reason,\n'
         '        })?;', PARAMS)
-    return text + '\n' + PARAMS_TESTS.replace('__TARGET__', target)
+    result = text + '\n' + PARAMS_TESTS.replace('__TARGET__', target)
+    if target == 'daemon-v0.18.3':
+        result += r'''
+#[cfg(test)]
+mod microduck_calibration_layer_tests {
+    use super::*;
+    #[test]
+    fn calibration_uses_user_layer_and_reports_a_rejected_override() {
+        let root = std::env::temp_dir().join(format!("microduck-cal-layer-{}-{}", std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&root).unwrap();
+        let (base,user,cal) = (root.join("base.toml"),root.join("user.toml"),root.join("cal.toml"));
+        std::fs::write(&base,"[control]\nhz=50\n").unwrap();
+        let data = RobotCalibration { schema:2, target_tag:"daemon-v0.18.3".into(),
+            joint_zero_rad:[0.0;15], joint_direction:[1;15], imu_mount_wxyz:[1.0,0.0,0.0,0.0],
+            imu_module:"bus_imu200".into(),gyro_profile:"custom_raw_div_16_4".into(),gyro_raw_counts_per_dps:16.4 };
+        std::fs::write(&cal,toml::to_string(&data).unwrap()).unwrap();
+        std::fs::write(&user,format!("[bus]\ncalibration_path = {:?}\n",cal.display().to_string())).unwrap();
+        let parsed = Params::load_layered(&base,&user,true).unwrap();
+        assert!(parsed.user_layer_rejected.is_none());
+        assert_eq!(parsed.bus.load_calibration().unwrap().unwrap().gyro_raw_counts_per_dps,16.4);
+        assert_eq!(std::fs::read_to_string(&base).unwrap(),"[control]\nhz=50\n");
+        std::fs::write(&user,"[bus]\ncalibration_path=\"relative.toml\"\n").unwrap();
+        let fallback = Params::load_layered(&base,&user,true).unwrap();
+        assert!(fallback.user_layer_rejected.is_some());
+        assert!(fallback.bus.calibration_path.is_empty());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+'''
+    return result
 
 
 def patch_registry(text: str) -> str:
@@ -492,19 +523,29 @@ fn write_effective_calibration(io: &duck_control::bus::DynamixelIo, bus: &params
 
 """
     snapshot = snapshot.replace('__TARGET__', tag)
-    if tag == 'daemon-v0.17.9':
+    if tag in ('daemon-v0.17.9', 'daemon-v0.18.3'):
         text = replace_once(text, 'write_effective_calibration(&io, bus)',
                             'write_effective_calibration(&io, bus, &state.config_path)', MAIN)
         snapshot = snapshot.replace('bus: &params::Bus)',
                                     'bus: &params::Bus, config_path: &std::path::Path)')
         snapshot = snapshot.replace('        "bus_verified": true,', '''        "bus_verified": true,
         "native_calibration_contract": "microduck-calibration/v2",
-        "base_revision": "96b89d8613f06722c1d64ce75ab0d7124fed9d8f",
+        "base_revision": "__BASE_REVISION__",
         "daemon_version": env!("CARGO_PKG_VERSION"),
         "build_revision": option_env!("DUCK_REVISION"),
         "executable": std::env::current_exe().ok().map(|p| p.display().to_string()),
         "config_path": config_path.display().to_string(),
         "calibration_active": !bus.calibration_path.is_empty(),''')
+    snapshot = snapshot.replace('__BASE_REVISION__', EXPECTED_TAG_COMMITS[tag])
+    if tag == 'daemon-v0.18.3':
+        text = replace_once(text, 'write_effective_calibration(&io, bus, &state.config_path)',
+            'write_effective_calibration(&io, bus, &state.config_path, state.config_error.as_deref())', MAIN)
+        snapshot = snapshot.replace('config_path: &std::path::Path)',
+            'config_path: &std::path::Path, config_error: Option<&str>)')
+        snapshot = snapshot.replace('        "calibration_active":', '''        "config_layering": "user-over-base/v1",
+        "user_config_path": params::user_layer_for(config_path).map(|p| p.display().to_string()),
+        "user_layer_rejected": config_error,
+        "calibration_active":''')
     return replace_once(text,marker,snapshot+marker,MAIN)
 
 
@@ -521,14 +562,14 @@ def run(repo: Path, tag: str, dry_run: bool) -> None:
         raise ValueError(f'{tag} does not point to verified upstream SHA {EXPECTED_TAG_COMMITS[tag]}')
     if head != head_tag:
         raise ValueError(f'HEAD {head[:12]} is not official {tag} at {head_tag[:12]}')
-    paths = [PARAMS, REGISTRY, BUS, IMU, MAIN] + ([EDITOR] if tag == 'daemon-v0.17.9' else [])
+    paths = [PARAMS, REGISTRY, BUS, IMU, MAIN] + ([EDITOR] if tag in ('daemon-v0.17.9', 'daemon-v0.18.3') else [])
     dirty = subprocess.run(['git', 'status', '--porcelain', '--', *paths], cwd=repo,
                            check=True, capture_output=True, text=True).stdout.strip()
     if dirty:
         raise ValueError('source files are already modified; commit/stash first:\n' + dirty)
     funcs = {PARAMS: lambda s: patch_params(s, tag), REGISTRY: patch_registry,
              BUS: patch_bus, IMU: patch_imu, MAIN: lambda s: patch_main(s, tag)}
-    if tag == 'daemon-v0.17.9':funcs[EDITOR] = patch_editor
+    if tag in ('daemon-v0.17.9', 'daemon-v0.18.3'):funcs[EDITOR] = patch_editor
     edits = {}
     for p in paths:
         f = repo / p

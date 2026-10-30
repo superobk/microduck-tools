@@ -1,0 +1,5 @@
+# REVIEW ONLY: 90-microduck-tools-native.conf, preserve foreign unit settings.
+# --no-policy does not disable torque or existing startup register writes.
+[Service]
+ExecStart=
+ExecStart=/opt/microduck-tools/native/current/bin/robotd --socket /run/robotd.sock --params /etc/robot/robotd.toml --no-policy

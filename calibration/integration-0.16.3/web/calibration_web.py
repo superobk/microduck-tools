@@ -36,26 +36,39 @@ PREVIEW_TEMPLATE=Path(__file__).with_name('index.html')
 MAX_POST=48_000
 NATIVE_0179_BASE='96b89d8613f06722c1d64ce75ab0d7124fed9d8f'
 NATIVE_0179_BUILD='96b89d86-calv3-f76915b8568d'
+NATIVE_0183_BASE='b2b0d213a402caeac492dd662ea891faa17f67c0'
+NATIVE_0183_BUILD='b2b0d213-calv3-30452a086d1e'
+NATIVE_BUILDS={'daemon-v0.17.9':(NATIVE_0179_BASE,NATIVE_0179_BUILD),'daemon-v0.18.3':(NATIVE_0183_BASE,NATIVE_0183_BUILD)}
 
 
-def verify_0179_receipt(data, config):
+def verify_native_receipt(data, config, target):
     """An official version string alone never enables native calibration writes."""
     try:
         if data.get('native_calibration_contract')!='microduck-calibration/v2':
             raise ValueError('native calibration contract missing; official daemon remains read-only')
-        if data.get('base_revision')!=NATIVE_0179_BASE or data.get('daemon_version')!='0.17.9':
+        base,build=NATIVE_BUILDS[target]
+        if data.get('base_revision')!=base or data.get('daemon_version')!=target.removeprefix('daemon-v'):
             raise ValueError('native calibration base/version differs')
         revision=data.get('build_revision')
-        if revision!=NATIVE_0179_BUILD:
+        if revision!=build:
             raise ValueError('unverified calibration build revision')
         if Path(data['config_path']).resolve()!=Path(config).resolve():raise ValueError('daemon uses another configuration path')
         if data.get('executable')!=os.readlink(f"/proc/{data['pid']}/exe"):
             raise ValueError('calibration executable identity differs')
         values={key:data[key] for key in ('joint_zero_rad','joint_direction','imu_mount_wxyz','gyro_raw_counts_per_dps','imu_module')}
-        values.update(schema=2,target_tag='daemon-v0.17.9',gyro_profile='manual')
-        cal.check_calibration(values,'daemon-v0.17.9')
+        values.update(schema=2,target_tag=target,gyro_profile='manual')
+        cal.check_calibration(values,target)
+        if target=='daemon-v0.18.3':
+            expected=cal.config_layers.user_layer_for(config,target)
+            if data['config_layering']!='user-over-base/v1' or data['user_config_path']!=(str(expected) if expected else None):
+                raise ValueError('native user/base configuration layout differs')
+            if data['user_layer_rejected'] is not None:
+                raise ValueError('daemon rejected user layer: '+str(data['user_layer_rejected']))
     except (OSError,ValueError,KeyError,TypeError,cal.CalibrationError) as error:return False,str(error)
-    return True,'verified 0.17.9 native calibration contract and live decoder values'
+    return True,'verified '+target+' native calibration contract and live decoder values'
+
+
+def verify_0179_receipt(data,config):return verify_native_receipt(data,config,'daemon-v0.17.9')
 
 
 def make_default(target):
@@ -180,7 +193,7 @@ class Context:
     def __init__(self,args):
         self.target=args.target
         self.config=Path(args.config)
-        self.dest=Path(args.dest)
+        self._requested_dest=args.dest
         self.runtime=Path(args.runtime)
         self.demo=args.demo
         self.allow_inactive=args.allow_inactive
@@ -208,16 +221,22 @@ class Context:
             getattr(args,'camera_runtime','/run/mediad/camera-effective.json'),
             self.target,self.demo,getattr(args,'enable_camera_apply',False),
             getattr(args,'camera_web_port',8080))
-        if self.target in ('auto','daemon-v0.17.9'):
+        if self.target in ('auto',*NATIVE_BUILDS):
             self.camera=native_camera.Camera(self.config,getattr(args,'camera_settings','/var/lib/microduck-tools/camera.json'),
                 self.target,self.demo,getattr(args,'enable_camera_apply',False),getattr(args,'camera_web_port',8080))
     def calibration_identity(self):
         try:
-            raw=self.config.read_bytes();params=tomllib.loads(raw.decode('utf-8'))
+            target=self.calibration_target();base,user=cal.config_layers.texts(self.config,target)
+            raw=base+b'\0USER\0'+user if cal.config_layers.user_layer_for(self.config,target) else base
+            params=self.effective_params()
             pointer=params.get('bus',{}).get('calibration_path')
             calibration=Path(pointer).read_bytes() if pointer else b'official-default-calibration'
             return daemon_adapter.fingerprint(dict(config_sha=config_store.revision(raw),calibration_sha=config_store.revision(calibration)))
         except (OSError,ValueError,TypeError):return None
+    @property
+    def dest(self):return Path(self._requested_dest or cal.config_layers.default_calibration(self.calibration_target()))
+    def effective_params(self):return cal.config_layers.load(self.config,self.calibration_target())
+    def write_config(self):return cal.config_layers.write_path(self.config,self.calibration_target())
     def calibration_target(self, runtime=None, verified=False):
         if self.target in cal.TARGETS:return self.target
         if self.target=='auto':
@@ -230,8 +249,11 @@ class Context:
         if verified is None:
             runtime,verified,_=self.runtime_read();target=self.calibration_target(runtime,verified)
         target=target or self.target
+        try:self.effective_params()
+        except (OSError,ValueError,TypeError):return False
         legacy_dev=self.allow_inactive and self.target in ('daemon-v0.16.3','daemon-v0.17.8')
-        permission=os.access(self.config,os.W_OK) and os.access(self.dest.parent,os.W_OK)
+        path=cal.config_layers.write_path(self.config,target)
+        permission=(not path.exists() or os.access(path,os.W_OK)) and os.access(path.parent,os.W_OK) and os.access(self.dest.parent,os.W_OK)
         return bool(target in cal.TARGETS and (verified or legacy_dev) and permission and (not self.demo or legacy_dev))
     def capabilities(self):
         runtime,verified,reason=self.runtime_read();target=self.calibration_target(runtime,verified)
@@ -241,7 +263,7 @@ class Context:
                 reason=reason if not verified else '原生校正已核验；保存仍需文件权限、工况与比例确认'))
     def configured(self):
         try:
-            data=tomllib.loads(self.config.read_text('utf-8'))
+            data=self.effective_params()
             ptr=(data.get('bus') or {}).get('calibration_path')
             if ptr is not None and not isinstance(ptr,str):raise ValueError('calibration_path must be a string')
             return ptr,None
@@ -260,7 +282,7 @@ class Context:
             ok,reason=valid_active_file(obj,demo=self.demo)
             if obj.get('target_tag') not in cal.TARGETS or self.target!='auto' and obj.get('target_tag')!=self.target:
                 ok=False;reason='active daemon tag differs from dashboard target'
-            if ok and obj.get('target_tag')=='daemon-v0.17.9':ok,reason=verify_0179_receipt(obj,self.config)
+            if ok and obj.get('target_tag') in NATIVE_BUILDS:ok,reason=verify_native_receipt(obj,self.config,obj['target_tag'])
             return obj,ok,reason
         except (OSError,json.JSONDecodeError) as e:
             return None,False,f'no verified runtime snapshot: {e}'
@@ -279,7 +301,7 @@ class Context:
         if self.demo and not telem:
             telem={'stale':True,'policy':'SIMULATION','gravity':[0,0,-1],
                    'gyro_rad_s':[0,0,0],'joints':[0]*15,'loop_hz':50}
-        return {'target':self.target,'calibration_target':self.calibration_target(runtime,verified),'configured_file':str(self.config),
+        return {'target':self.target,'calibration_target':self.calibration_target(runtime,verified),'configured_file':str(self.config),'write_config_file':str(self.write_config()),
                 'install_dest':str(self.dest),'configured':installed,
                 'saved_path':sp,'saved_error':serr,'saved':normalized,
                 'runtime':runtime,'runtime_verified':verified,
@@ -306,14 +328,14 @@ class Context:
     def save(self,body):
         values=self.validate_input(body)
         if not self.write_allowed():
-            raise cal.CalibrationError('no verified matching patched robotd or write permissions; 0.17.9 cannot bypass its native contract')
+            raise cal.CalibrationError('no verified matching patched robotd or write permissions; native targets cannot bypass their native contract')
         g=cal.effective_gyro(values)
         if g['gyro_profile']!='st_500dps' and body.get('confirm_hardware') is not True:
             raise cal.CalibrationError('confirm firmware gyro raw value scale before saving custom profile')
         if body.get('confirm_safe') is not True:
             raise cal.CalibrationError('confirm robot is supported and will not be restarted automatically')
         # Use same atomic install + backup path as CLI, no subprocess to mutate config.
-        with self.lock, config_store.locked(self.config), tempfile.TemporaryDirectory(prefix='duck-cal-web-') as td:
+        with self.lock, config_store.locked(self.write_config()), tempfile.TemporaryDirectory(prefix='duck-cal-web-') as td:
             if not self.write_allowed() or values['target_tag']!=self.calibration_target():
                 raise cal.CalibrationError('native identity or write permissions changed; refresh before saving')
             source=Path(td)/'generated.toml'
@@ -462,7 +484,7 @@ def parser():
     p.add_argument('--listen',default='127.0.0.1')
     p.add_argument('--port',type=int,default=8765)
     p.add_argument('--config',default='/etc/robot/robotd.toml')
-    p.add_argument('--dest',default='/etc/robot/robot-calibration.toml')
+    p.add_argument('--dest',help='calibration destination; auto follows verified target defaults')
     p.add_argument('--runtime',default='/run/robotd/calibration-effective.json')
     p.add_argument('--camera-runtime',default='/run/mediad/camera-effective.json')
     p.add_argument('--camera-settings',default='/var/lib/microduck-tools/camera.json',help='official CLI camera adapter settings, independent of robotd.toml')

@@ -28,7 +28,7 @@ def register_profile(name, api_versions):
     PROFILES[name] = frozenset(api_versions)
 
 
-register_profile('microduck-state-v1', (41,44,45))
+register_profile('microduck-state-v1', (41,44,45,47))
 
 
 def fingerprint(value):

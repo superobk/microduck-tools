@@ -29,7 +29,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(hashlib.sha256((package/entry['path']).read_bytes()).hexdigest(),entry['sha256'])
             run=subprocess.run([sys.executable,str(package/'calibration/integration-0.16.3/web/calibration_web.py'),'--help'],capture_output=True,text=True,timeout=5)
             self.assertEqual(run.returncode,0,run.stderr);self.assertIn('--plugin-config',run.stdout)
-            self.assertIn('--target {daemon-v0.16.3,daemon-v0.17.8,daemon-v0.17.9,auto}',run.stdout)
+            self.assertIn('--target {daemon-v0.16.3,daemon-v0.17.8,daemon-v0.17.9,daemon-v0.18.3,auto}',run.stdout)
             with self.assertRaises(ValueError):builder.build(ROOT,out)
 
     def test_unit_does_not_start_or_restart_native_services(self):

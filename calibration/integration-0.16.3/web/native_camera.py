@@ -1,6 +1,6 @@
 """Official mediad CLI rotation adapter. Keeps native robotd configuration untouched.
 
-Versioned extension point: only the reviewed 0.17.9 unit/CLI contract is writable.
+Versioned extension point: only reviewed version/revision pairs and the unit/CLI contract is writable.
 """
 import json
 import os
@@ -13,8 +13,9 @@ import camera_config
 import config_store
 import duck_calibrate as cal
 
-NATIVE_VERSIONS=frozenset(('0.17.9',))
-NATIVE_REVISIONS=frozenset(('96b89d8613f06722c1d64ce75ab0d7124fed9d8f',))
+REVIEWED_MEDIAD={'0.17.9':'96b89d8613f06722c1d64ce75ab0d7124fed9d8f','0.18.3':'b2b0d213a402caeac492dd662ea891faa17f67c0'}
+NATIVE_VERSIONS=frozenset(REVIEWED_MEDIAD)
+NATIVE_REVISIONS=frozenset(REVIEWED_MEDIAD.values())
 BINARY='/opt/robot/daemon/current/bin/mediad'
 DROPIN=Path('/etc/systemd/system/mediad.service.d/90-microduck-tools-camera.conf')
 
@@ -41,8 +42,8 @@ class Camera(camera_config.Camera):
     def _runtime(self,default):
         identity=json.loads(self.runtime.read_text())
         if identity.get('service')!='mediad' or identity.get('version') not in NATIVE_VERSIONS:
-            raise cal.CalibrationError('official camera adapter requires reviewed mediad version 0.17.9')
-        if identity.get('revision') not in NATIVE_REVISIONS:
+            raise cal.CalibrationError('official camera adapter requires a reviewed mediad version')
+        if identity.get('revision')!=REVIEWED_MEDIAD.get(identity.get('version')):
             raise cal.CalibrationError('unreviewed mediad revision; camera writes disabled')
         if self.target!='auto' and self.target!='daemon-v'+identity['version']:
             raise cal.CalibrationError('mediad version differs from selected target')
@@ -76,7 +77,9 @@ class Camera(camera_config.Camera):
         saved=None;expected=None;error=None;revision=None;runtime=None;verified=False
         try:
             saved,revision=self._saved()
-            board=tomllib.loads(self.config.read_text()).get('board',{}).get('version','zero3')
+            target=self.target
+            if target=='auto' and self.runtime.exists():target='daemon-v'+str(json.loads(self.runtime.read_text()).get('version',''))
+            board=cal.config_layers.load(self.config,target).get('board',{}).get('version','zero3')
             if board not in ('zero3','beta'):raise cal.CalibrationError('unknown board default')
             default=90 if board=='zero3' else 0
             expected=default if saved is None else saved

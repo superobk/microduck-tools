@@ -22,6 +22,9 @@ import time
 import tomllib
 from pathlib import Path
 
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+import config_layers
+
 JOINT_NAMES = (
     'left_hip_yaw', 'left_hip_roll', 'left_hip_pitch', 'left_knee', 'left_ankle',
     'neck_pitch', 'head_pitch', 'head_yaw', 'head_roll', 'mouth',
@@ -29,7 +32,7 @@ JOINT_NAMES = (
 )
 JOINT_IDS = (20, 21, 22, 23, 24, 30, 31, 32, 33, 34, 10, 11, 12, 13, 14)
 IMU_STEPS = ('still', 'fwd', 'back', 'left', 'right')
-TARGETS = ('daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9')
+TARGETS = ('daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9','daemon-v0.18.3')
 S = 2 ** -0.5
 MOUNT_DEFAULT = {'zero3': (S, 0., S, 0.), 'beta': (1., 0., 0., 0.)}
 MIN_SAMPLES = 15
@@ -546,17 +549,18 @@ def cmd_install(args):
     profile=effective_gyro(cal)['gyro_profile']
     if args.apply and profile != DEFAULT_GYRO_PROFILE and not getattr(args,'confirm_firmware_scale',False):
         raise CalibrationError('cannot install custom gyro profile without --confirm-firmware-scale')
-    config=Path(args.config)
-    dest=Path(args.dest)
-    if not config.is_file():
-        raise CalibrationError(f'missing robotd config {config} (do not create a replacement config blindly)')
+    base=Path(args.config)
+    config=config_layers.write_path(base,args.target)
+    dest=Path(args.dest or config_layers.default_calibration(args.target))
+    if not base.is_file():
+        raise CalibrationError(f'missing robotd config {base} (do not create a replacement config blindly)')
     if not dest.is_absolute():
         raise CalibrationError('--dest must be absolute')
-    if dest.resolve()==config.resolve():
+    if dest.resolve() in (config.resolve(),base.resolve()):
         raise CalibrationError('calibration and main config must be different files')
     if config.is_symlink() or dest.is_symlink():
         raise CalibrationError('symlink destinations not accepted')
-    current=config.read_text(encoding='utf-8')
+    current=config.read_text(encoding='utf-8') if config.exists() else ''
     modified=replace_bus_key(current,'calibration_path',str(dest))
     if not args.apply:
         print('DRY RUN: would create',dest,'and update [bus].calibration_path in',config)
@@ -566,7 +570,7 @@ def cmd_install(args):
     old_d=make_backup(dest)
     try:
         atomic_write(dest,render_toml(cal).encode('utf-8'),mode=0o644)
-        atomic_write(config,modified.encode('utf-8'),mode=config.stat().st_mode & 0o777)
+        atomic_write(config,modified.encode('utf-8'),mode=(config.stat().st_mode & 0o777) if config.exists() else 0o644)
     except Exception:
         # Keep last-known-good main config if the final write did not succeed.
         if old_c:
@@ -581,13 +585,19 @@ def cmd_install(args):
 
 
 def cmd_remove(args):
-    config=Path(args.config)
-    current=config.read_text(encoding='utf-8')
-    edited=replace_bus_key(current,'calibration_path',None)
+    target=getattr(args,'target',None);base=Path(args.config)
+    if not base.is_file():raise CalibrationError('missing base configuration')
+    if target is None and base==config_layers.DEFAULT_PATH and config_layers.USER_PATH.exists():
+        raise CalibrationError('select --target explicitly before removing a layered configuration')
+    config=config_layers.write_path(base,target)
+    current=config.read_text(encoding='utf-8') if config.exists() else ''
+    # An empty override masks a base pointer; deleting it would reactivate the base.
+    inherited=tomllib.loads(base.read_text()).get('bus',{}).get('calibration_path') if config!=base else None
+    edited=replace_bus_key(current,'calibration_path','' if inherited else None)
     if not args.apply:
         print('DRY RUN: would remove bus.calibration_path from',config); return
     backup=make_backup(config)
-    atomic_write(config,edited.encode('utf-8'),mode=config.stat().st_mode & 0o777)
+    atomic_write(config,edited.encode('utf-8'),mode=(config.stat().st_mode & 0o777) if config.exists() else 0o644)
     print('removed calibration pointer, backup:',backup)
     print('NOT RESTARTED. Restart only when robot is secure and relaxed.')
 
@@ -666,10 +676,11 @@ def parser():
     p.add_argument('--generated',required=True)
     p.add_argument('--target',required=True,choices=TARGETS)
     p.add_argument('--config',default='/etc/robot/robotd.toml')
-    p.add_argument('--dest',default='/etc/robot/robot-calibration.toml')
+    p.add_argument('--dest',help='calibration destination; 0.18.3 defaults to persistent /var/lib/robot/calibration')
     p.add_argument('--apply',action='store_true',help='actually write after default dry-run')
     p.set_defaults(fn=cmd_install)
     p=sub.add_parser('remove',help='undo config pointer without changing physical servo')
+    p.add_argument('--target',choices=TARGETS)
     p.add_argument('--config',default='/etc/robot/robotd.toml')
     p.add_argument('--apply',action='store_true')
     p.set_defaults(fn=cmd_remove)
