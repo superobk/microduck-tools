@@ -33,12 +33,18 @@ class FakeBoard:
         self.api = None
         self.revision = None
         self.argv = None
+        self.job = '0'
+        self.control_pid = '0'
+        self.stop_lingers = False
 
     def require(self):
         pass
 
     def account(self):
         return os.getuid(), os.getgid()
+
+    def absent(self):
+        pass
 
     def sleep(self):
         pass
@@ -47,13 +53,19 @@ class FakeBoard:
         if self.overrides:
             raise dry.Error('unreviewed drop-in')
 
+    def properties(self, *names):
+        values = dict(Job=self.job, MainPID=str(self.pid if self.running else 0),
+                      ControlPID=self.control_pid, ActiveState='active' if self.running else 'inactive')
+        return {name: values[name] for name in names}
+
     def systemctl(self, *args):
         self.calls.append(args)
         if args[0] == 'start':
             self.running = True
             self.pid += 1
         elif args[0] == 'stop':
-            self.running = False
+            if not self.stop_lingers:
+                self.running = False
         return str(self.pid if self.running else 0)
 
     def identity(self, pid):
@@ -61,8 +73,9 @@ class FakeBoard:
         return (path / 'bin/robotd').resolve(), self.argv or [str(path / 'bin/robotd'), '--fake', '--no-policy',
             '--params', str(path / 'robotd.toml'), '--socket', str(self.root / 'run/robotd.sock')]
 
-    def probe(self, path):
+    def probe(self, path, expected_pid):
         assert path == self.root / 'run/robotd.sock'
+        assert expected_pid == self.pid
         version = (self.root / 'current').resolve().name
         return (dict(api_version=self.api or dry.APIS[version], daemon_version=version,
                      revision=self.revision or 'revision-' + version),
@@ -284,7 +297,8 @@ class CommandAndWireTests(unittest.TestCase):
                             file.write((json.dumps(dict(method='robot.state', params=sample(t))) + '\n').encode()); file.flush()
                 except Exception as error: errors.append(error)
             thread = threading.Thread(target=server, daemon=True); thread.start()
-            hello, model, health, samples = dry.Board().probe(path)
+            with patch.object(dry.Board, 'peer_pid', return_value=os.getpid()):
+                hello, model, health, samples = dry.Board().probe(path, os.getpid())
             thread.join(3)
             self.assertFalse(errors); self.assertFalse(thread.is_alive())
             self.assertEqual(seen, ['hello', 'robot.model', 'robot.health', 'robot.subscribe'])

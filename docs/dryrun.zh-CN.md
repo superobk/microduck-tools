@@ -1,12 +1,12 @@
 # 无舵机板端：三版本可执行演练
 
-Microduck Tools **0.4.1** 新增 `tools/microduck-dryrun.py`，支持0.16.3、0.17.9、0.18.3准备、切换、验证、循环与回退。板端执行继续等待另行通知，本发布不执行SSH或板端安装。
+Microduck Tools **0.4.2** 新增 `tools/microduck-dryrun.py`，支持0.16.3、0.17.9、0.18.3准备、切换、验证、循环与回退。板端执行继续等待另行通知，本发布不执行SSH或板端安装。
 
 ## 范围与前提
 
 脚本固定管理 `/var/lib/microduck-tools-dryrun`、`microduck-dryrun.service` 和独立 `run/robotd.sock`。没有可指向正式目录/服务的CLI选项；不改正式current，不调用正式robotd、mediad或updater，不执行daemon的init/enable运动命令。所有修改默认JSON预览，**加 `--apply` 才执行**。预览不证明板端验证通过。
 
-执行要求：Linux ARM64 root、systemd、Python3.11+、已有非root `microduck-tools` 用户，以及每版匹配的ELF64 AArch64 robotd/robotctl。脚本不下载程序、不创建用户、不安装官方套件。fake服务固定以非root用户和 `--fake --no-policy` 启动，隐藏设备、保护系统目录，仅允许写演练run目录。init调用一次 `systemctl daemon-reload`，不重启其他服务，也不启用开机自启。
+执行要求：Linux ARM64 root、systemd（须提供本工具所核验的核心属性，参考249及以上）、Python3.11+、已有非root `microduck-tools` 用户，以及每版匹配的ELF64 AArch64 robotd/robotctl。脚本不下载程序、不创建用户、不安装官方套件。fake服务固定以非root用户和 `--fake --no-policy` 启动，隐藏设备、保护系统目录，仅允许写演练run目录。init调用一次 `systemctl daemon-reload`，不重启其他服务，也不启用开机自启。
 
 输入SHA须来自已核验官方发布/签名或已评审native manifest；对未知文件计算哈希再填入，不等于确认可信。脚本验证SHA，不替代签名验证。已有0.18.3 native产物包含GLIBC_2.35符号需求，旧运行库须重建兼容产物。
 
@@ -20,10 +20,10 @@ Microduck Tools **0.4.1** 新增 `tools/microduck-dryrun.py`，支持0.16.3、0.
 
 ## 1. 初始化：未来在板端逐段执行
 
-独立解压0.4.1运行包，确保根目录包含tools、deploy、calibration。示例位置 `/opt/microduck-tools-test-0.4.1`，不切正式工具current。
+独立解压0.4.2运行包，确保根目录包含tools、deploy、calibration。示例位置 `/opt/microduck-tools-test-0.4.2`，不切正式工具current。
 
 ```bash
-export DRY_TOOL=/opt/microduck-tools-test-0.4.1/tools/microduck-dryrun.py
+export DRY_TOOL=/opt/microduck-tools-test-0.4.2/tools/microduck-dryrun.py
 id microduck-tools
 uname -m
 getconf GNU_LIBC_VERSION
@@ -61,9 +61,9 @@ sudo python3 "$DRY_TOOL" verify
 sudo python3 "$DRY_TOOL" status
 ```
 
-切换顺序：检查目录/unit/无额外drop-in、目标及回退文件 → 保存pending事务 → 停测试服务 → 原子切测试current → 启动 → 验证 → 保存成功版本。未准备/被改动目标在停止服务前拒绝；并发写操作被锁拒绝。
+切换顺序：检查目录/unit/无额外drop-in、别名/依赖联动/待重载状态，目标及回退文件 → 保存pending事务 → 停止测试服务并确认MainPID/ControlPID归零、状态停止、Job结束 → 原子切测试current → 启动 → 验证 → 保存成功版本。未准备/被改动目标在停止服务前拒绝；并发写操作被锁拒绝。
 
-验证要求：实际MainPID、`/proc/PID/exe`及完整argv匹配固定fake命令；测试socket的hello版本、精确revision、API和15关节拓扑匹配；health为healthy；5Hz订阅至少收到3帧递增 `t_ns`、15维有限关节/目标数据、held policy；前后PID一致。
+验证要求：实际MainPID、`/proc/PID/exe`及完整argv匹配固定fake命令；测试socket的hello版本、精确revision、API和15关节拓扑匹配；health为healthy；Linux SO_PEERCRED确认socket对端就是MainPID，拒绝软链接socket；5Hz订阅至少收到3帧递增 `t_ns`、15维有限关节/目标数据、held policy；前后PID一致。
 
 只发出 `hello`、`robot.model`、`robot.health`、`robot.subscribe`。不使用可能同时查询updaterd的CLI health/version充当隔离验收。验证通过只表示fake软件路径，不代表舵机完好。
 
@@ -84,7 +84,7 @@ cycle预先检查三版文件，固定执行 **0.16.3 → 0.17.9 → 0.18.3 → 
 - 正常rollback切回上一个成功验证版本并再次验证；无历史则拒绝。重复switch当前版不会抹掉previous。
 - 新版验证失败自动尝试恢复进入该步之前的版本。即使恢复成功，原switch/cycle仍返回非零、`ok=false`，包含restored证据，不记为升级成功。
 - 首次启动失败且无旧版时停止测试服务、清除测试current，不拿正式版本作回退。
-- 进程中断或恢复失败保留pending，下一次switch拒绝；审阅后显式rollback。回退文件损坏时拒绝使用，不能跳过SHA检查。
+- 进程中断或恢复失败保留pending，下一次switch拒绝；审阅后显式rollback。systemctl超时可能留下后台Job，先等待并检查Job结束，再rollback；脚本不取消未知任务、不更换仍在运行实例的current。回退文件损坏时拒绝使用，不能跳过SHA检查。
 - stop只停止测试服务，保留版本/历史，不清理文件，不停止正式服务。
 
 这是目录切换和失败恢复；官方更新器健康回滚、签名安装、完整套件和OS切槽须单独验收。
@@ -95,7 +95,7 @@ cycle预先检查三版文件，固定执行 **0.16.3 → 0.17.9 → 0.18.3 → 
 sudo python3 "$DRY_TOOL" web-command
 ```
 
-只打印可复制的启动命令，不启动Web。命令固定非root用户、localhost18765、测试配置/回执/状态/socket及 `robotctl-dryrun` 包装入口。包装入口为monitor补 `--robot-socket`，避免Web健康与遥测连接不同实例。
+只打印可复制的启动命令，不启动Web。命令固定非root用户、localhost18765、测试配置/回执/状态/socket及 `robotctl-dryrun` 包装入口。包装入口只接受精确的 `monitor --hz 5 --json`，其他命令/额外参数直接拒绝；它为monitor补 `--robot-socket`，避免Web健康与遥测连接不同实例。
 
 已获授权后在板端执行打印出的命令；Mac用本次确认地址建隧道：
 
@@ -111,8 +111,14 @@ ssh -N -L 18765:127.0.0.1:18765 用户@本次板端地址
 
 成功修改及switch/cycle恢复结果保存到root私有 `evidence/<UTC时间>-<随机值>.json`，记录版本/API/revision、二进制SHA、PID/exe、health、时间戳和回退结果。预览不写证据。前置校验错误输出stderr；调用者也应保存stdout/stderr和退出码。进程日志查看 `journalctl -u microduck-dryrun.service`。
 
-退出0：命令成功或输出预览，须区分preview与fake执行；退出1：校验/操作失败，或新版失败但恢复成功；参数语法错误退出2。报告始终 `hardware_acceptance=false`、`automatic_updater_rollback=NOT_RUN`。
+退出0：命令成功或输出预览，须区分preview与fake执行；退出1：校验/操作失败，或新版失败但恢复成功；参数语法错误退出2；SIGINT/SIGTERM中断返回130，不自动回退，先status再按pending决定是否rollback。SIGKILL无法捕获，依靠持久pending恢复。报告始终 `hardware_acceptance=false`、`automatic_updater_rollback=NOT_RUN`。
+
+状态JSON/链接采用唯一临时文件、原子替换及父目录同步；旧中断临时文件不会阻塞新写入，不自动删除旧残留。日志磁盘失败时明确返回evidence_error及execution_ok，已验证切换不会因报告写入失败而偷偷回退，cycle停止后续步骤。掉电/存储硬件故障仍须板端独立验证。
+
+已初始化0.4.1的环境不会被0.4.2静默接管：新版模板显式要求KillMode=control-group、包装入口收紧。若存在旧测试环境，须先按旧版停止测试Web/服务，备份并由现场审阅迁移模板；未审阅前新版会拒绝操作，不修改正式服务。
 
 本地测试覆盖模拟systemd三版本循环、首次/切换/恢复失败、中断恢复、哈希/架构/服务配置/路径/进程/遥测拒绝、Unix socket只读请求及运行包独立导入。它们不代表Linux板端systemd已经验收。
 
 正式部署另行按[0.17.9指南](daemon-0.17.9-calibration.zh-CN.md)、[0.18.3指南](daemon-0.18.3-calibration.zh-CN.md)及[功能比较](daemon-0.18.3-comparison.zh-CN.md)执行，0.16.3沿用历史交付指南。**所有板端操作继续等待用户另行通知。**
+
+[0.4.2审查结论、故障矩阵与边界](dryrun-review.zh-CN.md)。即便隔离检查通过，测试进程仍占用CPU/内存；不宣称控制时序开销为零。板端systemd图/权限/停止行为需要后续实测，不能仅凭本地mock保证任意第三方配置下无影响。

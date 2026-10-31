@@ -9,6 +9,7 @@ Group=microduck-tools
 WorkingDirectory=/var/lib/microduck-tools-dryrun
 ExecStart=/var/lib/microduck-tools-dryrun/current/bin/robotd --fake --no-policy --params /var/lib/microduck-tools-dryrun/current/robotd.toml --socket /var/lib/microduck-tools-dryrun/run/robotd.sock
 Restart=no
+KillMode=control-group
 TimeoutStopSec=15s
 UMask=0077
 NoNewPrivileges=yes

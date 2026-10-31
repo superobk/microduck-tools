@@ -1,4 +1,8 @@
 #!/bin/sh
-# Web's monitor subprocess does not inherit --robot-socket; pin it explicitly here.
+# This is only Web's telemetry entry, never a general robotctl alias.
+if [ "$#" -ne 4 ] || [ "$1" != monitor ] || [ "$2" != --hz ] || [ "$3" != 5 ] || [ "$4" != --json ]; then
+  echo 'Only monitor --hz 5 --json is allowed in the dry run wrapper.' >&2
+  exit 2
+fi
 exec /var/lib/microduck-tools-dryrun/current/bin/robotctl \
   --robot-socket /var/lib/microduck-tools-dryrun/run/robotd.sock "$@"

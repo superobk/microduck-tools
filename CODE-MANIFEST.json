@@ -1,9 +1,9 @@
 {
   "date_local": "2026-10-31",
-  "tool_version": "0.4.1",
-  "stage": "isolated-multiversion-dryrun",
+  "tool_version": "0.4.2",
+  "stage": "dryrun-reliability-review",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "scope": "source, patches, synthetic tests and deployment scripts; board execution NOT_RUN",
+  "scope": "source, patches, tests and isolated rehearsal scripts; all board operations NOT_RUN",
   "files": [
     {
       "path": ".gitattributes",
@@ -15,11 +15,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "6c6b7534f659409f4385908e8abea8f798b09c16b74f16882ee23cdceef22e18"
+      "sha256": "d7a40b3492243c7e1c41c487b36e3869b6753ea41be4447e28e06f185fe800f7"
     },
     {
       "path": "VERSION",
-      "sha256": "f62184cee8787f2f6941c82041a5725d4edc9aa293ebe5dbf664406e82ec1fe1"
+      "sha256": "e2f7bb608ebc9e24092ffcb796ad0aa83f0015afe23635f017df52273150f00d"
     },
     {
       "path": "calibration/common/apply_source_patch.py",
@@ -331,7 +331,11 @@
     },
     {
       "path": "calibration/tests/test_dryrun.py",
-      "sha256": "53a0117edcc02436da5cd3d04d9cad5785ada98373adba25985fd17820c15eb1"
+      "sha256": "5618aad48d89d868f0d526731a26ae9179a14dca5546e3c92ae28119071e537d"
+    },
+    {
+      "path": "calibration/tests/test_dryrun_reliability.py",
+      "sha256": "f037c5231a139ba28664f2c3fb4e5aff568c59e2dc50cd113e0fca42e57cd5de"
     },
     {
       "path": "calibration/tests/test_gyro_v2_web.py",
@@ -379,7 +383,7 @@
     },
     {
       "path": "deploy/microduck-dryrun.service",
-      "sha256": "54d926d36568b169e615e5790ba94152361dcfa1e0be6e876bce92b01a2c93a2"
+      "sha256": "dafc2067466a6fa5ee223d8af77dc8abefd0f4575f092a9dd7a4d97d5e7a6a84"
     },
     {
       "path": "deploy/microduck-tools.service",
@@ -399,7 +403,7 @@
     },
     {
       "path": "deploy/robotctl-dryrun",
-      "sha256": "c68f7488721684e42fb92ecbd9c6896548b0a5e29520a27eb4e8045d7df7c5c2"
+      "sha256": "b47894ce056a9395f67c07787543c3ae2cc80371861a80a2b44fe07400a5bcd6"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -418,8 +422,12 @@
       "sha256": "4e5bf35d395aa5dff49d40c00457fccdbbb5b20a1bb7323327b00a1139e55797"
     },
     {
+      "path": "docs/dryrun-review.zh-CN.md",
+      "sha256": "de70d73bf36bc3523e4264ad3f43a4d99d9f9ebecc47ef8e7bcfdb603a6610df"
+    },
+    {
       "path": "docs/dryrun.zh-CN.md",
-      "sha256": "50a88553ef56d67a11314d77b29948ee7eaaf055d25c78f0dee42da0005fd402"
+      "sha256": "d0ff78b45cc288df136c341db20c8293215804d24e257dbe4fe3a9afcd6f51e2"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -435,7 +443,7 @@
     },
     {
       "path": "tools/microduck-dryrun.py",
-      "sha256": "849cb61556b5e5cd5d9099f83705007b2049acd078438025cd2d0b46ccac7e21"
+      "sha256": "0cfa506577094f5fb606a5992bd4f865cda26d77b47aa13fe95a52f7ed0203a5"
     }
   ]
 }
