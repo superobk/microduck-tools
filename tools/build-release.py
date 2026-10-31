@@ -12,7 +12,7 @@ def build(root,out):
     root=Path(root);out=Path(out)
     if out.exists():raise ValueError('output already exists; choose a new release path')
     version=(root/'VERSION').read_text().strip()
-    files=[root/'VERSION',root/'README.md']+list((root/'docs').glob('*.md'))
+    files=[root/'VERSION',root/'README.md',root/'tools/microduck-dryrun.py']+list((root/'docs').glob('*.md'))
     files += list((root/'deploy').glob('*'))
     files += list((root/'calibration/common').glob('*.py'))
     files += [p for p in (root/'calibration/integration-0.16.3/web').iterdir() if p.suffix in ('.py','.html','.js')]
@@ -30,7 +30,8 @@ def build(root,out):
     out.parent.mkdir(parents=True,exist_ok=True)
     with tarfile.open(out,'w:gz') as archive:
         for name,raw in entries:
-            info=tarfile.TarInfo('microduck-tools-'+version+'/'+name);info.size=len(raw);info.mode=0o644
+            info=tarfile.TarInfo('microduck-tools-'+version+'/'+name);info.size=len(raw)
+            info.mode=0o755 if name in ('tools/microduck-dryrun.py','deploy/robotctl-dryrun') else 0o644
             archive.addfile(info,io.BytesIO(raw))
     digest=hashlib.sha256(out.read_bytes()).hexdigest()
     out.with_name(out.name+'.sha256').write_text(digest+'  '+out.name+'\n')
