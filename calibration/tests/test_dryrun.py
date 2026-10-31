@@ -36,6 +36,7 @@ class FakeBoard:
         self.job = '0'
         self.control_pid = '0'
         self.stop_lingers = False
+        self.lingering_tasks = False
 
     def require(self):
         pass
@@ -55,7 +56,9 @@ class FakeBoard:
 
     def properties(self, *names):
         values = dict(Job=self.job, MainPID=str(self.pid if self.running else 0),
-                      ControlPID=self.control_pid, ActiveState='active' if self.running else 'inactive')
+                      ControlPID=self.control_pid, ActiveState='active' if self.running else 'inactive',
+                      TasksCurrent='1' if self.running or self.lingering_tasks else '0',
+                      ControlGroup='/system.slice/microduck-dryrun.service' if self.running or self.lingering_tasks else '')
         return {name: values[name] for name in names}
 
     def systemctl(self, *args):

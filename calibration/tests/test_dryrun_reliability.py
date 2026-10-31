@@ -155,6 +155,21 @@ m.Rehearsal(root={str(self.app.root)!r}).select('0.18.3')
         self.board.stop_lingers = False
         self.assertTrue(self.app.rollback()['ok'])
 
+    def test_dead_main_pid_with_lingering_cgroup_tasks_does_not_allow_switch(self):
+        self.prepare(); self.board.lingering_tasks = True
+        result = self.switch('0.18.3')
+        self.assertFalse(result['ok']); self.assertTrue(result['pending'])
+        self.assertFalse(self.board.running)
+        self.assertEqual(self.app.current_link(), '0.17.9')
+        self.board.lingering_tasks = False
+        self.assertTrue(self.app.rollback()['ok'])
+        for tasks, group, accepted in [('1', '', False), ('[not set]', '/test', False), ('[not set]', '', True)]:
+            with patch.object(self.board, 'properties', return_value=dict(MainPID='0', ControlPID='0',
+                    ActiveState='inactive', Job='0', TasksCurrent=tasks, ControlGroup=group)):
+                if accepted: self.app.stopped()
+                else:
+                    with self.assertRaises(dry.Error): self.app.stopped()
+
     def test_stop_timeout_with_pending_job_requires_explicit_later_recovery(self):
         self.prepare()
         original = self.board.systemctl

@@ -5,7 +5,7 @@
 | 发现的问题 | 0.4.2处理 | 对应验证 |
 |---|---|---|
 | 固定 `.state.json.tmp` / `.current-next` 在中断后可能阻塞下一次保存或回退 | 唯一临时文件/链接、原子替换、父目录fsync；遗留文件不被复用或误删 | 两个真实本地SIGKILL子进程留下残留，再恢复成功；写入错误保持旧JSON |
-| systemctl返回成功不等于脚本已核验停止；客户端超时后后台Job可能还在执行 | 停止后验证MainPID/ControlPID为0、inactive/failed、Job结束；所有start/stop用job-mode=fail，任务未结束不换链接 | 停止不生效、停止/启动超时、待执行任务及手动恢复 |
+| systemctl返回成功不等于脚本已核验停止；客户端超时后后台Job或cgroup任务可能仍未结束 | 停止后验证MainPID/ControlPID为0、inactive/failed、Job结束；cgroup尚存在时要求TasksCurrent为0，无法核实时拒绝；所有start/stop用job-mode=fail | 停止不生效、主PID已死但cgroup仍有任务、停止/启动超时、待执行任务及手动恢复 |
 | unit文件和drop-in检查不能排除旧的管理器缓存、服务别名或其他unit配置的依赖联动 | init前确认名称未被使用；每次服务操作前重新核验LoadState/Names/NeedDaemonReload/沙箱，拒绝正反向Requires/Conflicts等非预期关系 | 别名、待重载、外部关系、root用户、错误KillMode等逐项拒绝 |
 | 回退可停止一个身份未经检查的进程 | 停止前要求可执行文件属于测试版本目录、完整参数为固定fake命令 | 外部命令/PID身份不符时不发送stop |
 | socket路径不保证响应来自刚验证的进程，部分行可长期拖延读取 | Linux SO_PEERCRED绑定MainPID、拒绝软链接/被替换socket；整个IPC交换有绝对期限 | 错误对端未收到任何RPC、软链接拒绝、慢速碎片超时、只读RPC集合 |

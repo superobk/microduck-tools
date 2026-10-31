@@ -396,9 +396,11 @@ class Rehearsal:
         return pid
 
     def stopped(self):
-        values = self.board.properties('MainPID', 'ControlPID', 'ActiveState', 'Job')
+        values = self.board.properties('MainPID', 'ControlPID', 'ActiveState', 'Job', 'TasksCurrent', 'ControlGroup')
+        empty = values['TasksCurrent'] == '0' or (not values['ControlGroup'] and values['TasksCurrent'] in ('[not set]', str(2**64 - 1)))
         if (values['MainPID'] != '0' or values['ControlPID'] != '0'
-                or values['ActiveState'] not in ('inactive', 'failed') or values['Job'].split()[:1] != ['0']):
+                or values['ActiveState'] not in ('inactive', 'failed') or values['Job'].split()[:1] != ['0']
+                or not empty):
             raise Error('Test service did not fully stop; current was not changed.')
 
     def stop(self):

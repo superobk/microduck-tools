@@ -61,7 +61,7 @@ sudo python3 "$DRY_TOOL" verify
 sudo python3 "$DRY_TOOL" status
 ```
 
-切换顺序：检查目录/unit/无额外drop-in、别名/依赖联动/待重载状态，目标及回退文件 → 保存pending事务 → 停止测试服务并确认MainPID/ControlPID归零、状态停止、Job结束 → 原子切测试current → 启动 → 验证 → 保存成功版本。未准备/被改动目标在停止服务前拒绝；并发写操作被锁拒绝。
+切换顺序：检查目录/unit/无额外drop-in、别名/依赖联动/待重载状态，目标及回退文件 → 保存pending事务 → 停止测试服务并确认MainPID/ControlPID归零、状态停止、Job结束及cgroup无残留任务 → 原子切测试current → 启动 → 验证 → 保存成功版本。未准备/被改动目标在停止服务前拒绝；并发写操作被锁拒绝。
 
 验证要求：实际MainPID、`/proc/PID/exe`及完整argv匹配固定fake命令；测试socket的hello版本、精确revision、API和15关节拓扑匹配；health为healthy；Linux SO_PEERCRED确认socket对端就是MainPID，拒绝软链接socket；5Hz订阅至少收到3帧递增 `t_ns`、15维有限关节/目标数据、held policy；前后PID一致。
 
