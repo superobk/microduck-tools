@@ -1,6 +1,6 @@
 # Microduck Tools
 
-Microduck 校准与配置工具 **0.4.2**。保留 daemon-v0.16.3 的 IMU、15 舵机软件映射、摄像头四向配置和黑橙统一 Web；增加官方新版只读能力适配、独立插件配置与相机 CLI 适配，并提供固定 0.17.9 / 0.18.3 基线的原生校正候选。
+Microduck 校准与配置工具 **0.5.0**。保留 daemon-v0.16.3 的 IMU、15 舵机软件映射、摄像头四向配置和黑橙统一 Web；增加官方新版只读能力适配、独立插件配置与相机 CLI 适配，并提供固定 0.17.9 / 0.18.3 基线的原生校正候选。
 
 这是软件准备和审阅版本，尚未执行实机回滚、部署或物理验收。Web 不自动重启 robotd；摄像头应用需单独启用并明确确认，只重启 mediad。IMU/关节校正依赖匹配的原生补丁；两版 calv3 均实现加载、16.4 解码与真实回执；0.18.3 另适配持久用户层。官方未打补丁的 0.17.9 仍禁止校正写入，监测与相机不需要原生校正补丁。
 
@@ -23,11 +23,16 @@ python3 -m unittest discover -s calibration/tests -v
 
 ## 当前入口
 
+- **[菜单与任务脚本：安装 / 配置 / 状态 / 回滚](docs/script-manager.zh-CN.md)**：完整交付包运行 `sudo ./duck.sh`，显示当前状态及下一步；默认预览，板端仍NOT_RUN。
+
+- [0.16.3 → 0.18.3：脚本升级路径](docs/manual-upgrade-0183.zh-CN.md)
+- 升级顺序：`check → backup → install → configure → services start → status`；中断用 `recover`，回退用 `rollback`，完整回旧系统用救援环境的 `image restore`。命令及状态说明统一见上述指南。
+
 - [统一 Web](calibration/integration-0.16.3/web/calibration_web.py) / [前端](calibration/integration-0.16.3/web/index.html)
 - [摄像头配置模块](calibration/integration-0.16.3/web/camera_config.py)
 - [校准 CLI](calibration/common/duck_calibrate.py)
 - [0.16.3 完整源码补丁](calibration/integration-0.16.3/evidence/calibration-camera-v2-0.16.3.patch)
-- [同步代码哈希](CODE-MANIFEST.json)
+- [同步代码哈希](CODE-MANIFEST.json) / [部署登记](docs/deployment-register.zh-CN.md)
 
 `calibration/web/`、`daemon-v0.16.3/`、`daemon-v0.17.8/` 保留原始输入包，当前统一入口为 `calibration/integration-0.16.3/web/`。0.17.8 原始文件不代表本次已适配或验证该版本。0.17.9 补丁、构建身份及合成示例位于 `calibration/daemon-v0.17.9/`。
 
@@ -55,7 +60,7 @@ python3 calibration/integration-0.16.3/web/calibration_web.py \
 
 - [兼容范围、部署与回滚说明](docs/compatibility.zh-CN.md)
 - [非root服务模板](deploy/microduck-tools.service) / [插件配置示例](deploy/plugins.example.json)
-- 运行包构建：`python3 tools/build-release.py --out /tmp/microduck-tools-0.4.2.tar.gz`
+- 运行包构建：`python3 tools/build-release.py --out /tmp/microduck-tools-0.5.0.tar.gz`
 
 软件回放、假daemon和本机浏览器验证不代表板端运行或硬件验收。完整现场部署审阅与验证记录保留本地deliverables，实际设备操作仍待用户另行通知。
 

@@ -1,0 +1,12 @@
+btd.service
+configd.service
+mediad.service
+microduck-tools.service
+netpadd.service
+nfcd.service
+padd.service
+robot-boot-check.service
+robot-boot-check.timer
+robotd.service
+tofd.service
+updaterd.service

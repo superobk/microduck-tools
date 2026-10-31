@@ -33,6 +33,13 @@ class ReleaseTests(unittest.TestCase):
             run=subprocess.run([sys.executable,str(package/'tools/microduck-dryrun.py'),'--help'],capture_output=True,text=True,timeout=5)
             self.assertEqual(run.returncode,0,run.stderr);self.assertIn('rollback',run.stdout)
             self.assertTrue((package/'deploy/robotctl-dryrun').stat().st_mode & 0o111)
+            self.assertTrue((package/'deploy/manual-upgrade/inputs.json').is_file())
+            run=subprocess.run([sys.executable,str(package/'tools/upgrade-review.py'),'--help'],capture_output=True,text=True,timeout=5)
+            self.assertEqual(run.returncode,0,run.stderr);self.assertIn('deferred',run.stdout)
+            run=subprocess.run([str(package/'deploy/manager/status.sh'),'--json'],capture_output=True,text=True,timeout=5)
+            self.assertEqual(run.returncode,0,run.stderr);self.assertIn('stage',json.loads(run.stdout))
+            for wrapper in (package/'deploy/manager').glob('*.sh'):
+                self.assertTrue(wrapper.stat().st_mode&0o111)
             with self.assertRaises(ValueError):builder.build(ROOT,out)
 
     def test_unit_does_not_start_or_restart_native_services(self):
