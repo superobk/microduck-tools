@@ -1,9 +1,9 @@
 {
   "date_local": "2026-10-31",
-  "tool_version": "0.4.3",
-  "stage": "manual-0183-upgrade-review",
+  "tool_version": "0.5.0",
+  "stage": "scripted-0183-manager",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "scope": "manual upgrade documentation, input fingerprints, bounded review helpers and tests; all board operations NOT_RUN",
+  "scope": "task scripts, deployment manager, tests and guides; core calibration/Web/native unchanged; board NOT_RUN",
   "files": [
     {
       "path": ".gitattributes",
@@ -15,11 +15,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "48f8037e40bfa3748bdc207726550b95e488b028d880801accaccaca9e2a371d"
+      "sha256": "11c2d922c0b46d1f640dfad515bf56269c6fa63b299dcc580fef97ef0b1aeb9a"
     },
     {
       "path": "VERSION",
-      "sha256": "520a19075780a38b440395e2c70e20d7cddd96b8c2e2c2403b265cbb74a1b333"
+      "sha256": "a0ad50640139a524f86591157145bf1d4674ea9c065bfea21558f0f7b04430c8"
     },
     {
       "path": "calibration/common/apply_source_patch.py",
@@ -338,6 +338,10 @@
       "sha256": "6f542ce7787f3b0152b66f3ee923e744d7165deac0273025c3c1ebe8c77d44ec"
     },
     {
+      "path": "calibration/tests/test_duck_manager.py",
+      "sha256": "6f228c0bd5d16faa6e72bfca6ab97d9057dfd3cfb49cbeec3a3254f93fb83a32"
+    },
+    {
       "path": "calibration/tests/test_gyro_v2_web.py",
       "sha256": "14f3e12ec05e2498d54c8ce8b2bc83fc028325338e10df0c181bb6901bfb8675"
     },
@@ -351,7 +355,7 @@
     },
     {
       "path": "calibration/tests/test_runtime_release.py",
-      "sha256": "6bfa4cd0b95f049e59826a771b10b610e8a01d93bdbd0be0cc3829d837b884e4"
+      "sha256": "cbb3982fb59e5fe3184b7b96d7360c1d50b9e6869ffcc488c715e6aafab63383"
     },
     {
       "path": "calibration/tests/test_servo_health.py",
@@ -384,6 +388,50 @@
     {
       "path": "deploy/dryrun.robotd.toml",
       "sha256": "7e51e118e6bdae5a48154e3813d4fc50bc56e8b0b189b36770c99cdf9908e05c"
+    },
+    {
+      "path": "deploy/manager/backup.sh",
+      "sha256": "eed88852db9f023c0cddd162d636af76798a26db36ef95eb53154b332c0bfac3"
+    },
+    {
+      "path": "deploy/manager/check.sh",
+      "sha256": "0e0047a221182853cabe3bb67b2b1d05c619f7263e576d69b943184c1346d0e4"
+    },
+    {
+      "path": "deploy/manager/configure.sh",
+      "sha256": "c41344b8d83f2fa39d5c78912f95c62bc1450df880151ca164ae617b5cfcd467"
+    },
+    {
+      "path": "deploy/manager/duck.sh",
+      "sha256": "2f5da603d4e7b9cee450ff9240cc3c99b3baf8438f2f4582bd8b3e7d608584e4"
+    },
+    {
+      "path": "deploy/manager/image.sh",
+      "sha256": "aa99293ff8e98306f6fdaa4ca40dd2792f56ebaed4c7f107321c2a724976af69"
+    },
+    {
+      "path": "deploy/manager/install.sh",
+      "sha256": "883096e418a20c1804646075f300c6dcbeaba30c9bf2710f0450e34858491deb"
+    },
+    {
+      "path": "deploy/manager/recover.sh",
+      "sha256": "7c2368eb5b3060e300a5935e891defe073a9236424fefd78bcb9a727a83aea5e"
+    },
+    {
+      "path": "deploy/manager/robot-units.txt",
+      "sha256": "03cf7f52905000aa4ee26735594fec1b716a5e55f75cf2bb99f9f90a115e8b6f"
+    },
+    {
+      "path": "deploy/manager/rollback.sh",
+      "sha256": "7a6f18715430580a8fb9f96835568fb3b62d9e58c71757df8440b78bf2315c97"
+    },
+    {
+      "path": "deploy/manager/services.sh",
+      "sha256": "933819edebc5c9b279209d319236ccbe35ae35cabad759ffb609ee02cc4e5803"
+    },
+    {
+      "path": "deploy/manager/status.sh",
+      "sha256": "ded54378f36235a8a75961c259b17bfbde497d667666847e32b3efa690c49cc4"
     },
     {
       "path": "deploy/manual-upgrade/inputs.json",
@@ -439,7 +487,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "aef210260f73f227122e74b2c3f49dce945b31c9cbf62e2055ee8da25335decc"
+      "sha256": "27ec50fcd43911e67eba1c11a45f05462ae3f89cf345952202cc01869f6b966a"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -451,7 +499,7 @@
     },
     {
       "path": "docs/manual-upgrade-0183.zh-CN.md",
-      "sha256": "e70fa98941e1cf4e59c2d37023eb2307b6d44a0674257dfc2100fba8c1ff78bd"
+      "sha256": "a6333594c458364a610f6c09ea8635392655a31c94fa11a86a0fc93a08dd8fe4"
     },
     {
       "path": "docs/manual-upgrade-image.zh-CN.md",
@@ -470,16 +518,24 @@
       "sha256": "8e8cdeb3b06d3af9063fa567aab8c20afaf933295cb240cfed78cc8af0dcef89"
     },
     {
+      "path": "docs/script-manager.zh-CN.md",
+      "sha256": "13e9fdfa96475779c2cfca53b58332531ef2355f0fa51d05aeb546e5d3009351"
+    },
+    {
       "path": "docs/validation-0.3.0.zh-CN.md",
       "sha256": "55c3a8428746e75d12ce392f877b385614d45435eb67ca4718bc225766227aea"
     },
     {
       "path": "tools/build-release.py",
-      "sha256": "4a763056c485d3a3f89fdb360f50eb6e723a9bc2719b412624534495cfde9e3f"
+      "sha256": "f230e84516c2932e12a9e31702e61dc3a331bb0978d4793b34de7149a9de40ea"
     },
     {
       "path": "tools/check-native.py",
       "sha256": "187c122d88cbab348c9e464842ac2f1a3fe4f57fd8cea7a6ddba1d00726a1546"
+    },
+    {
+      "path": "tools/duck-manager.py",
+      "sha256": "f6c8ff3c51d05af52f448c4f0fec9ad246b1f5de1f1930d05287ee8ba4532fc0"
     },
     {
       "path": "tools/microduck-dryrun.py",

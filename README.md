@@ -1,6 +1,6 @@
 # Microduck Tools
 
-Microduck 校准与配置工具 **0.4.3**。保留 daemon-v0.16.3 的 IMU、15 舵机软件映射、摄像头四向配置和黑橙统一 Web；增加官方新版只读能力适配、独立插件配置与相机 CLI 适配，并提供固定 0.17.9 / 0.18.3 基线的原生校正候选。
+Microduck 校准与配置工具 **0.5.0**。保留 daemon-v0.16.3 的 IMU、15 舵机软件映射、摄像头四向配置和黑橙统一 Web；增加官方新版只读能力适配、独立插件配置与相机 CLI 适配，并提供固定 0.17.9 / 0.18.3 基线的原生校正候选。
 
 这是软件准备和审阅版本，尚未执行实机回滚、部署或物理验收。Web 不自动重启 robotd；摄像头应用需单独启用并明确确认，只重启 mediad。IMU/关节校正依赖匹配的原生补丁；两版 calv3 均实现加载、16.4 解码与真实回执；0.18.3 另适配持久用户层。官方未打补丁的 0.17.9 仍禁止校正写入，监测与相机不需要原生校正补丁。
 
@@ -22,6 +22,8 @@ python3 -m unittest discover -s calibration/tests -v
 ```
 
 ## 当前入口
+
+- **[菜单与任务脚本：安装 / 配置 / 状态 / 回滚](docs/script-manager.zh-CN.md)**：完整交付包运行 `sudo ./duck.sh`，显示当前状态及下一步；默认预览，板端仍NOT_RUN。
 
 - [0.16.3 直升 0.18.3：手工升级主流程](docs/manual-upgrade-0183.zh-CN.md)
 - [失败回退与中断恢复](docs/manual-upgrade-recovery.zh-CN.md) / [本次审查与修复](docs/manual-upgrade-review.zh-CN.md)

@@ -2,9 +2,12 @@
 
 | 工具版本 | 目标 | 准备和软件验证 | 板端状态 |
 |---|---|---|---|
+| 0.5.0 / 2026-10-31 | 固定0.16.3→0.18.3的菜单/任务管理 | 十个入口脚本、默认预览、分层运行状态、外部备份、独占更新锁、安装意图日志、中断恢复、同版官方/安装前撤销/救援镜像回退；236项Python通过无跳过，其中46项管理器测试；原生程序及核心Web/校正未改 | 板端安装、服务、总线、镜像与物理验收全部NOT_RUN |
 | 0.4.3 / 2026-10-31 | 当前0.16.3直接到固定0.18.3 | 六步手工指南；故障/中断/镜像恢复；13+2程序固定输入；GLIBC2.30目标重建native，ELF最高要求2.29；190项Python通过无跳过，含26项本轮助手/文档测试和两处真实本地SIGKILL；原生补丁和核心校正/Web未改 | SSH、运行库加载、安装、服务、升级、回退、相机/IMU/性能均NOT_RUN，等另行通知 |
 
-执行入口：[手工主流程](manual-upgrade-0183.zh-CN.md)、[回退与中断](manual-upgrade-recovery.zh-CN.md)、[镜像恢复](manual-upgrade-image.zh-CN.md)、[审查问题与修复](manual-upgrade-review.zh-CN.md)。固定程序SHA与源码身份在 [inputs.json](../deploy/manual-upgrade/inputs.json)。
+**当前入口：[菜单与任务脚本](script-manager.zh-CN.md)**，完整交付目录 `/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-manager-20261031`，在bundle里运行 `sudo ./duck.sh`。独立check/backup/install/configure/status/services/rollback/recover/image脚本共用持久会话；旧手工包保留历史，不混用。普通Web非root；校正写入使用有时限的临时维护Web，退出恢复普通服务，robotd仅在明确reload时重启。
+
+历史手工审阅入口：[手工主流程](manual-upgrade-0183.zh-CN.md)、[回退与中断](manual-upgrade-recovery.zh-CN.md)、[镜像恢复](manual-upgrade-image.zh-CN.md)、[审查问题与修复](manual-upgrade-review.zh-CN.md)。固定程序SHA与源码身份在 [inputs.json](../deploy/manual-upgrade/inputs.json)。
 
 程序准备：官方13个ARM64程序来自固定官方签名归档；两个自定义校正程序已交叉编译；Tools为Python/Web源码运行包，无需板端编译。上述软件可交付不等于该板已经可运行，前后动态库/ONNX和进程身份仍须实测。
 
