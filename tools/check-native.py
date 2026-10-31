@@ -19,12 +19,12 @@ def run(args):
     head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=source,text=True).strip()
     if head!=expected:raise ValueError('source HEAD is not the pinned official target')
     allowed={patcher.PARAMS,patcher.REGISTRY,patcher.BUS,patcher.IMU,patcher.MAIN}
-    if args.target=='daemon-v0.17.9':allowed.add(patcher.EDITOR)
+    if args.target in ('daemon-v0.17.9','daemon-v0.18.3'):allowed.add(patcher.EDITOR)
     changed=set(subprocess.check_output(['git','diff','HEAD','--name-only'],cwd=source,text=True).splitlines())
     if not changed or changed-allowed:raise ValueError('expected only the reviewed native calibration patch')
     diff=subprocess.check_output(['git','diff','HEAD','--binary'],cwd=source)
-    if args.target=='daemon-v0.17.9' and args.stage in ('host-test','cross-build'):
-        reviewed=Path(__file__).resolve().parents[1]/'calibration/daemon-v0.17.9/native-calibration-v3.patch'
+    if args.target in ('daemon-v0.17.9','daemon-v0.18.3') and args.stage in ('host-test','cross-build'):
+        reviewed=Path(__file__).resolve().parents[1]/'calibration'/args.target/'native-calibration-v3.patch'
         if diff!=reviewed.read_bytes():raise ValueError('native diff differs from the published reviewed patch; use the pinned formatter or review/register a new build')
     digest=hashlib.sha256(diff).hexdigest();revision=expected[:8]+'-calv3-'+digest[:12]
     env=os.environ.copy();env['DUCK_REVISION']=revision;env['CARGO_TARGET_DIR']=str(out/'target')

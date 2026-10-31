@@ -44,7 +44,7 @@ class FakeDaemon:
 
 class AdapterTests(unittest.TestCase):
     def test_fake_daemons_41_44_45_identity_model_cache_and_read_allowlist(self):
-        for api,version in [(41,'0.16.3'),(44,'0.17.9'),(45,'0.18.0-dev')]:
+        for api,version in [(41,'0.16.3'),(44,'0.17.9'),(45,'0.18.0-dev'),(47,'0.18.3')]:
             with self.subTest(api=api), tempfile.TemporaryDirectory(prefix='md-') as directory:
                 path=Path(directory)/'ipc';daemon=FakeDaemon(path,api,version)
                 try:
@@ -244,7 +244,7 @@ class NativeCameraTests(unittest.TestCase):
     def test_runtime_requires_revision_process_identity_and_reviewed_arguments(self):
         identity=self.directory/'identity.json';self.camera.runtime=identity
         executable='/opt/robot/daemon/releases/0.17.9/bin/mediad'
-        data=dict(service='mediad',version='0.17.9',revision=next(iter(native_camera.NATIVE_REVISIONS)),pid=123,exe=executable)
+        data=dict(service='mediad',version='0.17.9',revision=native_camera.REVIEWED_MEDIAD['0.17.9'],pid=123,exe=executable)
         identity.write_text(json.dumps(data))
         for angle in (0,90,180,270,None):
             args=[executable] if angle is None else [executable,'--rotate',str(angle)]

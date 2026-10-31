@@ -1,13 +1,13 @@
 {
-  "date_local": "2026-10-29",
-  "tool_version": "0.3.0",
-  "stage": "native-0.17.9-calibration",
-  "upstream_base": "96b89d8613f06722c1d64ce75ab0d7124fed9d8f",
-  "scope": "source, source patches, synthetic tests and generic deployment documentation only; hardware NOT_RUN",
+  "date_local": "2026-10-31",
+  "tool_version": "0.4.0",
+  "stage": "native-0.18.3-layered-compatibility",
+  "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
+  "scope": "source, source patches, synthetic tests and generic docs only; hardware NOT_RUN",
   "files": [
     {
       "path": ".gitattributes",
-      "sha256": "b3809b4bfce6c8d24322373b14731683d97bd06e0df7d1e5c7e19c01dfd29b48"
+      "sha256": "dfbb2a3c99575e7a069922096835e6a1f1c3684a1fa64eab165179b3f7c53636"
     },
     {
       "path": ".gitignore",
@@ -15,19 +15,23 @@
     },
     {
       "path": "README.md",
-      "sha256": "59e80ebeffb6f8923a5dcb47609f86795d4e7c24a19a7f3897e2228a5277e0b9"
+      "sha256": "c098824b892e3c103e5a6ff8ad2d6915fc9e3a749a2b90746a757db11f1c065b"
     },
     {
       "path": "VERSION",
-      "sha256": "d915cc95d6ca8f47ae297713ed46d4e5c5d99ddd29fc3c61e263bdf305f2b5b0"
+      "sha256": "40b8eb4000a913a7791090535f291d3d369874162a89ef3c9e3d4e887a1b9e79"
     },
     {
       "path": "calibration/common/apply_source_patch.py",
-      "sha256": "13ab5b2f9bc19ed022c78edcced7b5823d0d42c227023b52e90a6ac2e028d96b"
+      "sha256": "a8603a51f978d786d4aa6742b8a854792f738da546be0980d7f1311ae07fe8d0"
+    },
+    {
+      "path": "calibration/common/config_layers.py",
+      "sha256": "238234faed7b2b6f595200047134308b51ef5cfd29334520924371a79728b718"
     },
     {
       "path": "calibration/common/duck_calibrate.py",
-      "sha256": "a7d7b61b4b05ad60eeea968b42b1e60c43c8d742c01c3db9cad6bb6323bb6f24"
+      "sha256": "37e33ecda8ec185ba1273613bfc3dd491802176d12a8adb0194634475ab3991b"
     },
     {
       "path": "calibration/daemon-v0.16.3/apply_source_patch.py",
@@ -76,6 +80,22 @@
     {
       "path": "calibration/daemon-v0.17.9/raw16.4.example.toml",
       "sha256": "c50784fbb8496116d36214c1cda6d690f3186d60ce1e537807f6afdb04062219"
+    },
+    {
+      "path": "calibration/daemon-v0.18.3/README.md",
+      "sha256": "86f728c1319e44405edf05dba7675eff8277b93aa945a9ebf8c2162a0d938753"
+    },
+    {
+      "path": "calibration/daemon-v0.18.3/native-build.json",
+      "sha256": "3286b59feec86553528e8ddabe723cf05e4e3d51d8e213f437aa1c2731a85aa4"
+    },
+    {
+      "path": "calibration/daemon-v0.18.3/native-calibration-v3.patch",
+      "sha256": "30452a086d1ed14cafa4ebb22d6adfab746f74e1c679856c8c3f92c71a4b334d"
+    },
+    {
+      "path": "calibration/daemon-v0.18.3/raw16.4.example.toml",
+      "sha256": "83810d405074e7bc81a29bbcdb5ccfc90321ec8b1ec7867e03d7bbc2ddb436ee"
     },
     {
       "path": "calibration/examples/demo-0.16.3.toml",
@@ -267,7 +287,7 @@
     },
     {
       "path": "calibration/integration-0.16.3/web/calibration_web.py",
-      "sha256": "d4e9d384f06dafe6b4e763ab010c6d2cdfa3dce942526d2c4959273da1146b23"
+      "sha256": "d732c687b96dd542862382672972418e8128b8cd28ec45e3d978bd9b90b6fdf8"
     },
     {
       "path": "calibration/integration-0.16.3/web/camera_config.py",
@@ -279,15 +299,15 @@
     },
     {
       "path": "calibration/integration-0.16.3/web/daemon_adapter.py",
-      "sha256": "d86c4483f0b364a248250252a0bcc9af940aa7d358e159f246729995d4b828aa"
+      "sha256": "b6f52e9af9e002fe968de05f0dbdb48403bf5806ae97ed2daa5578f9c0fa2d2d"
     },
     {
       "path": "calibration/integration-0.16.3/web/index.html",
-      "sha256": "86285373e1a2060bcb8f7db5019d61a6fab3bfc4312335314e7c8b3df7863391"
+      "sha256": "67ec8cd45e9970bf6acac28b2208557ea4ce57aa061bb027994bf5f285fa79ce"
     },
     {
       "path": "calibration/integration-0.16.3/web/native_camera.py",
-      "sha256": "3fad02f3066de5e7cc44d912557438319cea84c53b1e6727dc185f1f46c10dd0"
+      "sha256": "7a6208764a8f53eab0b2269f933df2cc896964e26d6b057e01fd143783c1885e"
     },
     {
       "path": "calibration/integration-0.16.3/web/servo-health.js",
@@ -307,7 +327,7 @@
     },
     {
       "path": "calibration/tests/test_compatibility.py",
-      "sha256": "86d5ac908d1dddd79268c5cc1087b8d1dd38cf2216332f08d4ba7ac3cc316c44"
+      "sha256": "3fb75d79386ab80de105a69355f03f912b5a1a3586df37635e01bc3c851095f1"
     },
     {
       "path": "calibration/tests/test_gyro_v2_web.py",
@@ -318,8 +338,12 @@
       "sha256": "7d0a1fbe5ec602791915af6228409bf6bca524f806cfdffbb3a0ea0346f30caf"
     },
     {
+      "path": "calibration/tests/test_native_0183.py",
+      "sha256": "c0b207442d789da330400a11065df29718e76755f1b1e895aaacb33c0d2cec02"
+    },
+    {
       "path": "calibration/tests/test_runtime_release.py",
-      "sha256": "dd99ed78a72ef88789ac8ea3ee3be3f277ac24c946cd7179805872993e0fa161"
+      "sha256": "da41674d8b906da7bcdd4c3d9fb61265d6dd9eac52d570e690fa5c4c19a9c056"
     },
     {
       "path": "calibration/tests/test_servo_health.py",
@@ -354,16 +378,28 @@
       "sha256": "12a58ec6ca955d15d6f7d1f9ca5dc51713da06e76bc60c90eb902ae02e6fd1f8"
     },
     {
+      "path": "deploy/native-0.18.3.robotd.conf.example",
+      "sha256": "59b2a00f82345b9e5c494fde9b318c720bd2e5141d71083f8190b69cc7fb74c3"
+    },
+    {
       "path": "deploy/plugins.example.json",
       "sha256": "1d69cb8910f68c6a33b0a7494fdae96f6ca73f6b5606ff411275b475e6b2c4a3"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
-      "sha256": "30674bd199f8b375bd8fbd98c2f7acb697c811267d14fa7260dff92a778fde8a"
+      "sha256": "6b6bb59db32f2dca45d42c53473c8395d4391d504254fb36a9a7d94bfbdeb476"
     },
     {
       "path": "docs/daemon-0.17.9-calibration.zh-CN.md",
       "sha256": "ae2029d987023f5615ddf87d52abbf1e6349e0f7ef53f7532c2edef4b6c960ec"
+    },
+    {
+      "path": "docs/daemon-0.18.3-calibration.zh-CN.md",
+      "sha256": "7df6e9ba1eac60d48d062c8896b3283d57f4adccb3f192d02037011335e1cc48"
+    },
+    {
+      "path": "docs/daemon-0.18.3-comparison.zh-CN.md",
+      "sha256": "4e5bf35d395aa5dff49d40c00457fccdbbb5b20a1bb7323327b00a1139e55797"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -371,11 +407,11 @@
     },
     {
       "path": "tools/build-release.py",
-      "sha256": "3012db580e37319c214365ea013ab1117d4e9d5702b944bac17985de9beae55b"
+      "sha256": "0d691b17066dc3ab34d010fed075ab00a1f64b46bf1a18810e296177523054de"
     },
     {
       "path": "tools/check-native.py",
-      "sha256": "0985ee94663bb9eead6e8ecd0b92c71de18bc9b460640a5ec42cd9adf336a8cc"
+      "sha256": "187c122d88cbab348c9e464842ac2f1a3fe4f57fd8cea7a6ddba1d00726a1546"
     }
   ]
 }
