@@ -1,5 +1,7 @@
 # 0.18.3 校正、插件生效与部署审阅
 
+> 当前部署入口：Tools 0.4.3 的[六步手工直升指南](manual-upgrade-0183.zh-CN.md)和[失败/中断恢复](manual-upgrade-recovery.zh-CN.md)。下面保留 0.4.0 适配记录；其默认 GLIBC2.35 构建示例不是本次 GLIBC2.30 目标产物的部署入口。
+
 本页属于 Microduck Tools 0.4.0。固定官方源码 `b2b0d213a402caeac492dd662ea891faa17f67c0` / API47；配套原生候选 `b2b0d213-calv3-30452a086d1e`。本轮没有执行任何实机命令。
 
 ## 简单生效路径

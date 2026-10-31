@@ -12,8 +12,8 @@ def build(root,out):
     root=Path(root);out=Path(out)
     if out.exists():raise ValueError('output already exists; choose a new release path')
     version=(root/'VERSION').read_text().strip()
-    files=[root/'VERSION',root/'README.md',root/'tools/microduck-dryrun.py']+list((root/'docs').glob('*.md'))
-    files += list((root/'deploy').glob('*'))
+    files=[root/'VERSION',root/'README.md',root/'tools/microduck-dryrun.py',root/'tools/upgrade-review.py']+list((root/'docs').glob('*.md'))
+    files += [p for p in (root/'deploy').rglob('*') if p.is_file()]
     files += list((root/'calibration/common').glob('*.py'))
     files += [p for p in (root/'calibration/integration-0.16.3/web').iterdir() if p.suffix in ('.py','.html','.js')]
     files += [root/'calibration/integration-0.16.3/servo-maintenance.py',root/'calibration/integration-0.16.3/requirements-maintenance.txt']

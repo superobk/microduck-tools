@@ -1,0 +1,29 @@
+{
+  "schema": "microduck-upgrade-inputs/v1",
+  "version": "0.18.3",
+  "base_revision": "b2b0d213a402caeac492dd662ea891faa17f67c0",
+  "native_revision": "b2b0d213-calv3-30452a086d1e",
+  "build_target": "aarch64-unknown-linux-gnu.2.30",
+  "native_glibc_requirement_max": "2.29",
+  "official_tar_sha256": "335df81b88e3c895d234b436dc8dbf1a92b1b5832253e2ddce873c2fb55cccf4",
+  "official": {
+    "btd": "c022d06e6d5096b296e64ccb68dc48432ac75adcefea6f3e650d233b24d6f0a2",
+    "configd": "7317758684ca4b8238df689b8b813a70f5d3a81f1b619e849aaa9e4d40f59e97",
+    "mediad": "d89880592444b39433ab22f0a253e8a6f7aa0f9a5bdcccb0fb3c6add0bc158ae",
+    "netpadd": "9d9b7e737620ba30946c92deab291baab20e71f6d202eda894e0226ddd139408",
+    "nfcd": "da08031c90f8ddf27421e10c9e6c70c30581702409551a2c84d47d750c854ad5",
+    "padd": "fc3d3b5fa6e43fce0ccb9c9d764842d1ea07a9289c436db145fd8d2a38d02464",
+    "pet-detect": "7534a290f8ab6fb743246298e7fb68424ff6f7b416f4ed8c003a2d861135a129",
+    "pet-features": "7bd05b36a58966f3147bd802176244d4b65c2f8111189e807533cdb48eb54249",
+    "robotctl": "0717a7b7c6af119ade1a68beada83cd05c5e4fc4aebd0512d55eb3744344fc5b",
+    "robotd": "0de2fbeea33c2a57c77c61945ee8e33540ecff62b838d66cecb3da86b9dd445b",
+    "sounds": "9436e7d6664a23a73a9594629d78d3aa53909e6fb596eeb4a90ab43540c30fc2",
+    "tofd": "ee3ee40f639606914043734add364005ebbc8b0fbe0ccc27c4eca5e734eff82f",
+    "updaterd": "6f06075606d2aa7a8b466df9c843e540e33b1e362e36e3e297c7f26050ac0c42"
+  },
+  "native": {
+    "robotctl": "17f69c44252ab4ba2eb4683ed04426764f02111461396c58824cb0990b767a5b",
+    "robotd": "f8fcb954492c095e14cb0f354150c174e82984f5992c3edd1c79a837221a7118"
+  },
+  "board": "NOT_RUN"
+}

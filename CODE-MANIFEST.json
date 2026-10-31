@@ -1,9 +1,9 @@
 {
   "date_local": "2026-10-31",
-  "tool_version": "0.4.2",
-  "stage": "dryrun-reliability-review",
+  "tool_version": "0.4.3",
+  "stage": "manual-0183-upgrade-review",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "scope": "source, patches, tests and isolated rehearsal scripts; all board operations NOT_RUN",
+  "scope": "manual upgrade documentation, input fingerprints, bounded review helpers and tests; all board operations NOT_RUN",
   "files": [
     {
       "path": ".gitattributes",
@@ -15,11 +15,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "d7a40b3492243c7e1c41c487b36e3869b6753ea41be4447e28e06f185fe800f7"
+      "sha256": "48f8037e40bfa3748bdc207726550b95e488b028d880801accaccaca9e2a371d"
     },
     {
       "path": "VERSION",
-      "sha256": "e2f7bb608ebc9e24092ffcb796ad0aa83f0015afe23635f017df52273150f00d"
+      "sha256": "520a19075780a38b440395e2c70e20d7cddd96b8c2e2c2403b265cbb74a1b333"
     },
     {
       "path": "calibration/common/apply_source_patch.py",
@@ -351,7 +351,7 @@
     },
     {
       "path": "calibration/tests/test_runtime_release.py",
-      "sha256": "a040d2f3a21176cbf22dde323ecf6f6ce4494cf1e205899e6cad5d60e6cadf26"
+      "sha256": "6bfa4cd0b95f049e59826a771b10b610e8a01d93bdbd0be0cc3829d837b884e4"
     },
     {
       "path": "calibration/tests/test_servo_health.py",
@@ -370,6 +370,10 @@
       "sha256": "18bf1478c23670a7394e406e34273e100de3206f12bb30f60a9ff62544f9d0fe"
     },
     {
+      "path": "calibration/tests/test_upgrade_review.py",
+      "sha256": "4c732de7cc6c4303949772d60f5d1039d124dc824edae714e4583641ec681941"
+    },
+    {
       "path": "calibration/web/calibration_web.py",
       "sha256": "eb8bbb74c1fa7ccd8a3c4d3c99a9e7f3d22307d3fefc072b22b505a65f7fa4e7"
     },
@@ -380,6 +384,18 @@
     {
       "path": "deploy/dryrun.robotd.toml",
       "sha256": "7e51e118e6bdae5a48154e3813d4fc50bc56e8b0b189b36770c99cdf9908e05c"
+    },
+    {
+      "path": "deploy/manual-upgrade/inputs.json",
+      "sha256": "58774810303845b37b11e968552afdcb8f291097f5b2f4cc9b2314b767665d52"
+    },
+    {
+      "path": "deploy/manual-upgrade/robotd-native.conf",
+      "sha256": "6f5be2ed10e0ae732dc4a7ad9b3dafe5e7517bbd1312a487aaf273fffd4de05c"
+    },
+    {
+      "path": "deploy/manual-upgrade/robotd-official.conf",
+      "sha256": "bf59c32c393a988383f8445d70c6f72a46eb5f27bac94586f5a60aa51433c9ed"
     },
     {
       "path": "deploy/microduck-dryrun.service",
@@ -415,11 +431,15 @@
     },
     {
       "path": "docs/daemon-0.18.3-calibration.zh-CN.md",
-      "sha256": "7df6e9ba1eac60d48d062c8896b3283d57f4adccb3f192d02037011335e1cc48"
+      "sha256": "99f1882b95f161a4968b00d9ce7423745b3b7e01d6a8d29bc9d7f3a3e69f7f63"
     },
     {
       "path": "docs/daemon-0.18.3-comparison.zh-CN.md",
       "sha256": "4e5bf35d395aa5dff49d40c00457fccdbbb5b20a1bb7323327b00a1139e55797"
+    },
+    {
+      "path": "docs/deployment-register.zh-CN.md",
+      "sha256": "4af8373b62fd5b633822f1d675398cb30edaa02e68b28211c38410b2e34dc05d"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -430,12 +450,32 @@
       "sha256": "3aa773e3fc0f28f97a93b3ef6e9749da62840cd1adbab5dd6c77fd7582cbdc62"
     },
     {
+      "path": "docs/manual-upgrade-0183.zh-CN.md",
+      "sha256": "6372189ac31a2f5d8d1037a5c4875b983a69f369824632f16922e70ae8ddb2ad"
+    },
+    {
+      "path": "docs/manual-upgrade-image.zh-CN.md",
+      "sha256": "1fef6521988425fe93f4144ecf7361a94b22561cd03b1c9a20dd39302aa26651"
+    },
+    {
+      "path": "docs/manual-upgrade-recovery.zh-CN.md",
+      "sha256": "4d6aa644b114532a8a57ce03ac8af605bef3b4d5f761e0abe902680396c160fe"
+    },
+    {
+      "path": "docs/manual-upgrade-review.zh-CN.md",
+      "sha256": "273f23a8c10fdc63cea8359229440adc1785b5e617cefd6af163fc92c1ab0b75"
+    },
+    {
+      "path": "docs/manual-upgrade-tools.zh-CN.md",
+      "sha256": "8e8cdeb3b06d3af9063fa567aab8c20afaf933295cb240cfed78cc8af0dcef89"
+    },
+    {
       "path": "docs/validation-0.3.0.zh-CN.md",
       "sha256": "55c3a8428746e75d12ce392f877b385614d45435eb67ca4718bc225766227aea"
     },
     {
       "path": "tools/build-release.py",
-      "sha256": "703e891707b5469acb249acbc40ab3f1686288e40193f0cff9f7ef55b44799f1"
+      "sha256": "4a763056c485d3a3f89fdb360f50eb6e723a9bc2719b412624534495cfde9e3f"
     },
     {
       "path": "tools/check-native.py",
@@ -444,6 +484,10 @@
     {
       "path": "tools/microduck-dryrun.py",
       "sha256": "a0d70e110dff0633f90ac3820cc24d1a5894265c65189b347431d9c946cbf034"
+    },
+    {
+      "path": "tools/upgrade-review.py",
+      "sha256": "3f0f5240f2157fe3ef841d84971300b8371784f67a7c6a897a4c9ce51b5b21be"
     }
   ]
 }
