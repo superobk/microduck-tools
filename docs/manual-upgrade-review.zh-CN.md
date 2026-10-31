@@ -6,6 +6,7 @@
 |---|---|---|
 | PATH 中 robotctl 可能是旧 native 或别名 | 同一命令可能连接不同版本接口 | 备份固定官方旧 robotctl；升级后使用绝对路径和实际进程身份 |
 | native 构建要求 GLIBC2.35，官方较低 | 官方能启动不表示校正候选可加载 | 相同补丁按 GLIBC2.30 目标重建；读取 ELF DT_VERNEED 表，不再用字符串扫描当 ABI 证据 |
+| 只检查库文件是否存在 | ldd可能退出0但有未解析符号 | 使用ldd -r并显式拒绝undefined symbol/symbol lookup error；已补充回归 |
 | ldd 没检查 ONNX 的 dlopen 依赖 | 文件名/软链接可能伪报版本或无法加载 | 有超时的子进程读取真实 OrtGetApiBase、GetVersionString 和 GetApi(23)；升级前后都检查 |
 | 检查全量程序前后不一致 | 钩子可改运行库，复制也可能不完整 | 固定 13+2 个程序清单/SHA，拒绝空/未知清单；板端前后各检查一次 |
 | 直接 stop updaterd 可能截断正在升级的事务 | 状态查询与停止之间仍有竞争 | 先读状态，再用同一个 update.lock 持锁执行 stop；忙则拒绝，不能杀进程或删锁 |

@@ -126,7 +126,7 @@ m.tool_link(sys.argv[2],sys.argv[3],sys.argv[4])
         self.assertEqual(result.returncode,2);self.assertIn('Only tool current',result.stderr)
 
     def test_loader_nonzero_and_missing_library_refused(self):
-        for code,text in [(1,'error'),(0,'libx.so => not found'),(0,'GLIBC_2.35 not found')]:
+        for code,text in [(1,'error'),(0,'libx.so => not found'),(0,'GLIBC_2.35 not found'),(0,'undefined symbol: gst_missing_api'),(0,'symbol lookup error: missing export')]:
             with self.subTest(text=text),self.assertRaises(m.Error):m.checked_loader('fixture',lambda *a,**k:subprocess.CompletedProcess(a,code,text,''))
         self.assertIn('libc',m.checked_loader('fixture',lambda *a,**k:subprocess.CompletedProcess(a,0,'libc => /lib/libc.so','')))
 

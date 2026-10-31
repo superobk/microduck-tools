@@ -131,9 +131,9 @@ def tool_link(path, target, expected):
 
 
 def checked_loader(path, run):
-    result=run(['ldd',str(path)],capture_output=True,text=True,timeout=20)
+    result=run(['ldd','-r',str(path)],capture_output=True,text=True,timeout=20)
     text=result.stdout+'\n'+result.stderr
-    if result.returncode or re.search(r'not found|cannot open|No such file',text,re.I):
+    if result.returncode or re.search(r'not found|cannot open|No such file|undefined symbol|symbol lookup error',text,re.I):
         raise Error('Loader failed for '+str(path)+': '+text.strip())
     return text.strip()
 

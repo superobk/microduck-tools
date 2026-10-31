@@ -63,7 +63,7 @@ printf 'BUNDLE=%q\nRUN=%q\nTOOL=%q\nREVIEW=%q\nNATIVE=%q\n' "$BUNDLE" "$RUN" "$T
 chown -R root:root "$BUNDLE"
 ```
 
-**下面解包到工作区、检查动态库，不安装官方程序、不运行安装钩子。** `runtime` 会核对 15 个 ELF 的固定 SHA，再运行 ldd，并在有超时的子进程中检查真实 ONNX 库和 API 23。
+**下面解包到工作区、检查动态库，不安装官方程序、不运行安装钩子。** `runtime` 会核对 15 个 ELF 的固定 SHA，再运行 ldd -r 检查库和重定位符号，并在有超时的子进程中检查真实 ONNX 库和 API 23。
 
 ```bash
 hostname
