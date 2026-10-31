@@ -1,0 +1,24 @@
+[Unit]
+Description=Isolated Microduck fake backend version rehearsal
+After=local-fs.target
+
+[Service]
+Type=simple
+User=microduck-tools
+Group=microduck-tools
+WorkingDirectory=/var/lib/microduck-tools-dryrun
+ExecStart=/var/lib/microduck-tools-dryrun/current/bin/robotd --fake --no-policy --params /var/lib/microduck-tools-dryrun/current/robotd.toml --socket /var/lib/microduck-tools-dryrun/run/robotd.sock
+Restart=no
+TimeoutStopSec=15s
+UMask=0077
+NoNewPrivileges=yes
+PrivateDevices=yes
+DevicePolicy=closed
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX
+ReadWritePaths=/var/lib/microduck-tools-dryrun/run

@@ -1,0 +1,9 @@
+# Synthetic standalone bench configuration, never copy over the robot's actual config.
+[audio]
+enabled = false
+
+[head_imu]
+enabled = false
+
+[policy]
+enabled = false

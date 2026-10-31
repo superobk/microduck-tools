@@ -1,9 +1,9 @@
 {
   "date_local": "2026-10-31",
-  "tool_version": "0.4.0",
-  "stage": "native-0.18.3-layered-compatibility",
+  "tool_version": "0.4.1",
+  "stage": "isolated-multiversion-dryrun",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "scope": "source, source patches, synthetic tests and generic docs only; hardware NOT_RUN",
+  "scope": "source, patches, synthetic tests and deployment scripts; board execution NOT_RUN",
   "files": [
     {
       "path": ".gitattributes",
@@ -15,11 +15,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "c098824b892e3c103e5a6ff8ad2d6915fc9e3a749a2b90746a757db11f1c065b"
+      "sha256": "6c6b7534f659409f4385908e8abea8f798b09c16b74f16882ee23cdceef22e18"
     },
     {
       "path": "VERSION",
-      "sha256": "40b8eb4000a913a7791090535f291d3d369874162a89ef3c9e3d4e887a1b9e79"
+      "sha256": "f62184cee8787f2f6941c82041a5725d4edc9aa293ebe5dbf664406e82ec1fe1"
     },
     {
       "path": "calibration/common/apply_source_patch.py",
@@ -330,6 +330,10 @@
       "sha256": "3fb75d79386ab80de105a69355f03f912b5a1a3586df37635e01bc3c851095f1"
     },
     {
+      "path": "calibration/tests/test_dryrun.py",
+      "sha256": "53a0117edcc02436da5cd3d04d9cad5785ada98373adba25985fd17820c15eb1"
+    },
+    {
       "path": "calibration/tests/test_gyro_v2_web.py",
       "sha256": "14f3e12ec05e2498d54c8ce8b2bc83fc028325338e10df0c181bb6901bfb8675"
     },
@@ -343,7 +347,7 @@
     },
     {
       "path": "calibration/tests/test_runtime_release.py",
-      "sha256": "da41674d8b906da7bcdd4c3d9fb61265d6dd9eac52d570e690fa5c4c19a9c056"
+      "sha256": "a040d2f3a21176cbf22dde323ecf6f6ce4494cf1e205899e6cad5d60e6cadf26"
     },
     {
       "path": "calibration/tests/test_servo_health.py",
@@ -370,6 +374,14 @@
       "sha256": "e727925e15f50ec02bdc39d6ef0298bc216366c590730e4296c2ccd73033d934"
     },
     {
+      "path": "deploy/dryrun.robotd.toml",
+      "sha256": "7e51e118e6bdae5a48154e3813d4fc50bc56e8b0b189b36770c99cdf9908e05c"
+    },
+    {
+      "path": "deploy/microduck-dryrun.service",
+      "sha256": "54d926d36568b169e615e5790ba94152361dcfa1e0be6e876bce92b01a2c93a2"
+    },
+    {
       "path": "deploy/microduck-tools.service",
       "sha256": "64e2e767f94cd7531d290ece86370788be79526cb1651d597b4b37c6db6e595a"
     },
@@ -384,6 +396,10 @@
     {
       "path": "deploy/plugins.example.json",
       "sha256": "1d69cb8910f68c6a33b0a7494fdae96f6ca73f6b5606ff411275b475e6b2c4a3"
+    },
+    {
+      "path": "deploy/robotctl-dryrun",
+      "sha256": "c68f7488721684e42fb92ecbd9c6896548b0a5e29520a27eb4e8045d7df7c5c2"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -402,16 +418,24 @@
       "sha256": "4e5bf35d395aa5dff49d40c00457fccdbbb5b20a1bb7323327b00a1139e55797"
     },
     {
+      "path": "docs/dryrun.zh-CN.md",
+      "sha256": "50a88553ef56d67a11314d77b29948ee7eaaf055d25c78f0dee42da0005fd402"
+    },
+    {
       "path": "docs/validation-0.3.0.zh-CN.md",
       "sha256": "55c3a8428746e75d12ce392f877b385614d45435eb67ca4718bc225766227aea"
     },
     {
       "path": "tools/build-release.py",
-      "sha256": "0d691b17066dc3ab34d010fed075ab00a1f64b46bf1a18810e296177523054de"
+      "sha256": "703e891707b5469acb249acbc40ab3f1686288e40193f0cff9f7ef55b44799f1"
     },
     {
       "path": "tools/check-native.py",
       "sha256": "187c122d88cbab348c9e464842ac2f1a3fe4f57fd8cea7a6ddba1d00726a1546"
+    },
+    {
+      "path": "tools/microduck-dryrun.py",
+      "sha256": "849cb61556b5e5cd5d9099f83705007b2049acd078438025cd2d0b46ccac7e21"
     }
   ]
 }

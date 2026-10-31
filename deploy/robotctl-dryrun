@@ -1,0 +1,4 @@
+#!/bin/sh
+# Web's monitor subprocess does not inherit --robot-socket; pin it explicitly here.
+exec /var/lib/microduck-tools-dryrun/current/bin/robotctl \
+  --robot-socket /var/lib/microduck-tools-dryrun/run/robotd.sock "$@"
