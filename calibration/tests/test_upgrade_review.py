@@ -195,6 +195,14 @@ m.tool_link(sys.argv[2],sys.argv[3],sys.argv[4])
         self.assertIn('PASS',m.deferred(['mediad.service'],run=query))
         self.assertIn('PASS',m.deferred(['robotd.service'],run=lambda *a,**k:subprocess.CompletedProcess([],0,'[]','')))
 
+    def test_inactive_timer_without_service_pid_properties_is_valid(self):
+        def timer(argv,**kwargs):
+            return subprocess.CompletedProcess(argv,0,'Id=robot-boot-check.timer\nLoadState=loaded\nActiveState=inactive\nJob=\n','')
+        self.assertIn('PASS',m.stopped(['robot-boot-check.timer'],run=timer,check_deferred=False))
+        def broken_service(argv,**kwargs):
+            return subprocess.CompletedProcess(argv,0,'Id=robotd.service\nLoadState=loaded\nActiveState=inactive\nJob=\n','')
+        with self.assertRaises(m.Error):m.stopped(['robotd.service'],run=broken_service,check_deferred=False)
+
     def test_quiescence_rejects_descendant_cgroup_tasks(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);(root/'robot/child').mkdir(parents=True);(root/'robot/cgroup.procs').write_text('');(root/'robot/child/cgroup.procs').write_text('123\n')

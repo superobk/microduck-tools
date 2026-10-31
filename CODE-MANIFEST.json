@@ -371,7 +371,7 @@
     },
     {
       "path": "calibration/tests/test_upgrade_review.py",
-      "sha256": "4c732de7cc6c4303949772d60f5d1039d124dc824edae714e4583641ec681941"
+      "sha256": "6692e3fea8687d4bcc2a38fbcd0d08f869d401594ee2d2222545ee45fd111202"
     },
     {
       "path": "calibration/web/calibration_web.py",
@@ -439,7 +439,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "4af8373b62fd5b633822f1d675398cb30edaa02e68b28211c38410b2e34dc05d"
+      "sha256": "aef210260f73f227122e74b2c3f49dce945b31c9cbf62e2055ee8da25335decc"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -451,7 +451,7 @@
     },
     {
       "path": "docs/manual-upgrade-0183.zh-CN.md",
-      "sha256": "6372189ac31a2f5d8d1037a5c4875b983a69f369824632f16922e70ae8ddb2ad"
+      "sha256": "4cd7409b993c38372d3740dda1936ac57e6d8a98e95c5b113aa187cc82e1c765"
     },
     {
       "path": "docs/manual-upgrade-image.zh-CN.md",
@@ -459,11 +459,11 @@
     },
     {
       "path": "docs/manual-upgrade-recovery.zh-CN.md",
-      "sha256": "4d6aa644b114532a8a57ce03ac8af605bef3b4d5f761e0abe902680396c160fe"
+      "sha256": "9a07e1dac61ce9ae7e9a674d4e200886f7151df9994b381c23c621a1b133f5cf"
     },
     {
       "path": "docs/manual-upgrade-review.zh-CN.md",
-      "sha256": "273f23a8c10fdc63cea8359229440adc1785b5e617cefd6af163fc92c1ab0b75"
+      "sha256": "5784dddcf37127c49af843f2b1653dd009d25462559917cfcef5fb7f3a3e87fb"
     },
     {
       "path": "docs/manual-upgrade-tools.zh-CN.md",
@@ -487,7 +487,7 @@
     },
     {
       "path": "tools/upgrade-review.py",
-      "sha256": "3f0f5240f2157fe3ef841d84971300b8371784f67a7c6a897a4c9ce51b5b21be"
+      "sha256": "27996c07bfec30e42cf2d53757c6b9108a017e71d38742e1d41edb3ec58a3173"
     }
   ]
 }

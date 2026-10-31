@@ -8,8 +8,9 @@
 | native 构建要求 GLIBC2.35，官方较低 | 官方能启动不表示校正候选可加载 | 相同补丁按 GLIBC2.30 目标重建；读取 ELF DT_VERNEED 表，不再用字符串扫描当 ABI 证据 |
 | ldd 没检查 ONNX 的 dlopen 依赖 | 文件名/软链接可能伪报版本或无法加载 | 有超时的子进程读取真实 OrtGetApiBase、GetVersionString 和 GetApi(23)；升级前后都检查 |
 | 检查全量程序前后不一致 | 钩子可改运行库，复制也可能不完整 | 固定 13+2 个程序清单/SHA，拒绝空/未知清单；板端前后各检查一次 |
+| 直接 stop updaterd 可能截断正在升级的事务 | 状态查询与停止之间仍有竞争 | 先读状态，再用同一个 update.lock 持锁执行 stop；忙则拒绝，不能杀进程或删锁 |
 | 启动旧 updater 会恢复事务并可能自动更新 | 维护流程可能被后台强制更新打断 | 先检查无进行中事务；生成仅 auto_apply=off 的维护配置和持久服务覆盖，原配置不改 |
-| 停止判断只看 is-active | Job、控制进程、子 cgroup 可能尚未结束 | 独立只读 stopped 检查；未安装的新 unit 与查询失败区别处理 |
+| 停止判断只看 is-active | Job、控制进程、子 cgroup 可能尚未结束 | 独立只读 stopped 检查；区分未安装/查询失败，timer不强求service专属PID字段 |
 | 更新完成后还有延迟重启 timer | 单看目标 unit 的 Job 看不到将来的重启命令 | 查 run-* transient timer/service 的实际 ExecStart；自然完成后才停止服务/改配置，不取消未知 timer |
 | 原校正放在正式升级后才迁移 | 比例或源文件问题会让流程卡在半升级 | 在 apply 前生成和核对迁移文件，不改真实配置；非默认比例仍需真实契约确认 |
 | 整体移动 /etc/systemd/system、/var/lib/robot 做回退 | 涉及无关服务，中断后目录归属不明确 | 撤下该恢复循环；同版撤候选只改本次覆盖，完整版本恢复使用已核验系统镜像 |

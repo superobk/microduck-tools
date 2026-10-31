@@ -41,6 +41,7 @@ apply.started/verified.completed 只是记录，断电可能丢失，也可能�
 
 ```bash
 python3 "$REVIEW" deferred --units "$RUN/units.txt"
+flock --nonblock --close "$UPDATER_STATE/update.lock" systemctl stop updaterd
 while read -r unit; do if systemctl is-active --quiet "$unit"; then systemctl stop "$unit"; fi; done < "$RUN/units.txt"
 python3 "$REVIEW" stopped --units "$RUN/units.txt"
 cmp /etc/systemd/system/robotd.service.d/zzzz-manual-0183.conf "$BUNDLE/deploy/robotd-native.conf"
@@ -71,6 +72,7 @@ systemctl start robotd
 
 ```bash
 python3 "$REVIEW" deferred --units "$RUN/units.txt"
+flock --nonblock --close "$UPDATER_STATE/update.lock" systemctl stop updaterd
 while read -r unit; do if systemctl is-active --quiet "$unit"; then systemctl stop "$unit"; fi; done < "$RUN/units.txt"
 python3 "$REVIEW" stopped --units "$RUN/units.txt"
 cmp "$BUNDLE/official/updaterd-bootstrap-aarch64" "$RUN/official/bin/updaterd"

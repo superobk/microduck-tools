@@ -70,9 +70,17 @@ hostname
 uname -m
 getconf GNU_LIBC_VERSION
 python3 --version
+command -v flock
+getent passwd microduck-tools
+getent group robot
+timeout 10 /opt/robot/daemon/current/bin/robotctl update status | tee "$RUN/update-before.txt"
 robotctl version --json > "$RUN/version-before.json"
 robotctl health --json > "$RUN/health-before.json"
 systemctl cat robotd updaterd > "$RUN/private/units-before.txt"
+UPDATER_STATE=$(python3 -c 'import tomllib;print(tomllib.load(open("/etc/robot/updater.toml","rb"))["state_dir"])')
+test -d "$UPDATER_STATE"
+case "$UPDATER_STATE" in /*) ;; *) echo "非绝对state_dir，停止"; exit 1;; esac
+declare -p UPDATER_STATE >> "$RUN/session.env"
 readlink -f /opt/robot/daemon/current > "$RUN/old-release.txt"
 PID=$(systemctl show robotd -p MainPID --value)
 if [ "$PID" -gt 0 ]; then readlink -f "/proc/$PID/exe" > "$RUN/old-robotd-exe.txt"; sha256sum "/proc/$PID/exe" > "$RUN/old-robotd.sha256"; fi
@@ -82,7 +90,7 @@ tar --zstd -xf "$BUNDLE/official/daemon-0.18.3.tar.zst" -C "$RUN/official"
 python3 "$REVIEW" runtime --phase before --official "$RUN/official" --native "$BUNDLE/native" --inputs "$BUNDLE/inputs.json" > "$RUN/runtime-before.json"
 ```
 
-**继续条件：**确为本次板、Linux ARM64、当前套件 0.16.3、Python3.11+；runtime 退出 0；旧安全 hold、mask、Condition、陌生服务覆盖均已核对，不通过删除来放行。缺库/ONNX/GStreamer 时先停止修环境，不手工替换系统 libc，也不以“钩子可能会补齐”代替此次通过。
+**继续条件：**确为本次板、Linux ARM64、当前套件 0.16.3、Python3.11+；runtime 退出 0；更新器状态可查询且没有 pending/applying/未完成事务；实际 updaterd 的 --config 确为 /etc/robot/updater.toml；已有工具账号/robot组。旧安全 hold、mask、Condition、陌生服务覆盖均已核对，不通过删除来放行。缺库/ONNX/GStreamer 时先停止修环境，不手工替换系统 libc，也不以“钩子可能会补齐”代替此次通过。
 
 ## 第 3 步：准备旧校正和备份，然后关闭自动更新
 
@@ -117,13 +125,14 @@ systemctl list-dependencies --reverse robotd updaterd --no-pager | tee "$RUN/rev
 
 ```bash
 python3 "$REVIEW" deferred --units "$RUN/units.txt"
+flock --nonblock --close "$UPDATER_STATE/update.lock" systemctl stop updaterd
 while read -r unit; do
   if systemctl is-active --quiet "$unit"; then systemctl stop "$unit"; fi
 done < "$RUN/units.txt"
 python3 "$REVIEW" stopped --units "$RUN/units.txt"
 ```
 
-反向依赖应在执行 stop 前审阅；如果有非机器人服务，停下单独评估。`stopped` 拒绝残留 PID、Job、子 cgroup 任务或 unit 别名；不要删除 Job 或杀未知进程来通过。
+flock 用两版源码一致的 update.lock 与升级引擎互斥：只有拿到锁才停止 updaterd；锁忙即拒绝、不打断事务，也不删除锁文件。其他机器人服务随后停止。反向依赖应在执行 stop 前审阅；如果有非机器人服务，停下单独评估。`stopped` 拒绝残留 PID、Job、子 cgroup 任务或 unit 别名；不要删除 Job 或杀未知进程来通过。
 
 **下面保存旧程序、配置和工具，并保留一份固定的旧 robotctl。** 后续明确用它调用旧更新器，避免 PATH 指向别的自定义程序。先确认空间足够；备份报错就不升级。
 
@@ -188,6 +197,7 @@ python3 "$REVIEW" deferred --units "$RUN/units.txt"
 
 ```bash
 python3 "$REVIEW" deferred --units "$RUN/units.txt"
+flock --nonblock --close "$UPDATER_STATE/update.lock" systemctl stop updaterd
 while read -r unit; do if systemctl is-active --quiet "$unit"; then systemctl stop "$unit"; fi; done < "$RUN/units.txt"
 python3 "$REVIEW" stopped --units "$RUN/units.txt"
 install -d -m 0755 /var/lib/robot/calibration

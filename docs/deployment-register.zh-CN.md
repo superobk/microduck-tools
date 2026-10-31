@@ -2,7 +2,7 @@
 
 | 工具版本 | 目标 | 准备和软件验证 | 板端状态 |
 |---|---|---|---|
-| 0.4.3 / 2026-10-31 | 当前0.16.3直接到固定0.18.3 | 六步手工指南；故障/中断/镜像恢复；13+2程序固定输入；GLIBC2.30目标重建native，ELF最高要求2.29；189项Python通过无跳过，含25项本轮助手/文档测试和两处真实本地SIGKILL；原生补丁和核心校正/Web未改 | SSH、运行库加载、安装、服务、升级、回退、相机/IMU/性能均NOT_RUN，等另行通知 |
+| 0.4.3 / 2026-10-31 | 当前0.16.3直接到固定0.18.3 | 六步手工指南；故障/中断/镜像恢复；13+2程序固定输入；GLIBC2.30目标重建native，ELF最高要求2.29；190项Python通过无跳过，含26项本轮助手/文档测试和两处真实本地SIGKILL；原生补丁和核心校正/Web未改 | SSH、运行库加载、安装、服务、升级、回退、相机/IMU/性能均NOT_RUN，等另行通知 |
 
 执行入口：[手工主流程](manual-upgrade-0183.zh-CN.md)、[回退与中断](manual-upgrade-recovery.zh-CN.md)、[镜像恢复](manual-upgrade-image.zh-CN.md)、[审查问题与修复](manual-upgrade-review.zh-CN.md)。固定程序SHA与源码身份在 [inputs.json](../deploy/manual-upgrade/inputs.json)。
 

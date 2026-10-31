@@ -237,7 +237,9 @@ def stopped(units, run=subprocess.run, cgroup_root=Path('/sys/fs/cgroup'), check
         if result.returncode:raise Error('Cannot inspect '+unit)
         if props.get('Id')!=unit:raise Error('Unexpected unit alias: '+unit)
         if props.get('ActiveState') not in ('inactive','failed'):raise Error('Service is not stopped: '+unit)
-        if props.get('MainPID')!='0' or props.get('ControlPID')!='0' or props.get('Job') not in ('','0'):raise Error('PID/Job remains: '+unit)
+        if props.get('Job') not in ('','0'):raise Error('Job remains: '+unit)
+        allowed_pids=(None,'0') if unit.endswith('.timer') else ('0',)
+        if props.get('MainPID') not in allowed_pids or props.get('ControlPID') not in allowed_pids:raise Error('PID remains or service PID unavailable: '+unit)
         group=props.get('ControlGroup','')
         if group:
             if not group.startswith('/') or '..' in Path(group).parts:raise Error('Invalid cgroup path')
