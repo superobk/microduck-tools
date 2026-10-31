@@ -25,8 +25,8 @@ python3 -m unittest discover -s calibration/tests -v
 
 - **[菜单与任务脚本：安装 / 配置 / 状态 / 回滚](docs/script-manager.zh-CN.md)**：完整交付包运行 `sudo ./duck.sh`，显示当前状态及下一步；默认预览，板端仍NOT_RUN。
 
-- [0.16.3 直升 0.18.3：手工升级主流程](docs/manual-upgrade-0183.zh-CN.md)
-- [失败回退与中断恢复](docs/manual-upgrade-recovery.zh-CN.md) / [本次审查与修复](docs/manual-upgrade-review.zh-CN.md)
+- [0.16.3 → 0.18.3：脚本升级路径](docs/manual-upgrade-0183.zh-CN.md)
+- 升级顺序：`check → backup → install → configure → services start → status`；中断用 `recover`，回退用 `rollback`，完整回旧系统用救援环境的 `image restore`。命令及状态说明统一见上述指南。
 
 - [统一 Web](calibration/integration-0.16.3/web/calibration_web.py) / [前端](calibration/integration-0.16.3/web/index.html)
 - [摄像头配置模块](calibration/integration-0.16.3/web/camera_config.py)
@@ -60,7 +60,7 @@ python3 calibration/integration-0.16.3/web/calibration_web.py \
 
 - [兼容范围、部署与回滚说明](docs/compatibility.zh-CN.md)
 - [非root服务模板](deploy/microduck-tools.service) / [插件配置示例](deploy/plugins.example.json)
-- 运行包构建：`python3 tools/build-release.py --out /tmp/microduck-tools-0.4.3.tar.gz`
+- 运行包构建：`python3 tools/build-release.py --out /tmp/microduck-tools-0.5.0.tar.gz`
 
 软件回放、假daemon和本机浏览器验证不代表板端运行或硬件验收。完整现场部署审阅与验证记录保留本地deliverables，实际设备操作仍待用户另行通知。
 

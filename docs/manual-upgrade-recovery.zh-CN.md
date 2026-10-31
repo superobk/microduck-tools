@@ -1,5 +1,7 @@
 # 失败时怎么回退、掉线后从哪里继续
 
+> 当前Tools0.5.0会话：先 `sudo ./status.sh`，中断用 `sudo ./recover.sh --apply`，同版官方回退用 `sudo ./rollback.sh --to official --apply`。完整回原0.16.3走救援环境的 `sudo ./image.sh restore --apply`。说明见[脚本升级路径](manual-upgrade-0183.zh-CN.md)。下文为0.4.3手工会话历史，不得对新会话加载旧session.env。
+
 先记住两条：**不要因为命令没返回就再 apply 一次；不要把旧备份整包解压到 /。** 本页板端操作均 NOT_RUN。
 
 ## 掉线后先看事实，不看标记猜结果

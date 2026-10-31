@@ -1,5 +1,7 @@
 # Tools 服务：保留原权限，明确配套 robotctl
 
+> 当前Tools0.5.0用 `sudo ./configure.sh --apply` 接入校正/Tools，再用 `sudo ./services.sh start --apply` 启动；修改IMU/关节用临时维护Web。见[脚本升级路径](manual-upgrade-0183.zh-CN.md)。下文仅对应[0.4.3手工历史流程](manual-upgrade-0183-0.4.3-history.zh-CN.md)第5步，其变量不适用于新会话。
+
 这是主指南第 5 步的补充，不是另一次 daemon 升级。本页板端 NOT_RUN。原机器人服务和 Tools 已停止、备份已完成；TOOL/RUN/BUNDLE 来自主指南 session.env。
 
 **意义：确认已有服务是否可直接沿用。** 不要覆盖陌生服务。以下查询只读。

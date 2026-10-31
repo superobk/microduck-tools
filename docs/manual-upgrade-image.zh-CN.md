@@ -1,5 +1,7 @@
 # 完整退回 0.16.3：先备份原盘，再用原镜像恢复
 
+> 当前Tools0.5.0入口：在独立Linux救援环境的完整bundle中用 `sudo ./image.sh backup --apply` / `sudo ./image.sh restore --apply`，由向导询问原盘和外部镜像。新管理器需要image.sh生成的 `.proof.json`。下文为0.4.3手工镜像历史；不要混用证明格式。当前升级入口见[脚本升级路径](manual-upgrade-0183.zh-CN.md)。
+
 **这是兜底的完整回退方法，不是普通升级时反复执行的步骤。** 必须用独立救援 microSD/USB 启动该板，或将原系统盘接到另一台 Linux 主机。被备份/恢复的原盘不能正在运行或挂载。板端本轮全部 NOT_RUN。
 
 需要：Linux、Python3.11+、GNU dd/coreutils、lsblk；外部备份介质容量大于原盘；稳定供电。先把本包 review.py 复制到救援系统或外部介质，不能为了读取它而挂载原盘。镜像包含密钥/网络/账号，私有保存，不放 GitHub。

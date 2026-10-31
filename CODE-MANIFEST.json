@@ -1,9 +1,9 @@
 {
   "date_local": "2026-10-31",
   "tool_version": "0.5.0",
-  "stage": "scripted-0183-manager",
+  "stage": "scripted-upgrade-path-documentation",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "scope": "task scripts, deployment manager, tests and guides; core calibration/Web/native unchanged; board NOT_RUN",
+  "scope": "canonical 0.16.3 to 0.18.3 task-script upgrade guide and historical redirects; implementation and frozen 0.5.0 bundle unchanged; board NOT_RUN",
   "files": [
     {
       "path": ".gitattributes",
@@ -15,7 +15,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "11c2d922c0b46d1f640dfad515bf56269c6fa63b299dcc580fef97ef0b1aeb9a"
+      "sha256": "ea3eb68d5f88152aa3f8e25c5955a31a3083590dc2efa7aa4cc7920249f5c7bb"
     },
     {
       "path": "VERSION",
@@ -479,7 +479,7 @@
     },
     {
       "path": "docs/daemon-0.18.3-calibration.zh-CN.md",
-      "sha256": "99f1882b95f161a4968b00d9ce7423745b3b7e01d6a8d29bc9d7f3a3e69f7f63"
+      "sha256": "cd069ba5529b384143af4af56819ff71d31fcfe84d0799ff824b2a1043a8115e"
     },
     {
       "path": "docs/daemon-0.18.3-comparison.zh-CN.md",
@@ -487,7 +487,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "27ec50fcd43911e67eba1c11a45f05462ae3f89cf345952202cc01869f6b966a"
+      "sha256": "8ef7f7fcfad55d758b6dbb00b911ede8b500ca6f9cf06acb65cdfa0355a82e49"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -498,28 +498,32 @@
       "sha256": "3aa773e3fc0f28f97a93b3ef6e9749da62840cd1adbab5dd6c77fd7582cbdc62"
     },
     {
+      "path": "docs/manual-upgrade-0183-0.4.3-history.zh-CN.md",
+      "sha256": "f18b5204c7b7978aaf19c03c1c8cda225bf0f4ab77f5f83732387fa9868cc4c7"
+    },
+    {
       "path": "docs/manual-upgrade-0183.zh-CN.md",
-      "sha256": "a6333594c458364a610f6c09ea8635392655a31c94fa11a86a0fc93a08dd8fe4"
+      "sha256": "5e991648f2206331ca0b8c74d43285c5c24b602b85f210473f7ad8c9089c7aee"
     },
     {
       "path": "docs/manual-upgrade-image.zh-CN.md",
-      "sha256": "1fef6521988425fe93f4144ecf7361a94b22561cd03b1c9a20dd39302aa26651"
+      "sha256": "1a11f4f6bbe44944892a5f5d1a6eaaa00a2f48f52c5aec054324abc070a43be8"
     },
     {
       "path": "docs/manual-upgrade-recovery.zh-CN.md",
-      "sha256": "9a07e1dac61ce9ae7e9a674d4e200886f7151df9994b381c23c621a1b133f5cf"
+      "sha256": "18ffee3972f139da4bae82a92c8dce7e48d006168f34404d2a64afd2a6ec968e"
     },
     {
       "path": "docs/manual-upgrade-review.zh-CN.md",
-      "sha256": "92b795b932a473dc096d86745c3de9b8044c1616f71db43329cc198be2feb97a"
+      "sha256": "e2ed2bc517fefc836c60e55afb6258e52d339953c383addceb93890367f4fae7"
     },
     {
       "path": "docs/manual-upgrade-tools.zh-CN.md",
-      "sha256": "8e8cdeb3b06d3af9063fa567aab8c20afaf933295cb240cfed78cc8af0dcef89"
+      "sha256": "3b29e18538f3c1e9e1769b9bd71ca08481d7f95cfc065f1ca902eef5cc84cdb0"
     },
     {
       "path": "docs/script-manager.zh-CN.md",
-      "sha256": "13e9fdfa96475779c2cfca53b58332531ef2355f0fa51d05aeb546e5d3009351"
+      "sha256": "096e5713650aad13ab6eb6eb29a2e2be4a4a2b0a4123176143c7401ea85a3fc3"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
