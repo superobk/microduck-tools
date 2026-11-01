@@ -907,7 +907,9 @@ asyncio.run(h.take())
                 for flag in ("-keyout", "-out"):
                     if argv[0] == "openssl" and flag in argv:
                         Path(argv[argv.index(flag) + 1]).write_bytes(b"FAKE TEST CERT")
-                return SimpleNamespace(stdout="test")
+                return SimpleNamespace(
+                    stdout="not-found" if argv[:2] == ["systemctl", "show"] else "test"
+                )
 
             handoff = Handoff(root / "handoff", root / "systemd", root / "manager")
             user = SimpleNamespace(
@@ -927,9 +929,13 @@ asyncio.run(h.take())
                 return original(path, raw, mode, os.geteuid(), os.getegid())
 
             j.write = write
-            with patch.object(manage, "BASE", root / "addon"), patch.object(
+            with patch(
+                "studio.preflight.check", return_value=dict(ok=True)
+            ), patch.object(manage, "BASE", root / "addon"), patch.object(
                 manage, "CONFIG", root / "config/config.json"
-            ), patch.object(manage, "run", side_effect=run), patch.object(
+            ), patch.object(
+                manage, "run", side_effect=run
+            ), patch.object(
                 manage.pwd, "getpwnam", return_value=user
             ), patch(
                 "grp.getgrnam", return_value=object()

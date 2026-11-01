@@ -1,10 +1,10 @@
 {
   "date_local": "2026-11-01",
   "tool_version": "0.6.0",
-  "stage": "mobile-studio-review-candidate",
+  "stage": "guided-offline-install-flow",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
   "git_base": "9e0df24e25a75ec77b8085db0deb43ea77bfa6f3",
-  "scope": "independent Studio add-on; original calibration/native/manager unchanged; board NOT_RUN",
+  "scope": "one kit/entry delegates frozen manager 0.5.0 and independent Studio; preflight/status/recovery fixes; board NOT_RUN",
   "files": [
     {
       "path": ".gitattributes",
@@ -16,7 +16,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "9121e36fbe63926c781e502fce4ab8c10bf40b4f05257be137a215745b947f82"
+      "sha256": "92e7a334433e37d4c4d1172663d9bfd6f7b40391e3de929b4d7998514bac7433"
     },
     {
       "path": "VERSION",
@@ -500,7 +500,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "1689ef2da3dfb7dae8493310fffc89a0f4f471b4ebc0e669a239820dd0360515"
+      "sha256": "b8fa4028cc09ac4a7b6815b1e7262620863e555a6a4a33129308fa4dd8ce145a"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -511,12 +511,16 @@
       "sha256": "3aa773e3fc0f28f97a93b3ef6e9749da62840cd1adbab5dd6c77fd7582cbdc62"
     },
     {
+      "path": "docs/install-upgrade-simple.zh-CN.md",
+      "sha256": "2e774fa6cc0a39da96fadfb86b635b74366ad5ae3b3f42eaab44721f58f3565b"
+    },
+    {
       "path": "docs/manual-upgrade-0183-0.4.3-history.zh-CN.md",
       "sha256": "f18b5204c7b7978aaf19c03c1c8cda225bf0f4ab77f5f83732387fa9868cc4c7"
     },
     {
       "path": "docs/manual-upgrade-0183.zh-CN.md",
-      "sha256": "5e991648f2206331ca0b8c74d43285c5c24b602b85f210473f7ad8c9089c7aee"
+      "sha256": "2dce52d83de97f5a631182f749bc40a476e4228c9e3951f2e70513c741acb9e2"
     },
     {
       "path": "docs/manual-upgrade-image.zh-CN.md",
@@ -536,11 +540,11 @@
     },
     {
       "path": "docs/script-manager.zh-CN.md",
-      "sha256": "096e5713650aad13ab6eb6eb29a2e2be4a4a2b0a4123176143c7401ea85a3fc3"
+      "sha256": "c1bc5a0043f4e24c1b8020e394eb237c2db50020d11ac1c04f1e45eef3da678b"
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
-      "sha256": "e28a63382a58a048798fa00000dd3933a4094448c858edcf5561e0ddf319204f"
+      "sha256": "bb479b98c580f211f278b428c8bda801ca9fad809486d452a3e9456c38473bfc"
     },
     {
       "path": "docs/studio-0.6.0-plan.zh-CN.md",
@@ -553,6 +557,30 @@
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
       "sha256": "55c3a8428746e75d12ce392f877b385614d45435eb67ca4718bc225766227aea"
+    },
+    {
+      "path": "duck.sh",
+      "sha256": "ac54549e0c81b5882122d7e40e6ead5702e5cf523ad2e4aee2c9082b29873a4b"
+    },
+    {
+      "path": "installer/__init__.py",
+      "sha256": "5968a1ea04adee2f1a2b4049622a290e93b9a55b772a7dc9074ea5d300da5740"
+    },
+    {
+      "path": "installer/assistant.py",
+      "sha256": "e136f0aa3fba9ea55765bd11d6386cd19bb6139828e594a82515ef37f576853c"
+    },
+    {
+      "path": "installer/studio_cli.py",
+      "sha256": "fc7c9567579beb3dfb46a5fc3b696dfe7d952d019f6efe84f6f8f1c089db6c31"
+    },
+    {
+      "path": "installer/tests/test_assistant.py",
+      "sha256": "b49d94eb0d8895681911b4d68894558f88349fc92feb0ea7f40d3d8b132ae807"
+    },
+    {
+      "path": "installer/tests/test_kit_builder.py",
+      "sha256": "a51434487b30301eb67a8fd16f80ff1f74a69e9cf24f9bc5b675d670a26df4e8"
     },
     {
       "path": "studio/__init__.py",
@@ -580,7 +608,7 @@
     },
     {
       "path": "studio/manage.py",
-      "sha256": "85a808a1be43578174ae84a71e92a231b31150268abc1c8aef7e233969d5e4f5"
+      "sha256": "e69a9551192d167fa09b9780792211b6fba9838a8587319e4fa9c8d1c4df520c"
     },
     {
       "path": "studio/package-lock.json",
@@ -589,6 +617,10 @@
     {
       "path": "studio/package.json",
       "sha256": "15990c590062d1743885a0ab60a51e01c385b7eea28094f65d90baaad6044200"
+    },
+    {
+      "path": "studio/preflight.py",
+      "sha256": "bfe818f81c99a945b38229109ea148235348114e8d87d3e1ed187f4da816c9b1"
     },
     {
       "path": "studio/requirements-linux-arm64.lock",
@@ -656,11 +688,15 @@
     },
     {
       "path": "studio/tests/test_studio.py",
-      "sha256": "6256955b087e154a5283baed3039967301916d7a82b2faf449ea3f678914389b"
+      "sha256": "055bcb6d0507e6fe769456a7769b4be00468090a8c63878179f0fed75b58e95e"
+    },
+    {
+      "path": "tools/build-install-kit.py",
+      "sha256": "aa490b012faa58dfc15000ddec94339853de19e76d5e975d9237f193cfd87ec5"
     },
     {
       "path": "tools/build-release.py",
-      "sha256": "bdcebb5b65ccc16eacc39bee7b5869c069114f92d1eeddff356cd0fe9ad19d71"
+      "sha256": "8d114cdb8d24597b52dce8536ac0778e022bc63fa28572a1a5ec52f9c9ebb529"
     },
     {
       "path": "tools/build-studio-assets.py",

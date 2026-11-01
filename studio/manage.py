@@ -28,9 +28,23 @@ SERVICES = ("microduck-studio.service", "microduck-studio-helper.service")
 
 
 def run(*args):
-    return subprocess.run(
-        [str(a) for a in args], check=True, text=True, capture_output=True, timeout=180
-    )
+    try:
+        return subprocess.run(
+            [str(a) for a in args],
+            check=True,
+            text=True,
+            capture_output=True,
+            timeout=180,
+        )
+    except subprocess.CalledProcessError as error:
+        detail = (error.stderr or error.stdout or "").strip()[-2000:]
+        raise RuntimeError(
+            str(args[0]) + " 执行失败（" + str(error.returncode) + "）：" + detail
+        ) from error
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError(
+            str(args[0]) + " 等待超过180秒；先查看status和未完成登记，不重复安装。"
+        ) from error
 
 
 def digest(path):
@@ -280,15 +294,59 @@ def prepare_release(journal, assets, wheels):
 def setup(args, journal):
     if journal.data["phase"] not in ("new", "rolled_back"):
         raise RuntimeError("已有安装/中断登记；先status，再recover或rollback")
-    address = str(ipaddress.ip_address(args.server_ip))
+    ip = ipaddress.ip_address(args.server_ip)
+    if ip.is_unspecified or ip.is_multicast or str(ip) == "255.255.255.255":
+        raise RuntimeError("需要实际固定IPv4，不能使用监听通配/组播/广播地址")
+    address = str(ip)
     if ":" in address:
         raise RuntimeError("首版部署仅审阅IPv4 HTTPS地址")
     if not args.assets or not args.wheels:
         raise RuntimeError("setup需要--assets和--wheels离线目录")
+    from .preflight import check
+
+    preflight = check(args.assets, args.wheels)
+    if not preflight["ok"]:
+        raise RuntimeError(
+            "安装前检查失败："
+            + "；".join(
+                c["item"] + "：" + c["detail"]
+                for c in preflight["checks"]
+                if not c["ok"]
+            )
+        )
     manifest = verify_assets(args.assets)
     run(sys.executable, "-m", "venv", "--help")
-    if (Path("/var/lib/microduck-studio-handoff") / "phone.pending").exists():
+    if any(
+        (Path("/var/lib/microduck-studio-handoff") / n).exists()
+        for n in ("phone.pending", "return.intent")
+    ):
         raise RuntimeError("有未结束手柄交接，先明确hand-back")
+    # Fail before creating an account/venv when names or managed paths already exist.
+    handoff = Handoff()
+    planned = [
+        CONFIG,
+        *[CONFIG.parent / n for n in ("ca.key", "ca.crt", "server.key", "server.crt")],
+        *[handoff.guard_path(u) for u in UNITS],
+        *[
+            Path("/etc/systemd/system") / u
+            for u in (*SERVICES, "microduck-studio.slice")
+        ],
+    ]
+    for path in planned:
+        if path.exists() or path.is_symlink():
+            raise RuntimeError("已有同名文件，先status/recover，未覆盖：" + str(path))
+    for unit in SERVICES:
+        load = run(
+            "systemctl", "show", unit, "-p", "LoadState", "--value"
+        ).stdout.strip()
+        if load != "not-found":
+            raise RuntimeError("已有服务或状态未知，未覆盖：" + unit + " / " + load)
+    try:
+        import grp
+
+        grp.getgrnam("robot")
+    except KeyError:
+        raise RuntimeError("缺少daemon部署的robot组，不创建Studio账号")
     try:
         user = pwd.getpwnam("microduck-studio")
     except KeyError:
@@ -309,14 +367,6 @@ def setup(args, journal):
         or user.pw_shell not in ("/usr/sbin/nologin", "/sbin/nologin")
     ):
         raise RuntimeError("已有studio账号用途不匹配")
-    try:
-        import grp
-
-        grp.getgrnam("robot")
-    except KeyError:
-        raise RuntimeError(
-            "缺少daemon部署的robot组，请核对Unix socket读写权限；不放宽为全局可写"
-        )
     run("usermod", "-a", "-G", "robot", "microduck-studio")
     journal.data = dict(
         schema=1, phase="preparing", files=[], assets=manifest, created=time.time()
@@ -400,7 +450,6 @@ def setup(args, journal):
         camera_port=8080,
     )
     journal.write(CONFIG, json.dumps(cfg, indent=2).encode(), 0o640, 0, user.pw_gid)
-    handoff = Handoff()
     handoff.private()
     handoff.manager.mkdir(mode=0o700, parents=True, exist_ok=True)
     for unit in UNITS:
@@ -441,54 +490,195 @@ def setup(args, journal):
     )
 
 
-def status():
-    print("Microduck Studio " + VERSION + " | 板端验收 NOT_RUN")
-    if not STATE.joinpath("install.json").exists():
-        print("安装状态: 未安装（无独立安装登记）")
-        return
-    journal = Journal()
-    print("安装状态: " + journal.data["phase"])
+def rollback_install(journal):
+    if any(
+        (Path("/var/lib/microduck-studio-handoff") / n).exists()
+        for n in ("phone.pending", "return.intent")
+    ):
+        raise RuntimeError("有手柄交接记录；先明确hand-back，不能删除启动保护")
     journal.verify()
-    if journal.data.get("release_ready"):
-        verify_release(journal.data["release"])
-    print("登记文件与源资产: 哈希一致；旧套件独立保留")
-    if CONFIG.exists():
-        cfg = cfg_read()
-        print("界面: " + cfg["public_origin"] + "/studio/")
-        print(
-            "真实控制: "
-            + str(cfg["controls_enabled"])
-            + " | 相机: "
-            + str(cfg["camera_enabled"])
+    registered = {row["path"] for row in journal.data["files"]}
+    for unit in SERVICES:
+        path = Path("/etc/systemd/system") / unit
+        if str(path) not in registered or not path.exists():
+            continue
+        load = run(
+            "systemctl", "show", unit, "-p", "LoadState", "--value"
+        ).stdout.strip()
+        if load == "not-found":
+            continue
+        if load not in ("loaded", "error", "bad-setting", "masked", "merged"):
+            raise RuntimeError("自有服务加载状态未知，停止恢复：" + unit)
+        run("systemctl", "stop", unit)
+    journal.rollback()
+    release = Path(journal.data.get("release", "/nonexistent"))
+    if release.exists() and not (release / "STUDIO-RELEASE.json").exists():
+        release.rename(
+            release.with_name(release.name + "-interrupted-" + str(time.time_ns()))
         )
-    print(
-        run(
-            "systemctl",
-            "show",
-            *SERVICES,
-            "microduck-studio.slice",
-            "-p",
-            "Id",
-            "-p",
-            "ActiveState",
-            "-p",
-            "MainPID",
-            "-p",
-            "CPUQuotaPerSecUSec",
-            "-p",
-            "MemoryHigh",
-            "-p",
-            "MemoryMax",
-            "-p",
-            "MemoryCurrent",
-        ).stdout
+    run("systemctl", "daemon-reload")
+    print("已撤销独立Studio服务/配置；版本与证据保留，robotd和旧Tools未切换。")
+
+
+def status_report():
+    result = dict(
+        version=VERSION,
+        installed=False,
+        files_verified=False,
+        phase="not_installed",
+        ok=True,
+        units={},
+        settings={},
+        problems=[],
+        busy=False,
+        hardware="NOT_RUN",
+        next="setup",
     )
-    pending = Path("/var/lib/microduck-studio-handoff/phone.pending").exists()
-    intent = Path("/var/lib/microduck-studio-handoff/return.intent").exists()
-    print(
-        "手柄交接: "
-        + ("待明确交还；不会自动重启手柄" if pending or intent else "无未完成交接")
+    result["handoff_pending"] = any(
+        (Path("/var/lib/microduck-studio-handoff") / n).exists()
+        for n in ("phone.pending", "return.intent")
     )
+    lock_fd = None
+    try:
+        if not STATE.joinpath("install.json").exists():
+            return result
+        info = STATE.lstat()
+        if STATE.is_symlink() or info.st_uid != os.geteuid() or info.st_mode & 0o077:
+            raise RuntimeError("安装登记目录不是当前root私有目录")
+        lock_path = STATE / "lifecycle.lock"
+        if lock_path.exists():
+            lock_fd = os.open(lock_path, os.O_RDONLY | os.O_NOFOLLOW)
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+            except BlockingIOError:
+                result.update(busy=True, phase="busy", next="wait")
+                return result
+        journal = Journal(STATE)
+        result.update(phase=journal.data["phase"], release=journal.data.get("release"))
+        journal.verify()
+        if journal.data.get("release_ready"):
+            verify_release(journal.data["release"])
+        result["files_verified"] = True
+        result["installed"] = journal.data["phase"] == "installed"
+        if CONFIG.exists():
+            cfg = cfg_read()
+            result["settings"] = {
+                k: cfg.get(k)
+                for k in ("public_origin", "controls_enabled", "camera_enabled")
+            }
+        if platform.system() == "Linux":
+            raw = run(
+                "systemctl",
+                "show",
+                *SERVICES,
+                "microduck-studio.slice",
+                "-p",
+                "Id",
+                "-p",
+                "ActiveState",
+                "-p",
+                "MainPID",
+                "-p",
+                "CPUQuotaPerSecUSec",
+                "-p",
+                "MemoryHigh",
+                "-p",
+                "MemoryMax",
+                "-p",
+                "MemoryCurrent",
+            ).stdout
+            for block in raw.strip().split("\n\n"):
+                values = dict(
+                    line.split("=", 1) for line in block.splitlines() if "=" in line
+                )
+                if values.get("Id"):
+                    result["units"][values["Id"]] = values
+        result["handoff_pending"] = any(
+            (Path("/var/lib/microduck-studio-handoff") / n).exists()
+            for n in ("phone.pending", "return.intent")
+        )
+        result["next"] = (
+            "recover"
+            if not result["installed"]
+            else (
+                "hand-back"
+                if result["handoff_pending"]
+                else (
+                    "pair"
+                    if result["units"].get(SERVICES[0], {}).get("ActiveState")
+                    == "active"
+                    else "start"
+                )
+            )
+        )
+    except (
+        OSError,
+        ValueError,
+        RuntimeError,
+        KeyError,
+        subprocess.SubprocessError,
+    ) as e:
+        result.update(ok=False, next="review")
+        result["problems"].append(str(e))
+    finally:
+        if lock_fd is not None:
+            os.close(lock_fd)
+    return result
+
+
+def status(as_json=False):
+    report = status_report()
+    if as_json:
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return
+    print(
+        "Studio "
+        + VERSION
+        + " | "
+        + {
+            "not_installed": "未安装",
+            "installed": "已安装",
+            "preparing": "安装未完成",
+            "configuring": "配置未完成",
+            "rolled_back": "已回退",
+        }.get(report["phase"], report["phase"])
+    )
+    if report.get("busy"):
+        print("正在执行安装/配置，等待原任务；不要运行recover或重复安装。")
+    print(
+        "登记检查："
+        + (
+            "任务运行中，完成后复核"
+            if report.get("busy")
+            else (
+                "异常：" + "；".join(report["problems"])
+                if not report["ok"]
+                else "文件哈希一致" if report.get("files_verified") else "尚无安装登记"
+            )
+        )
+    )
+    if report["settings"]:
+        cfg = report["settings"]
+        print("界面：" + str(cfg.get("public_origin")) + "/studio/")
+        print(
+            "磁盘开关：控制="
+            + str(cfg.get("controls_enabled"))
+            + " / Camera="
+            + str(cfg.get("camera_enabled"))
+            + "；网页另核对运行值"
+        )
+    for name, unit in report["units"].items():
+        print(
+            "  "
+            + name
+            + "："
+            + unit.get("ActiveState", "未知")
+            + " / PID "
+            + unit.get("MainPID", "未知")
+        )
+    if report.get("handoff_pending"):
+        print("手柄：待明确交还，不自动恢复")
+    print("下一步：" + report["next"] + " | 板端验收 NOT_RUN")
 
 
 def main():
@@ -496,6 +686,7 @@ def main():
     p.add_argument(
         "command",
         choices=[
+            "doctor",
             "setup",
             "start",
             "status",
@@ -508,6 +699,7 @@ def main():
             "demo",
         ],
     )
+    p.add_argument("--json", action="store_true")
     p.add_argument("--apply", action="store_true")
     p.add_argument("--confirm", default="")
     p.add_argument("--server-ip")
@@ -539,8 +731,30 @@ def main():
         print(base["public_origin"] + "/studio/ | SIMULATION / NO HARDWARE", flush=True)
         web.run_app(create_app(base), host="127.0.0.1", port=args.port, access_log=None)
         return
+    if args.command == "doctor":
+        from .preflight import check
+
+        result = (
+            check(args.assets, args.wheels)
+            if args.assets and args.wheels
+            else dict(ok=False, checks=[], error="需要离线资产/wheel目录")
+        )
+        print(
+            json.dumps(result, ensure_ascii=False, indent=2)
+            if args.json
+            else "安装检查："
+            + ("通过" if result["ok"] else "未通过")
+            + "\n"
+            + "\n".join(
+                ("[通过] " if c["ok"] else "[待处理] ") + c["item"] + "：" + c["detail"]
+                for c in result["checks"]
+            )
+        )
+        if not result["ok"]:
+            raise SystemExit(1)
+        return
     if args.command == "status":
-        status()
+        status(args.json)
         return
     if not args.apply:
         print(
@@ -562,27 +776,7 @@ def main():
                 raise RuntimeError("需要--server-ip板端固定局域网地址")
             setup(args, journal)
         elif args.command in ("recover", "rollback"):
-            # Never remove the reboot guard while a phone handoff is pending.
-            if any(
-                (Path("/var/lib/microduck-studio-handoff") / n).exists()
-                for n in ("phone.pending", "return.intent")
-            ):
-                raise RuntimeError("有手柄交接记录；先明确hand-back，不能删除启动保护")
-            journal.verify()
-            for unit in SERVICES:
-                run("systemctl", "stop", unit)
-            journal.rollback()
-            release = Path(journal.data.get("release", "/nonexistent"))
-            if release.exists() and not (release / "STUDIO-RELEASE.json").exists():
-                release.rename(
-                    release.with_name(
-                        release.name + "-interrupted-" + str(time.time_ns())
-                    )
-                )
-            run("systemctl", "daemon-reload")
-            print(
-                "已卸下独立Studio服务/配置；版本文件与证据保留；未切换robotd或旧Tools"
-            )
+            rollback_install(journal)
         elif args.command == "hand-back":
             run("systemctl", "start", SERVICES[1])
             print(
