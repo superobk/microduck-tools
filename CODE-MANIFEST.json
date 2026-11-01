@@ -1,9 +1,10 @@
 {
-  "date_local": "2026-10-31",
-  "tool_version": "0.5.0",
-  "stage": "scripted-upgrade-path-documentation",
+  "date_local": "2026-11-01",
+  "tool_version": "0.6.0",
+  "stage": "mobile-studio-review-candidate",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "scope": "canonical 0.16.3 to 0.18.3 task-script upgrade guide and historical redirects; implementation and frozen 0.5.0 bundle unchanged; board NOT_RUN",
+  "git_base": "9e0df24e25a75ec77b8085db0deb43ea77bfa6f3",
+  "scope": "independent Studio add-on; original calibration/native/manager unchanged; board NOT_RUN",
   "files": [
     {
       "path": ".gitattributes",
@@ -11,15 +12,15 @@
     },
     {
       "path": ".gitignore",
-      "sha256": "e8b5d5bf4d73f067b04f393d5fd85f29673a92e5c4d49d2c73f290c4f8542096"
+      "sha256": "3c1b265d5f9ff5f80e0c7c7348e72458baef271eb66d478cd460764d9c02ef6c"
     },
     {
       "path": "README.md",
-      "sha256": "ea3eb68d5f88152aa3f8e25c5955a31a3083590dc2efa7aa4cc7920249f5c7bb"
+      "sha256": "9121e36fbe63926c781e502fce4ab8c10bf40b4f05257be137a215745b947f82"
     },
     {
       "path": "VERSION",
-      "sha256": "a0ad50640139a524f86591157145bf1d4674ea9c065bfea21558f0f7b04430c8"
+      "sha256": "97a5d6e540a6120d09c39ddb667e0e8e2bac7fcc2ffef813b82e08fd60365bce"
     },
     {
       "path": "calibration/common/apply_source_patch.py",
@@ -470,6 +471,18 @@
       "sha256": "b47894ce056a9395f67c07787543c3ae2cc80371861a80a2b44fe07400a5bcd6"
     },
     {
+      "path": "deploy/studio/microduck-studio-helper.service",
+      "sha256": "369b85e94ed3f1628504152e7f5af94a3a03b368b6a301dab7e6867d496459f9"
+    },
+    {
+      "path": "deploy/studio/microduck-studio.service",
+      "sha256": "ba8a0f8b19a866ba3b08a79cb80e65589b7295e493f26d0b53c5c3217535d9db"
+    },
+    {
+      "path": "deploy/studio/microduck-studio.slice",
+      "sha256": "9acb5100332a5776e4d6c74db2d7a158c4294f6865a8f7fdacef843d89acc7d3"
+    },
+    {
       "path": "docs/compatibility.zh-CN.md",
       "sha256": "6b6bb59db32f2dca45d42c53473c8395d4391d504254fb36a9a7d94bfbdeb476"
     },
@@ -487,7 +500,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "8ef7f7fcfad55d758b6dbb00b911ede8b500ca6f9cf06acb65cdfa0355a82e49"
+      "sha256": "cf4907caeaf47acf5b4f8e66767ee95749a8f4d63caed3cfa0b2c016da867d4e"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -526,12 +539,136 @@
       "sha256": "096e5713650aad13ab6eb6eb29a2e2be4a4a2b0a4123176143c7401ea85a3fc3"
     },
     {
+      "path": "docs/studio-0.6.0-guide.zh-CN.md",
+      "sha256": "e28a63382a58a048798fa00000dd3933a4094448c858edcf5561e0ddf319204f"
+    },
+    {
+      "path": "docs/studio-0.6.0-plan.zh-CN.md",
+      "sha256": "80c285a433fb54b7ddfffcf33bb5383d20f30a2c2297b012b46e47d02578238f"
+    },
+    {
+      "path": "docs/studio-0.6.0-validation.zh-CN.md",
+      "sha256": "7501db8a687d90bd2f749b9787db7e947d02e777cdcf38bb3b729dfcc1e45d77"
+    },
+    {
       "path": "docs/validation-0.3.0.zh-CN.md",
       "sha256": "55c3a8428746e75d12ce392f877b385614d45435eb67ca4718bc225766227aea"
     },
     {
+      "path": "studio/__init__.py",
+      "sha256": "b0fbc2ee831bb1c57148caedcd7d00fc3697ecf8927ce2109a468d45f5d54705"
+    },
+    {
+      "path": "studio/core.py",
+      "sha256": "2b2d6ddf37428d9a54125fc2464b7bc90449e589c7858eb6ece0468f25e22880"
+    },
+    {
+      "path": "studio/diagnostics.py",
+      "sha256": "ac653df7b76718774e672f9c599b25ce4e3aec4db927885d54d8dde2c0e5fa5c"
+    },
+    {
+      "path": "studio/helper.py",
+      "sha256": "59b57e9d004bb0eb0b260ee303b0dd5342a69ff6a8c49dabdf3a52bc2cc63b67"
+    },
+    {
+      "path": "studio/ipc.py",
+      "sha256": "d8e10e5fa9c6d06a75d59550ef4dcc89d76fba4e5e6a76b200881809140157e5"
+    },
+    {
+      "path": "studio/licenses/onnxruntime-MIT.txt",
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+    },
+    {
+      "path": "studio/manage.py",
+      "sha256": "85a808a1be43578174ae84a71e92a231b31150268abc1c8aef7e233969d5e4f5"
+    },
+    {
+      "path": "studio/package-lock.json",
+      "sha256": "02b09ccb46995945e084fff22db84a76fed679234f681c7fd4c1d286880b0cfc"
+    },
+    {
+      "path": "studio/package.json",
+      "sha256": "15990c590062d1743885a0ab60a51e01c385b7eea28094f65d90baaad6044200"
+    },
+    {
+      "path": "studio/requirements-linux-arm64.lock",
+      "sha256": "851b31727f01ba334a6a8f8bd3aa8ec1937de0f9bce15907e3b62dadff922775"
+    },
+    {
+      "path": "studio/requirements.txt",
+      "sha256": "1d3fc70cc6c68b4c6d05e2e5d94d679476e0ae1cfb5e01176836cf202d4f174a"
+    },
+    {
+      "path": "studio/server.py",
+      "sha256": "dc3348f6abd74189aff94cd9ce3ac3072eedf5a3910e4be95cc3129f4f3ca6ab"
+    },
+    {
+      "path": "studio/static/app.js",
+      "sha256": "1ae329bfafeff7b59c033c2a2ee88842b4f753666b102b185460abc4f78f7ecd"
+    },
+    {
+      "path": "studio/static/calibration-mobile.css",
+      "sha256": "b14c4f5c1b1ef460a158f9b034d2bb5c9097eab76d09ab9cb7d0462b15594a18"
+    },
+    {
+      "path": "studio/static/calibration-mobile.js",
+      "sha256": "b5237e20b2b10eb8d6b019678c367662dd8f92deb9c66fc9b2674be38801541a"
+    },
+    {
+      "path": "studio/static/feedback.js",
+      "sha256": "7c689540197fb0c793745f23ffb5798f4ab6bcfbd58baea63f144acd3156c104"
+    },
+    {
+      "path": "studio/static/index.html",
+      "sha256": "d0bc6646ec5638362d2b1bf36d7480229328edb970aef449e28e63ea89dac1e4"
+    },
+    {
+      "path": "studio/static/inputs.js",
+      "sha256": "338408eea71482bd402b7120ec1115d9cbde00cc7f99a1591ccf8216c038a7d7"
+    },
+    {
+      "path": "studio/static/scene.js",
+      "sha256": "ff56030100227985be69e548619bcb6a33d6aacb2f801927e6959a05be4e298a"
+    },
+    {
+      "path": "studio/static/semantic-worker.js",
+      "sha256": "c5709431735e93adc03343d5b58e60a2b7ae44f489fb599c69dd2cbb65556498"
+    },
+    {
+      "path": "studio/static/simulation.js",
+      "sha256": "65f93758e2194fe0437645e00ec6cb416bf5cf74029e3213e26ad343b20a8618"
+    },
+    {
+      "path": "studio/static/style.css",
+      "sha256": "12cde293663ba40642669195c535d6bf710d5070d7eaaeb3093eb865f1e0d659"
+    },
+    {
+      "path": "studio/static/vision-quality.js",
+      "sha256": "c4d5d74bce3470554e771340d09e47268a4d75c175cb81270d267d8a761ec29f"
+    },
+    {
+      "path": "studio/tests/feedback.test.js",
+      "sha256": "431475c1136171f17ba15845583341c8ef00c73fcac36055249a5573a83b1565"
+    },
+    {
+      "path": "studio/tests/inputs.test.js",
+      "sha256": "efec18bc8ec3b80012432695f5d8d74891acae76dcc5086e9d96472e759c46b8"
+    },
+    {
+      "path": "studio/tests/test_studio.py",
+      "sha256": "20d013dcb115ff5c84a1d557e65423045eb224124676a06182212cdbfdfc3a5c"
+    },
+    {
       "path": "tools/build-release.py",
-      "sha256": "f230e84516c2932e12a9e31702e61dc3a331bb0978d4793b34de7149a9de40ea"
+      "sha256": "bdcebb5b65ccc16eacc39bee7b5869c069114f92d1eeddff356cd0fe9ad19d71"
+    },
+    {
+      "path": "tools/build-studio-assets.py",
+      "sha256": "a1f389bea7bd07334d6fce521d45f7100e35ea92965e7a50904481cad73a75c6"
+    },
+    {
+      "path": "tools/build-studio-bundle.py",
+      "sha256": "f5aeaf490b0a5ad75973cd726a736d74e6aee13f1529b56604fe172ffca81c73"
     },
     {
       "path": "tools/check-native.py",
@@ -544,6 +681,22 @@
     {
       "path": "tools/microduck-dryrun.py",
       "sha256": "a0d70e110dff0633f90ac3820cc24d1a5894265c65189b347431d9c946cbf034"
+    },
+    {
+      "path": "tools/studio-browser-qa.py",
+      "sha256": "ea8e4117be7e1d9f1e3c3735b864a8eeb844e3aaff21baf94dec675c7743eb29"
+    },
+    {
+      "path": "tools/studio-legacy-mobile-qa.py",
+      "sha256": "d86affa601e01194c216cc0249da824ea45d772e5e44713a041cbb36e9654d89"
+    },
+    {
+      "path": "tools/studio-semantic-qa.js",
+      "sha256": "c49adfec04cac593baf5cce25bd8bfd1b4956e7bec86e1e1296115c31a318436"
+    },
+    {
+      "path": "tools/studio.sh",
+      "sha256": "f4757abcd0ebd8abff895233286ff36d4dbeb48c2ee114b8639bf9bceb35711f"
     },
     {
       "path": "tools/upgrade-review.py",

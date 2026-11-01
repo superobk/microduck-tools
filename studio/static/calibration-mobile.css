@@ -1,0 +1,134 @@
+/* Gateway-only enhancement: old deployed runtime files and POST contracts stay unchanged. */
+@media (max-width: 700px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  header,
+  .header,
+  .topbar {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    padding: 12px !important;
+  }
+  .layout,
+  .split,
+  .two-modes,
+  .grid2 {
+    display: block !important;
+  }
+  .sidebar,
+  aside {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+  }
+  .main,
+  main,
+  .content {
+    padding: 12px !important;
+    min-width: 0 !important;
+  }
+  .card {
+    min-width: 0 !important;
+    margin-bottom: 12px !important;
+  }
+  input,
+  select,
+  button {
+    min-height: 44px !important;
+    font-size: 16px !important;
+    max-width: 100% !important;
+  }
+  .jointrow {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    border: 1px solid #664021 !important;
+    margin-bottom: 10px !important;
+  }
+  .jointhead {
+    display: none !important;
+  }
+  .jointrow > :nth-child(2) {
+    grid-column: 1/3;
+    font-weight: bold;
+    color: #ffb26c;
+  }
+  .fourcol {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .kv,
+  .rowline,
+  .buttons {
+    flex-wrap: wrap !important;
+  }
+  .mono,
+  pre {
+    overflow-wrap: anywhere !important;
+    white-space: pre-wrap !important;
+  }
+  .nav,
+  .tabs,
+  nav {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    width: auto !important;
+  }
+}
+
+@media (max-width: 700px) {
+  #app {
+    display: block !important;
+  }
+  .cols,
+  .split,
+  .gyro-grid,
+  .camera-grid {
+    display: block !important;
+  }
+  .nav {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px !important;
+  }
+  .nav .brand,
+  .nav > small {
+    grid-column: 1/3;
+  }
+  .nav-foot {
+    display: none !important;
+  }
+  .top {
+    display: block !important;
+  }
+  .main {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  .tablewrap {
+    overflow-x: auto !important;
+  }
+}
+.mobile-joint-label {
+  display: block;
+  margin: 0;
+}
+.mobile-joint-label > span {
+  display: none;
+}
+@media (max-width: 700px) {
+  .mobile-joint-label > span {
+    display: block;
+    font-size: 11px;
+    color: #c8bba7;
+    margin-bottom: 4px;
+  }
+  .jointrow > .mono:before {
+    content: "实际角度 °：";
+    font-size: 11px;
+  }
+}

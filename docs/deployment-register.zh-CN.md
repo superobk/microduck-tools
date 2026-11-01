@@ -2,6 +2,7 @@
 
 | 工具版本 | 目标 | 准备和软件验证 | 板端状态 |
 |---|---|---|---|
+| 0.6.0 / 2026-11-01 | 固定0.18.3/API47的独立移动Studio | 独立HTTPS/助手/资源组与安装恢复登记；手机/桌面界面、七场景、真实反馈、Policy/手柄、离线Worker语义；测试见Studio验收登记；原0.5.0套件冻结 | 所有板端安装/配对/交接/运动/资源与实际设备验收NOT_RUN |
 | 0.5.0 / 2026-10-31 | 固定0.16.3→0.18.3的菜单/任务管理 | 十个入口脚本、默认预览、分层运行状态、外部备份、独占更新锁、安装意图日志、中断恢复、同版官方/安装前撤销/救援镜像回退；236项Python通过无跳过，其中46项管理器测试；原生程序及核心Web/校正未改 | 板端安装、服务、总线、镜像与物理验收全部NOT_RUN |
 | 0.4.3 / 2026-10-31 | 当前0.16.3直接到固定0.18.3 | 六步手工指南；故障/中断/镜像恢复；13+2程序固定输入；GLIBC2.30目标重建native，ELF最高要求2.29；190项Python通过无跳过，含26项本轮助手/文档测试和两处真实本地SIGKILL；原生补丁和核心校正/Web未改 | SSH、运行库加载、安装、服务、升级、回退、相机/IMU/性能均NOT_RUN，等另行通知 |
 
@@ -14,3 +15,5 @@
 当前完整安装包位于 `/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-manager-20261031`；旧0.4.3手工包为 `/Users/bou/Workspace/Duckduck/deliverables/microduck-0183-manual-review-20261031`，仅留历史。按现有仓库规则只提交源码、手册、模板、输入摘要和测试，不提交真实配置/账号/系统镜像、巨大编译缓存或二进制；本地交付包含已编译候选、固定官方包和证据。旧0.4.2及第一版直升归档保留作历史，不再执行其中整体搬移系统目录的恢复循环。
 
 2026-10-31 文档入口同步：README、0.18.3部署页与旧回退/镜像/Tools页统一指向简明指南的脚本命令；旧六步全文单列历史。脚本和固定程序未改，继续使用冻结的0.5.0完整bundle，不替换正在进行会话的tool目录。26项既有升级审查测试通过，新增文档链接/命令入口本地校验通过；指南增量、校验和源码快照留存在 `deliverables/microduck-tools-upgrade-path-20261031`；板端仍NOT_RUN。
+
+2026-11-01 Studio 0.6.0：新增独立候选包 `/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-studio-20261101`；入口为包内 `studio.sh`，源码入口 `tools/studio.sh`。配置 `/etc/microduck-studio/config.json`，运行版本 `/opt/microduck-tools/studio/releases/0.6.0`，安装登记 `/var/lib/microduck-studio-install`，与旧 `/opt/microduck-tools/current`、manager会话及robotd/current分离。源码在 `feat/mobile-studio-0.6.0` 供PR审阅，不自动合并。详见[统一设计](studio-0.6.0-plan.zh-CN.md)、[操作指南](studio-0.6.0-guide.zh-CN.md)、[软件验收及现场清单](studio-0.6.0-validation.zh-CN.md)。旧0.5.0归档SHA仍为 `d17bc4444d8c3fd817e2ed212bdb7001330680ad0fbe97fe30ec5417135d8790`，原生二进制/补丁与核心校正Web未修改。
