@@ -500,7 +500,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "cf4907caeaf47acf5b4f8e66767ee95749a8f4d63caed3cfa0b2c016da867d4e"
+      "sha256": "1689ef2da3dfb7dae8493310fffc89a0f4f471b4ebc0e669a239820dd0360515"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -548,7 +548,7 @@
     },
     {
       "path": "docs/studio-0.6.0-validation.zh-CN.md",
-      "sha256": "7501db8a687d90bd2f749b9787db7e947d02e777cdcf38bb3b729dfcc1e45d77"
+      "sha256": "954ac47a48837f9edada64adb8681da2b9bff98793a08794769dbcacc6e39853"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -572,7 +572,7 @@
     },
     {
       "path": "studio/ipc.py",
-      "sha256": "d8e10e5fa9c6d06a75d59550ef4dcc89d76fba4e5e6a76b200881809140157e5"
+      "sha256": "c43f3cc5c516105396be0d1f5cc75b0d06b070714574b49df8feedf7943775ee"
     },
     {
       "path": "studio/licenses/onnxruntime-MIT.txt",
@@ -656,7 +656,7 @@
     },
     {
       "path": "studio/tests/test_studio.py",
-      "sha256": "20d013dcb115ff5c84a1d557e65423045eb224124676a06182212cdbfdfc3a5c"
+      "sha256": "6256955b087e154a5283baed3039967301916d7a82b2faf449ea3f678914389b"
     },
     {
       "path": "tools/build-release.py",

@@ -196,6 +196,51 @@ class CoreTests(unittest.TestCase):
         with self.assertRaises(Refused):
             e.submit("a", r, f, "h")
 
+    def test_camera_identity_accepts_official_nonroot_uid_and_rejects_wrong_peer(self):
+        from studio.ipc import Identity, ROOT
+        from unittest.mock import MagicMock
+        import struct
+
+        known = json.loads((ROOT / "deploy/manual-upgrade/inputs.json").read_text())
+        identity = Identity(local=True)
+        identity.info = {"pid": 123}
+        client = MagicMock()
+        client.__enter__.return_value = client
+        client.getsockopt.return_value = struct.pack("3i", 123, 1001, 1001)
+        client.recv.return_value = (
+            json.dumps(
+                dict(
+                    id=1,
+                    result=dict(
+                        api_version=47,
+                        daemon_version="0.18.3",
+                        revision=known["base_revision"],
+                    ),
+                )
+            )
+            + "\n"
+        ).encode()
+        original = Path.read_text
+
+        def read(path, *a, **kw):
+            return (
+                "Name: mediad\nUid:\t1001\t1001\t1001\t1001\n"
+                if str(path) == "/proc/123/status"
+                else original(path, *a, **kw)
+            )
+
+        with patch.object(identity, "executable", return_value=True), patch(
+            "studio.ipc.socket.socket", return_value=client
+        ), patch("studio.ipc.socket.SO_PEERCRED", 17, create=True), patch.object(
+            Path, "read_text", read
+        ):
+            self.assertTrue(identity.camera())
+            client.getsockopt.return_value = struct.pack("3i", 123, 0, 0)
+            self.assertFalse(identity.camera())
+            client.getsockopt.return_value = struct.pack("3i", 999, 1001, 1001)
+            self.assertFalse(identity.camera())
+        client.connect.assert_called_with("/run/mediad/media.sock")
+
     def test_diagnostics_historical_temperature_labeled(self):
         s = ready()
         s.health["motors"] = dict(max_c=70, hottest="left_knee")

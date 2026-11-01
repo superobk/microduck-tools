@@ -268,13 +268,18 @@ class Identity:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
             client.settimeout(2)
             client.connect("/run/mediad/media.sock")
-            _, uid, _ = struct.unpack(
+            pid, uid, _ = struct.unpack(
                 "3i", client.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12)
             )
-            pid, _, _ = struct.unpack(
-                "3i", client.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12)
+            # Official mediad runs as User=mediad. Bind the endpoint to its actual
+            # systemd PID and real UID; root is required for the verifier, not the camera.
+            status = Path(f'/proc/{self.info["pid"]}/status').read_text()
+            actual_uid = int(
+                next(
+                    line for line in status.splitlines() if line.startswith("Uid:")
+                ).split()[1]
             )
-            if pid != self.info["pid"] or uid != 0:
+            if pid != self.info["pid"] or uid != actual_uid:
                 return False
             client.sendall(
                 b'{"jsonrpc":"2.0","id":1,"method":"hello","params":{"api_version":47}}\n'
