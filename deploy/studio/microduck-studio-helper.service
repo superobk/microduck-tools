@@ -1,0 +1,23 @@
+[Unit]
+Description=Microduck Studio restricted handoff/BlueZ helper
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=@RELEASE@
+ExecStart=@RELEASE@/venv/bin/python -m studio.helper
+Slice=microduck-studio.slice
+StateDirectory=microduck-studio-handoff
+StateDirectoryMode=0700
+UMask=0077
+Restart=no
+TimeoutStopSec=3
+KillMode=control-group
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/run /var/lib/microduck-studio-handoff /var/lib/microduck-tools-manager
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX

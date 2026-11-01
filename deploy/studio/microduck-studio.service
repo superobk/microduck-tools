@@ -1,0 +1,28 @@
+[Unit]
+Description=Microduck Studio HTTPS gateway (nonroot, optional)
+Requires=microduck-studio-helper.service
+After=microduck-studio-helper.service
+[Service]
+Type=simple
+User=microduck-studio
+Group=microduck-studio
+SupplementaryGroups=robot
+WorkingDirectory=@RELEASE@
+ExecStart=@RELEASE@/venv/bin/python -m studio.server --config /etc/microduck-studio/config.json
+Slice=microduck-studio.slice
+StateDirectory=microduck-studio
+StateDirectoryMode=0700
+UMask=0077
+Restart=no
+TimeoutStopSec=5
+KillMode=control-group
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/microduck-studio
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+[Install]
+WantedBy=multi-user.target

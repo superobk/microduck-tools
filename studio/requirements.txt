@@ -1,0 +1,3 @@
+# Optional Studio only. Legacy calibration Web remains standard-library-only.
+aiohttp==3.13.2
+dbus-next==0.2.3

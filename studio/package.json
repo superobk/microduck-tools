@@ -1,0 +1,10 @@
+{
+  "name": "microduck-studio-browser-assets",
+  "private": true,
+  "version": "0.6.0",
+  "dependencies": {
+    "three": "0.170.0",
+    "@huggingface/transformers": "3.7.2"
+  },
+  "type": "module"
+}

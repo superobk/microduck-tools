@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <title>Duck Studio · 数字孪生控制台</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-tab="overview">
+    <header>
+      <a class="brand" href="/studio/"
+        ><span class="duck-mark">◕</span
+        ><span>DUCK <b>STUDIO</b><small>MICRODUCK · 0.6.0</small></span></a
+      >
+      <div class="header-status">
+        <span id="connection" class="pill">未连接</span
+        ><span id="sourceBadge" class="pill">数据未知</span
+        ><button id="globalStop" class="stop">停车</button>
+      </div>
+    </header>
+    <div id="login" class="login card">
+      <div class="eyebrow">PAIR YOUR DISPLAY</div>
+      <h1>连接小鸭，<em>看见真实反馈。</em></h1>
+      <p>
+        手机与电脑共享同一实体鸭状态。使用本地
+        <code>studio.sh pair</code> 生成的一次性配对码。
+      </p>
+      <label
+        >一次性配对码<input
+          id="pairCode"
+          inputmode="text"
+          autocomplete="one-time-code"
+          placeholder="输入本地生成的配对码" /></label
+      ><button id="pairButton" class="primary">配对此显示端</button>
+      <p id="pairError" role="alert"></p>
+      <small>演练模式独立运行，不连接机器人、蓝牙或原校正Web。</small>
+    </div>
+    <div id="workspace" hidden>
+      <aside>
+        <div class="eyebrow">YOUR DUCK, IN SYNC</div>
+        <nav id="navigation">
+          <button data-tab="overview" class="active">◉ <span>总览</span></button
+          ><button data-tab="control">⌘ <span>控制</span></button
+          ><button data-tab="monitor">▤ <span>监控</span></button
+          ><button data-tab="policy">◇ <span>Policy</span></button
+          ><button data-tab="pad">⌁ <span>手柄</span></button>
+        </nav>
+        <a href="/calibration/" class="legacy-link">校正与配置 ↗</a>
+        <div class="sidebar-note">
+          真实反馈优先<br />环境估计只影响画面<br />实机验收另行登记
+        </div>
+      </aside>
+      <main>
+        <div class="page-title">
+          <div>
+            <div class="eyebrow">OBSERVE · CONTROL · UNDERSTAND</div>
+            <h1 id="pageTitle">小鸭的数字世界</h1>
+          </div>
+          <label class="mode-label"
+            >当前目标<select id="mode">
+              <option value="simulation">虚拟演练</option>
+              <option value="live">实体小鸭</option>
+            </select></label
+          >
+        </div>
+        <div id="banner" class="banner" role="status">等待数据。</div>
+        <section class="scene-card" id="sceneCard">
+          <div class="scene-toolbar">
+            <span class="pill" id="poseBadge">姿态待确认</span
+            ><label
+              >场景<select id="theme">
+                <option value="garden">橙光庭院</option>
+                <option value="harbor">星夜码头</option>
+                <option value="forest">萤火森林</option>
+                <option value="candy">糖果小镇</option>
+                <option value="snow">极光雪原</option>
+                <option value="workshop">微缩工坊</option>
+                <option value="space">太空营地</option>
+              </select></label
+            ><label
+              >视角<select id="view">
+                <option value="follow">跟随</option>
+                <option value="top">俯视</option>
+                <option value="orbit">自由观察</option>
+              </select></label
+            ><button id="lowPower">低功耗</button>
+          </div>
+          <canvas
+            tabindex="0"
+            id="world"
+            aria-label="根据实际机器人反馈绘制的3D小鸭"
+          ></canvas>
+          <div class="scene-bottom">
+            <span id="renderStatus">正在加载本地3D资源…</span
+            ><span id="renderStats">30FPS目标 · 仅客户端渲染</span>
+          </div>
+          <div class="scene-legend">
+            <span
+              >● 实体模式：姿态/关节/里程计反馈 · 橙箭头请求 / 绿箭头应用</span
+            ><span>◌ 场景为艺术化表达，不是实景地图</span>
+          </div>
+        </section>
+        <section id="overview" class="tab active">
+          <div class="metrics">
+            <article>
+              <small>控制循环 · 非网页刷新率</small
+              ><strong id="loopHz">-- Hz</strong
+              ><span id="loopDetail">等待daemon报告</span>
+            </article>
+            <article>
+              <small>实际姿态</small><strong id="imuReady">未知</strong
+              ><span id="imuDetail">没有可信样本</span>
+            </article>
+            <article>
+              <small>相对位置估计</small><strong id="position">--</strong
+              ><span>源自里程计，不由控制指令积分</span>
+            </article>
+            <article>
+              <small>环境信息</small><strong id="environment">未启用</strong
+              ><span id="environmentDetail">主题由人选择</span>
+            </article>
+          </div>
+          <div class="columns">
+            <article class="card">
+              <h2>控制与真实反馈</h2>
+              <dl>
+                <dt>本端输入意图</dt>
+                <dd id="userRequested">查看控制页输入预览</dd>
+                <dt>daemon收到的请求</dt>
+                <dd id="requested">--</dd>
+                <dt>daemon应用值</dt>
+                <dd id="applied">--</dd>
+                <dt>本tick policy</dt>
+                <dd id="currentPolicy">--</dd>
+                <dt>限制原因</dt>
+                <dd id="limited">--</dd>
+              </dl>
+              <p class="hint">
+                提交成功不等于实体已经移动。演练值始终标记为模拟。
+              </p>
+            </article>
+            <article class="card">
+              <h2>低频环境语义</h2>
+              <label class="check"
+                ><input
+                  type="checkbox"
+                  id="autoTheme"
+                />允许稳定语义自动切换主题</label
+              ><button id="enableVision">本设备执行环境分析</button
+              ><button id="disableVision">暂停分析</button>
+              <p id="visionStatus">
+                用户启用后才加载本地量化模型，不上传图像。
+              </p>
+              <img id="cameraImage" hidden alt="已鉴权的低频相机快照" /><small
+                id="cameraAge"
+                >默认约10秒一次；与姿态不是严格同步测量</small
+              >
+              <pre id="semanticResult"></pre>
+            </article>
+          </div>
+          <article class="card">
+            <div class="section-heading">
+              <h2>需要关注</h2>
+              <button data-jump="monitor">查看详细排查 →</button>
+            </div>
+            <div id="issueSummary">未读取诊断。</div>
+          </article>
+        </section>
+        <section id="control" class="tab">
+          <div class="columns">
+            <article class="card">
+              <h2>输入设备</h2>
+              <label
+                >输入来源<select id="inputSource">
+                  <option value="touch">触屏方向控制</option>
+                  <option value="keyboard">键盘 WASD / QE</option>
+                  <option value="phone_imu">手机IMU</option>
+                  <option value="gamepad">本机浏览器手柄</option>
+                </select></label
+              >
+              <div class="buttons">
+                <button id="authorizeImu">授权手机姿态</button
+                ><button id="centerImu">校准中立位置</button>
+              </div>
+              <div class="drive-pad">
+                <button data-drive="1,0,0">↑ 前</button>
+                <div>
+                  <button data-drive="0,1,0">← 横移</button
+                  ><button id="hold" class="primary">按住允许</button
+                  ><button data-drive="0,-1,0">横移 →</button>
+                </div>
+                <button data-drive="-1,0,0">↓ 后</button>
+                <div>
+                  <button data-drive="0,0,1">↶ 左转</button
+                  ><button data-drive="0,0,-1">右转 ↷</button>
+                </div>
+              </div>
+              <p class="hint">
+                触屏：按住方向键。手机IMU：按住允许。键盘：Space允许，WASD移动，QE转向，X停车。本机手柄：LB按住允许。
+              </p>
+              <pre id="inputPreview">输入待激活</pre>
+            </article>
+            <article class="card">
+              <h2>控制权与动作</h2>
+              <div id="leaseStatus" class="status-box">没有控制权</div>
+              <div class="buttons">
+                <button id="claim" class="primary">手机 / 本机接管</button
+                ><button id="returnPad">停车并交还手柄</button
+                ><button id="park">中断后恢复暂停</button>
+              </div>
+              <hr />
+              <button id="enablePolicy">明确启用policy（可能上电/归位）</button
+              ><button id="disablePolicy">停用policy（会返回归位姿态）</button>
+              <h3>动作 / 声音</h3>
+              <div id="skillButtons" class="buttons"></div>
+              <div class="buttons">
+                <button data-sound="chirp">啾叫</button
+                ><button data-sound="greet">招呼</button
+                ><button data-sound="coo">咕咕</button>
+              </div>
+              <p class="hint">
+                动作以本机实际skill为准；演练仅为角色动画，不验证真实策略。
+              </p>
+              <label
+                >演练故障案例<select id="simFault">
+                  <option value="none">无故障</option>
+                  <option value="imu">IMU冻结示例</option>
+                  <option value="tof">ToF过期示例</option>
+                  <option value="stream">状态断流示例</option>
+                </select></label
+              >
+            </article>
+          </div>
+        </section>
+        <section id="monitor" class="tab">
+          <div class="columns">
+            <article class="card">
+              <h2>ToF · 实际状态与原始分区</h2>
+              <div
+                id="tofGrid"
+                class="tof-grid"
+                aria-label="8乘8测距网格"
+              ></div>
+              <p id="tofStatus">未提供测距</p>
+              <small>灰色=无目标/未知；紫色=无效。无目标不代表前方安全。</small>
+            </article>
+            <article class="card">
+              <h2>身份、采样与资源</h2>
+              <pre id="identityDetails">--</pre>
+              <pre id="resourceDetails">--</pre>
+              <a
+                id="exportEvidence"
+                href="/api/studio/v1/diagnostics?export=1"
+                download
+                >导出诊断JSON ↗</a
+              >
+              <div class="buttons">
+                <button id="refreshDiagnostics">更新诊断</button
+                ><button id="readLogs">读取robotd限定日志</button>
+              </div>
+              <pre id="logs"></pre>
+            </article>
+          </div>
+          <article class="card">
+            <h2>15个关节 · 角度 / 误差 / 速度 / 电流</h2>
+            <div id="motors" class="motors"></div>
+            <p class="hint">
+              电流为供电侧绝对值，不是准确扭矩。缺失不补零；逐电机温度与故障码只在有维护证据时显示。
+            </p>
+          </article>
+          <article class="card">
+            <h2>异常详情与常用解决方案</h2>
+            <div id="diagnostics"></div>
+          </article>
+        </section>
+        <section id="policy" class="tab">
+          <article class="card">
+            <div class="section-heading">
+              <h2>配置 → 实际加载 → 绑定 → 验证</h2>
+              <button id="refreshPolicy">读取实际配置</button>
+            </div>
+            <p>
+              槽位使用官方RPC持久化；按键绑定skill，不直接绑定ONNX。失败保留部分完成状态，不整体回滚。
+            </p>
+            <pre id="policyState">等待读取</pre>
+          </article>
+          <div class="columns">
+            <article class="card">
+              <h2>模型槽位</h2>
+              <label
+                >槽位<select id="slot">
+                  <option>walk</option>
+                  <option>stand</option>
+                  <option>sitstand</option>
+                  <option>ground_pick</option>
+                  <option>kick_left</option>
+                  <option>kick_right</option>
+                  <option>roulade</option>
+                </select></label
+              ><label
+                >已存在的绝对ONNX路径<input
+                  id="modelPath"
+                  placeholder="/var/lib/robot/…/policy.onnx"
+              /></label>
+              <div class="buttons">
+                <button id="loadPolicy">设置此槽位</button
+                ><button id="resetPolicy">恢复此槽位默认</button>
+              </div>
+              <h3>明确从Hub获取</h3>
+              <label
+                >org/name<input
+                  id="hubRepo"
+                  placeholder="organization/model" /></label
+              ><label>revision（可选）<input id="hubRevision" /></label
+              ><label
+                >文件（可选）<input
+                  id="hubFile"
+                  placeholder="policy.onnx" /></label
+              ><button id="fetchPolicy">获取模型（不自动执行）</button>
+            </article>
+            <article class="card">
+              <h2>配置skill</h2>
+              <label>名称<input id="skillName" placeholder="my_skill" /></label
+              ><label
+                >模型路径<input
+                  id="skillPath"
+                  placeholder="/var/lib/robot/…/policy.onnx" /></label
+              ><label
+                >持续秒数<input
+                  id="skillDuration"
+                  type="number"
+                  min="0.1"
+                  max="60"
+                  step="0.1"
+                  value="2" /></label
+              ><label
+                >速度命令JSON [vx,vy,vyaw]<input
+                  id="skillCommand"
+                  value="[0,0,0]"
+              /></label>
+              <div class="buttons">
+                <button id="saveSkill">保存skill</button
+                ><button id="removeSkill">删除此自定义skill</button>
+              </div>
+              <h3>本次操作与读回结果</h3>
+              <pre id="actionResult">未提交</pre>
+            </article>
+          </div>
+        </section>
+        <section id="pad" class="tab">
+          <div class="columns">
+            <article class="card">
+              <h2>板端手柄</h2>
+              <p>
+                蓝牙配对发生在机器人；手机接管时驱动暂停是交接状态，不是故障。
+              </p>
+              <div class="buttons">
+                <button id="scanPad">限时扫描</button
+                ><button id="pairPad">明确配对</button
+                ><button id="connectPad">连接所选设备</button
+                ><button id="disconnectPad">断开所选设备</button
+                ><button id="forgetPad">忘记所选设备</button>
+              </div>
+              <label
+                >选择设备<select id="boardPad">
+                  <option value="">等待扫描 / 配对</option>
+                </select></label
+              ><label
+                >或明确填写MAC<input
+                  id="padMac"
+                  placeholder="AA:BB:CC:DD:EE:FF"
+              /></label>
+              <pre id="boardPadState">--</pre>
+              <pre id="padInput">输入未公开</pre>
+            </article>
+            <article class="card">
+              <h2>本机浏览器手柄</h2>
+              <p>
+                先在当前手机/电脑系统中连接手柄，再在前台按键激活。网页Gamepad
+                API不执行蓝牙配对。
+              </p>
+              <pre id="localPadState">未检测到本机输入</pre>
+              <div class="four-fields">
+                <label
+                  >横移轴<input
+                    id="mapX"
+                    type="number"
+                    min="0"
+                    max="31"
+                    value="0" /></label
+                ><label
+                  >前后轴<input
+                    id="mapY"
+                    type="number"
+                    min="0"
+                    max="31"
+                    value="1" /></label
+                ><label
+                  >转向轴<input
+                    id="mapYaw"
+                    type="number"
+                    min="0"
+                    max="31"
+                    value="2" /></label
+                ><label
+                  >允许按键<input
+                    id="mapHold"
+                    type="number"
+                    min="0"
+                    max="31"
+                    value="4"
+                /></label>
+              </div>
+              <button id="savePadMap">保存本机映射并清空输入</button
+              ><small>本机映射仅保存在当前浏览器，不修改板端手柄绑定。</small>
+            </article>
+          </div>
+          <article class="card">
+            <h2>板端按键 → skill绑定</h2>
+            <div id="bindings"></div>
+            <pre id="padActionResult"></pre>
+          </article>
+        </section>
+        <footer>
+          <a href="/calibration/">校正与配置 ↗</a><br />DUCK STUDIO · 实际反馈
+          / 环境估计 / 模拟数据分别标识 · 不自动修复或恢复运动
+        </footer>
+      </main>
+    </div>
+    <div id="toast" role="alert" hidden></div>
+    <script type="module" src="/static/app.js"></script>
+  </body>
+</html>
