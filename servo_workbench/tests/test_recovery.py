@@ -15,6 +15,28 @@ from servo_workbench.agent import serve_stdio
 
 
 class RecoveryTests(unittest.TestCase):
+    def test_group_verifies_new_offset_after_explicit_midpoint(self):
+        with tempfile.TemporaryDirectory() as d:
+            store=Store(d);bus=SimBus();clock=[0.]
+            e=Engine(store,bus,clock=lambda:clock[0]);e.create('hd1910')
+            try:
+                for i in range(15):
+                    bus.attach('mid-part-'+str(i))
+                    for _ in range(3):clock[0]+=.3;e.tick(True)
+                    p=e.plan(label='mid-part-'+str(i),model_confirmed=True)
+                    e.apply(dict(job_id='cfg'+str(i),revision=p['revision'],connection_epoch=e.status()['connection_epoch'],plan_hash=p['plan']['hash']))
+                    bus.attach(None);clock[0]+=.3;e.tick(True)
+                bus.attach('mid-part-0');bus.devices['mid-part-0']['raw'][56]=2400
+                for _ in range(3):clock[0]+=.3;e.tick(True)
+                p=e.action_plan('midpoint',True,True,True)
+                e.apply(dict(job_id='explicit-mid',revision=p['revision'],connection_epoch=e.status()['connection_epoch'],plan_hash=p['plan']['hash']))
+                self.assertEqual(e.status()['slots'][0]['after']['raw']['31'],352)
+                bus.attached=list(bus.devices);bus.power_cycle()
+                result=e.verify_all(True,True)
+                self.assertTrue(all(row['ok'] for row in result['rows']))
+                self.assertEqual(sum(x.get('instruction')==11 for x in bus.sent),1)
+            finally:store.close()
+
     def test_group_detects_loss_of_preserved_protection_not_only_changed_fields(self):
         with tempfile.TemporaryDirectory() as d:
             store=Store(d);bus=SimBus();clock=[0.]

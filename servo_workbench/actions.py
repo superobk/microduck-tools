@@ -113,6 +113,7 @@ class Actions:
                 job["steps"][-1]["state"]="verified_by_position_and_offset"
                 job["before_offset"]=snap["raw"]["31"];job["after_offset"]=after["raw"]["31"]
                 slot=s["slots"][plan["index"]];slot["midpoint"]=dict(job=jid,before=snap,after=after)
+                slot["after"]=after  # The next power-cycle comparison must use the new offset.
                 slot["test"]=None;slot["persistence"]="pending_operator_power_cycle"
                 if slot["state"]=="verified":slot["state"]="readback"
                 s["calibration_review_required"]=True

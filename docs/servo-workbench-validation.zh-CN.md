@@ -6,7 +6,7 @@
 
 | 检查 | 结果 / 范围 |
 |---|---|
-| 新工作台Python | 82项通过：双协议编解码、官方SDK交叉对照、15只逐次上下电、整组掉电/参数丢失、USB消失改名/歧义、读写中断、Reset Mid无效、有限动作取消、参数回退、修订/代次/幂等、两浏览器、权威重启、模式隔离、EOF冻结、旧SSH reader、代理与安装白名单、有界诊断导出 |
+| 新工作台Python | 83项通过：双协议编解码、官方SDK交叉对照、15只逐次上下电、整组掉电/参数丢失、中位更新后持久复核、USB消失改名/歧义、读写中断、Reset Mid无效、有限动作取消、参数回退、修订/代次/幂等、两浏览器、权威重启、模式隔离、EOF冻结、旧SSH reader、代理与安装白名单、有界诊断导出 |
 | 既有校正/升级Python | 236项通过；包含原Web/插件/相机、三版兼容、升级/回退/中断恢复 |
 | 既有安装向导Python | 37项通过 |
 | Studio Python | 41项通过（40项原功能+历史报告导入隔离）；报告导入不调用helper或IPC |
@@ -15,9 +15,11 @@
 | 响应式 | Playwright CLI0.1.23 + 本地Chromium缓存，1280/768/390宽度无横向溢出，三张最终截图；桌面、平板及手机布局已人工查看 |
 | 静态 | JS语法、shell语法、Git diff空白和manifest核对，交付逐文件哈希及解包验证另存本地交付记录 |
 
-共396项Python与11项Node，无测试跳过。实际本机为macOS/Python3.14.7；最低声明Python3.11，另提供macOS/Windows/Linux + Python3.11 CI，托管CI以PR实际结果为准，不能把本机结果称作Windows通过。
+共397项Python与11项Node，无测试跳过。实际本机为macOS/Python3.14.7；最低声明Python3.11，另提供macOS/Windows/Linux + Python3.11 CI，托管CI以PR实际结果为准，不能把本机结果称作Windows通过。
 
 首次托管Windows CI发现安装测试夹具的write_text被系统换行转换为CRLF，造成预期哈希与文件字节不一致；已改为固定UTF-8字节写入，保留生产校验强度。Linux工作台82项通过，macOS测试步骤通过但被矩阵fail-fast取消；后续设置三个平台独立完成，最终状态与运行链接登记在交付release-record，初次失败不覆盖。
+
+最终一致性复核增加“15只配置→单只Reset Mid→整组掉电复核”的完整回归，修正中位成功后仍以旧after偏移作持久比较的问题。中位现在保存新的比较快照，备份和中位前后证据保留；不会重复发送中位命令。
 
 完整原始输出位于工作区中央审计session `20261102T075521Z-100f26a21344/commands/`，关联运行证据 `logs/servo-workbench-20261102T075521Z/`。本轮早期Plan只读核查与压缩恢复时README直读缺口已如实note，未补造工具收据。测试中预期错误HTTP响应与ResourceWarning不等于产品失败；初期loopback sandbox权限、SDK stuffing参考差异、状态落盘失败及浏览器截图超时均保留原记录，修复/替代后重新验证。
 
