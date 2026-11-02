@@ -14,6 +14,12 @@ Microduck 校准与配置工具 **0.6.0**。保留 daemon-v0.16.3 的 IMU、15 �
 
 先看 [简单操作指南](docs/studio-0.6.0-guide.zh-CN.md)，再看 [统一设计与工作流](docs/studio-0.6.0-plan.zh-CN.md) / [本地测试和现场待验收](docs/studio-0.6.0-validation.zh-CN.md)。完整离线浏览器/模型/ARM64 wheels在本地deliverables，Git只存源码、依赖锁和文档。本轮没有连接板端，实际手柄/手机权限、运动与性能均NOT_RUN。
 
+## 舵机工作台0.1.0：电脑配置，板端联动
+
+新增独立XL330/HD1910双协议15关节向导，USB电脑或固定SSH板端执行；SQLite保存批次，上下电与USB改名后只读接续，每只配置明确确认，整组掉电复核。可选Reset Mid、有限台架测试、参数回退分别授权，Studio只导入历史报告，不抢正式总线。三个daemon版本的XL330预设保留，HD1910维护能力不等于robotd运动支持。所有硬件仍NOT_RUN。
+
+从[三步指南](docs/servo-workbench-guide.zh-CN.md)开始：`./workbench.sh serve --demo --open`（Windows用`workbench.cmd`）。[设计](docs/servo-workbench-design.zh-CN.md)、[断线恢复](docs/servo-workbench-recovery.zh-CN.md)、[来源](docs/servo-workbench-sources.zh-CN.md)及[验证记录](docs/servo-workbench-validation.zh-CN.md)独立登记。便携包含通用pyserial离线wheel，Python3.11+无需编译；源码仓库不含wheel。
+
 ## 本地预览（原校正页面）
 
 Python 3.11+，从仓库根目录运行：

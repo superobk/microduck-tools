@@ -434,6 +434,30 @@ class FakeBroker:
 
 
 class GatewayTests(unittest.IsolatedAsyncioTestCase):
+    async def test_workbench_import_is_historical_and_cannot_call_hardware(self):
+        from servo_workbench.store import Store as WorkStore
+        from servo_workbench.engine import Engine
+        from servo_workbench.simulation import SimBus
+        with tempfile.TemporaryDirectory() as d:
+            s=WorkStore(d);e=Engine(s,SimBus());e.create('hd1910')
+            report=e.report();s.close()
+        report['hardware_acceptance']=True;report['session']['hardware_acceptance']=True
+        # >48KB evidence is accepted on this route only.
+        report['jobs']=[dict(evidence='x'*60000)]
+        url=PREFIX+'/servo-workbench/reports'
+        r=await self.client.post(url,json=report,headers=self.headers)
+        self.assertEqual(r.status,200,await r.text());ident=(await r.json())['id']
+        r=await self.client.get(url+'?id='+ident)
+        value=await r.json()
+        self.assertFalse(value['live']);self.assertFalse(value['hardware_acceptance'])
+        self.assertFalse(value['session']['hardware_acceptance'])
+        self.assertEqual(len(value['jobs'][0]['evidence']),60000)
+        self.helper.assert_not_awaited();self.assertEqual(self.broker.ipc.calls,[])
+        r=await self.client.post(url,json=report,headers={'Origin':self.origin})
+        self.assertEqual(r.status,403)
+        r=await self.client.post(PREFIX+'/action',json={'extra':'x'*60000},headers=self.headers)
+        self.assertEqual(r.status,409)
+
     async def asyncSetUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.broker = FakeBroker()

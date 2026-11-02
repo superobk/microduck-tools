@@ -19,3 +19,6 @@
 2026-11-01 Studio 0.6.0：新增独立候选包 `/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-studio-20261101`；入口为包内 `studio.sh`，源码入口 `tools/studio.sh`。配置 `/etc/microduck-studio/config.json`，运行版本 `/opt/microduck-tools/studio/releases/0.6.0`，安装登记 `/var/lib/microduck-studio-install`，与旧 `/opt/microduck-tools/current`、manager会话及robotd/current分离。源码在 `feat/mobile-studio-0.6.0` 供PR审阅，不自动合并。详见[统一设计](studio-0.6.0-plan.zh-CN.md)、[操作指南](studio-0.6.0-guide.zh-CN.md)、[软件验收及现场清单](studio-0.6.0-validation.zh-CN.md)。旧0.5.0归档SHA仍为 `d17bc4444d8c3fd817e2ed212bdb7001330680ad0fbe97fe30ec5417135d8790`，原生二进制/补丁与核心校正Web未修改。
 
 2026-11-01 安装流程增量：推荐[一个入口的简明方案](install-upgrade-simple.zh-CN.md)。新 `microduck-install-kit-0.6.0` 将字节不变的冻结0.5.0机器人升级器与当前Studio完整离线包置于独立子目录，根目录 `sudo ./duck.sh` 按N逐步完成，不迁移原状态引擎。新增37项向导/预检/打包测试，与40项Studio、236项原回归及11项Node通过；正在执行/中断/文件已保存/真实回执分开显示。修复Studio早期失败恢复误停不存在服务、未知同名服务晚期发现、依赖失败缺少原文；增加只读结构化状态和互斥锁忙态。新交付 `/Users/bou/Workspace/Duckduck/deliverables/microduck-install-flow-20261101`；旧包保留不变。板端、镜像、升级/回退、配对/运动和资源验收全部NOT_RUN，继续等另行通知。
+# 2026-11-02：独立双协议舵机工作台0.1.0
+
+新增电脑本地15关节持久向导、XL330/HD1910独立驱动、固定SSH板端代理、只读自动重连与未知写入核对、整组掉电复核、可选中位/台架/参数回退，以及Studio历史报告联动。使用入口见[向导指南](servo-workbench-guide.zh-CN.md)，设计/恢复/来源/测试分别登记。Tools仍0.6.0，现有校正/daemon原生补丁/冻结升级器保持不变。仅本地模拟、假串口和环回HTTP验证；真实USB、Windows硬件、SSH板端、供电、EEPROM、中位、动作及性能全部NOT_RUN，等待用户另行通知。本轮交付与提交信息见最终验证记录。

@@ -491,7 +491,7 @@ async def secure(request, handler):
         if (
             request.path.startswith(PREFIX)
             and request.content_length
-            and request.content_length > 48000
+            and request.content_length > (2*1024*1024 if request.path == PREFIX + '/servo-workbench/reports' else 48000)
         ):
             raise Refused("REQUEST_SIZE", "Studio请求超过48KB")
         origin = cfg["public_origin"]
@@ -1236,6 +1236,48 @@ async def legacy(request):
         )
 
 
+async def workbench_reports(request):
+    """Historical file exchange only; no controller, serial access or live acceptance."""
+    from servo_workbench.reports import validate
+    from servo_workbench.profiles import Refused as ReportRefused, digest
+    directory = Path(request.app['studio'].config['state_dir']) / 'servo-workbench-reports'
+
+    def exchange(value=None):
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if value is not None:
+            try:
+                report = validate(value)
+            except ReportRefused as error:
+                raise Refused(error.code, str(error)) from error
+            ident = digest(report)
+            target = directory / (ident + '.json')
+            import tempfile
+            with tempfile.NamedTemporaryFile(dir=directory, delete=False, mode='w') as f:
+                json.dump(report, f, ensure_ascii=False, allow_nan=False)
+                f.flush(); os.fsync(f.fileno())
+                temporary = Path(f.name)
+            temporary.replace(target)
+            return dict(id=ident, historical=True, live=False, hardware_acceptance=False)
+        ident = request.query.get('id')
+        if ident:
+            if len(ident)!=64 or any(c not in '0123456789abcdef' for c in ident):
+                raise Refused('REPORT_ID', '报告ID错误')
+            return validate(json.loads((directory / (ident+'.json')).read_text()))
+        return [dict(id=p.stem) for p in sorted(directory.glob('*.json'))]
+
+    value = None
+    if request.method == 'POST':
+        raw = bytearray()
+        async for part in request.content.iter_chunked(65536):
+            raw.extend(part)
+            if len(raw)>2*1024*1024:
+                raise Refused('REPORT_SIZE', '报告超过2MiB')
+        value = json.loads(raw)
+        if not isinstance(value, dict):
+            raise Refused('REPORT_SCHEMA', '报告必须是对象')
+    return web.json_response(await asyncio.to_thread(exchange, value))
+
+
 def create_app(config=None, store=None, broker=None, helper_call=None):
     studio = Studio(config, store, broker, helper_call)
     app = web.Application(middlewares=[secure], client_max_size=1048576)
@@ -1251,6 +1293,11 @@ def create_app(config=None, store=None, broker=None, helper_call=None):
 
     app.router.add_get("/", root)
     app.router.add_get("/studio/", page)
+    async def report_page(request):
+        return web.FileResponse(Path(__file__).parent / 'static/workbench-reports.html')
+    app.router.add_get('/servo-workbench/', report_page)
+    app.router.add_get(PREFIX + '/servo-workbench/reports', workbench_reports)
+    app.router.add_post(PREFIX + '/servo-workbench/reports', workbench_reports)
     app.router.add_post(PREFIX + "/pair", pair)
     app.router.add_get(PREFIX + "/status", status)
     app.router.add_get(PREFIX + "/stream", websocket)
