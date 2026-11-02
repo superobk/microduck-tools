@@ -175,7 +175,7 @@ def desired(kind, target, raw, opts):
 
 
 def public_profiles():
-    return dict(component_version="0.1.0",hardware_acceptance=False,
+    return dict(component_version="0.1.1",hardware_acceptance=False,
                 profiles=[dict(id=k,protocol=v["protocol"],voltage_range=v["voltage_range"],
                     registers={str(a):dict(size=s,name=n) for a,(s,n) in v["registers"].items()})
                     for k,v in PROFILES.items()],

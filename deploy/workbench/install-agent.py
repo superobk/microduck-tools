@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 
-VERSION='0.1.0'
+VERSION='0.1.1'
 
 def verify(source):
     source=Path(source)

@@ -977,6 +977,12 @@ asyncio.run(h.take())
                     j,
                 )
             self.assertEqual(j.data["phase"], "installed")
+            release=Path(j.data['release'])
+            self.assertFalse((release/'servo_workbench/transport.py').exists())
+            import subprocess,sys
+            isolated=subprocess.run([sys.executable,'-I','-B','-c',
+                "import sys;sys.path.insert(0,sys.argv[1]);from servo_workbench.reports import validate;from servo_workbench.profiles import layout;r=validate(dict(schema='microduck-servo-workbench/v1',session=dict(kind='hd1910',slots=[dict(x,state='pending') for x in layout('microduck')])));assert r['historical'];assert 'serial' not in sys.modules;assert 'servo_workbench.transport' not in sys.modules",str(release)],capture_output=True,text=True)
+            self.assertEqual(isolated.returncode,0,isolated.stderr)
             j.verify()
             j.rollback()
             self.assertFalse((root / "config/config.json").exists())

@@ -68,11 +68,14 @@ class SerialBus:
         self.ports_fn=ports_fn;self.serial_factory=serial_factory
         self.guard=guard or linux_guard
         self.serial=None;self.reconnecting=False;self.current_baud=None
+        self.connection_epoch=0;self.pinned_epoch=None;self.pre_write_guard=None
         self.sent=deque(maxlen=500);self.bad_frames=0
 
     def ports(self):return self.ports_fn()
 
     def reconnect(self):
+        if self.pinned_epoch is not None and (self.serial is None or self.connection_epoch!=self.pinned_epoch):
+            raise ConnectionError("事务连接已中断；禁止在旧确认下重新打开串口")
         if self.serial is not None:return
         row=({"device":self.selection["device"]} if self.board else
              select_port(self.selection,self.ports_fn(),self.reconnecting))
@@ -99,6 +102,15 @@ class SerialBus:
             serial_port.close();raise
         self.serial=serial_port;self.selection={**self.selection,**row}
         self.current_baud=1000000;self.reconnecting=False
+        self.connection_epoch+=1
+
+    def begin_transaction(self,epoch):
+        if self.pinned_epoch is not None or self.serial is None or self.connection_epoch!=epoch:
+            raise ConnectionError('预览对应的串口连接已变化，需重新稳定读取和确认')
+        self.pinned_epoch=epoch
+
+    def end_transaction(self):
+        self.pinned_epoch=None;self.pre_write_guard=None
 
     def close(self):
         if self.serial is not None:
@@ -117,16 +129,18 @@ class SerialBus:
             self.serial.reset_input_buffer()
             codec=profile(self.kind)["protocol"]
             raw=packet(codec,ident,instruction,params)
+            if write and self.pre_write_guard:self.pre_write_guard()
             if self.serial.write(raw)!=len(raw):
                 self.close();raise ConnectionError("串口仅发送了部分数据；结果未知，禁止重发")
             self.sent.append(dict(hex=raw.hex(),instruction=instruction,id=ident,write=write))
             decoder=Decoder(codec);deadline=time.monotonic()+.07
             while time.monotonic()<deadline:
                 for answer in decoder.feed(self.serial.read(256)):
+                    if answer['packet']==raw:continue  # Half-duplex adapter echo is not feedback.
                     if answer["id"]!=ident:continue
                     error=answer["error"] & (0x7f if codec=="dxl2" else 0xff)
                     self.last_status=answer["error"]
-                    if error and write:raise Refused("DEVICE_STATUS",f"ID{ident} 应答状态0x{answer['error']:02x}")
+                    if error:raise Refused("DEVICE_STATUS",f"ID{ident} 应答状态0x{answer['error']:02x}；该应答不作为有效读数")
                     if expected is not None and len(answer["data"])!=expected:continue
                     self.bad_frames+=decoder.bad
                     return answer["data"]

@@ -1,2 +1,2 @@
 """Independent servo workbench. Importing this package never opens a device."""
-__version__ = "0.1.0"
+__version__ = "0.1.1"

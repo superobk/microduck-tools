@@ -22,3 +22,7 @@
 # 2026-11-02：独立双协议舵机工作台0.1.0
 
 新增电脑本地15关节持久向导、XL330/HD1910独立驱动、固定SSH板端代理、只读自动重连与未知写入核对、整组掉电复核、可选中位/台架/参数回退，以及Studio历史报告联动。使用入口见[向导指南](servo-workbench-guide.zh-CN.md)，设计/恢复/来源/测试分别登记。Tools仍0.6.0，现有校正/daemon原生补丁/冻结升级器保持不变。仅本地模拟、假串口和环回HTTP验证；真实USB、Windows硬件、SSH板端、供电、EEPROM、中位、动作及性能全部NOT_RUN，等待用户另行通知。本轮交付与提交信息见最终验证记录。
+
+## 2026-11-02：PR #7工作台0.1.1安全复审
+
+修复Feetech回显/错误读数、事务跨连接、恢复确认顺序、非默认ID/速率扫描与回退续检、台架心跳/反馈/越界保护及整组跨连接验收。提供[原生命令直升与Tools安装](native-upgrade-0163-to-0183.zh-CN.md)、[完整回退](native-upgrade-recovery.zh-CN.md)、[复审](servo-workbench-safety-review.zh-CN.md)。无真实USB/SSH/板端/舵机操作；原daemon、校正核心、冻结升级器/包不变，最终计数、提交、CI与交付以本轮release-record登记。

@@ -31,6 +31,7 @@ class Actions:
                       target_id=snap["id"],identity=snap["identity"],snapshot=snap,
                       model_confirmed=model_confirmed,standalone=True,operator_ready=True,
                       connection_epoch=s["connection_epoch"],preset_hash=s["preset_hash"])
+            plan['transport_epoch']=self.bus.connection_epoch
             if kind=="midpoint":
                 if s["kind"]!="hd1910":raise Refused("MIDPOINT","此步骤只用于HD1910")
                 if snap["raw"].get("33")!=4:raise Refused("MODE","中位只开放已评审HD1910模式4")
@@ -64,6 +65,10 @@ class Actions:
                     raise Refused("BACKUP","没有本批次配置任务的写前备份")
                 changes=clone(parent["plan"]["changes"])
                 for c in changes:c["value"],c["old"]=c["old"],snap["raw"].get(str(c["address"]))
+                changes=[c for c in changes if c['value']!=c['old']]
+                for c in changes:
+                    if c['address']==p['baud_addr'] and c['value'] not in BAUDS[s['kind']]:raise Refused('BAUD','备份波特率代码无效，拒绝回退写入')
+                    if c['address']==p['id_addr'] and (type(c['value']) is not int or not 0<=c['value']<=(252 if s['kind']=='xl330' else 253)):raise Refused('ID','备份ID不可用于单播，拒绝回退')
                 changes.sort(key=lambda c:2 if c["address"]==p["baud_addr"] else
                              1 if c["address"]==p["id_addr"] else 0)
                 plan["changes"]=changes;plan["parent_job"]=parent["id"]
@@ -84,12 +89,12 @@ class Actions:
         if not self.lock.acquire(False):raise Refused("BUSY","已有作业运行")
         job=None
         try:
+            self.cancel.clear()
             s,plan=self._fresh(request);p=profile(s["kind"])
             snap=self.snapshot(plan["source_id"],plan["source_baud"])
             self._guard_snapshot(s,snap,plan["model_confirmed"])
             if snap["identity"]!=plan["identity"] or any(snap["raw"].get(a)!=v for a,v in plan["binding"].items()):
                 raise Refused("CHANGED","读数变化，请重新预览可选步骤")
-            self.cancel.clear()
             job=dict(id=jid,session=s["id"],kind=plan["kind"],plan=clone(plan),
                      request_hash=digest(request),state="running",steps=[])
             self.store.save_job(job);s["running_job"]=jid;s["phase"]={"motion":"testing","rollback":"rolling_back"}.get(plan["kind"],plan["kind"])
@@ -98,6 +103,8 @@ class Actions:
             if plan["kind"]=="midpoint":
                 job["steps"].append(dict(instruction=11,state="intent"))
                 self.store.save_job(job);self.fault_hook("after_intent")
+                self.bus.pre_write_guard=lambda:self._before_write('configuration',job)
+                self._before_write('configuration',job)
                 if self.disconnected.is_set() or self.cancel.is_set():
                     raise Refused("DISCONNECTED","中位发包前连接已断开或取消")
                 # Exactly one command. Never repeat on timeout or reconnect.
@@ -110,7 +117,9 @@ class Actions:
                 after=self.snapshot(sid,baud);self._guard_snapshot(s,after,plan["model_confirmed"])
                 if abs(after["metrics"]["position_raw"]-2048)>4:
                     raise Refused("MID_NO_EFFECT","中位应答不能证明生效；位置与2048不一致，禁止自动重发")
-                job["steps"][-1]["state"]="verified_by_position_and_offset"
+                if after['raw'].get('31') is None:raise Refused('MID_OFFSET','中位偏移读数缺失，不能验证')
+                job["steps"][-1]["state"]="position_readback_with_offset_evidence"
+                job['midpoint_effect']='already_centered_or_not_observable' if abs(snap['metrics']['position_raw']-2048)<=4 else 'position_changed_to_midpoint'
                 job["before_offset"]=snap["raw"]["31"];job["after_offset"]=after["raw"]["31"]
                 slot=s["slots"][plan["index"]];slot["midpoint"]=dict(job=jid,before=snap,after=after)
                 slot["after"]=after  # The next power-cycle comparison must use the new offset.
@@ -151,22 +160,27 @@ class Actions:
                 self.store.save(s,"optional_interrupted",dict(job=jid,cleanup=cleanup))
                 self.connected=True;self._lost(str(e))
             raise
-        finally:self.lock.release()
+        finally:
+            self._end_transaction();self.lock.release()
 
     def _motion(self,s,plan,job):
         p=profile(s["kind"]);sid=plan["source_id"];baud=plan["source_baud"]
         r=plan["snapshot"]["raw"];base=plan["snapshot"]["metrics"]["position_raw"]
+        self.motion_deadline=self.clock()+20
         if self.clock()>=getattr(self,"motion_until",0):
             raise Refused("MOTION_HEARTBEAT","需要独立的前台测试心跳；遥测不能续期")
         temporary=([ (100,2,min(r["100"],177)),(108,4,2),(112,4,4),(98,1,15) ]
                    if s["kind"]=="xl330" else
                    [(41,1,1),(44,2,min(r["44"],46)),(46,2,100),(48,2,min(r["48"],200))])
         if any(v<=0 for _,_,v in temporary):raise Refused("LIMIT","台架限值为0，先人工核对")
+        self._motion_feedback(s,sid,baud,base,0)
         for a,size,v in temporary:self._step(s,job,a,size,v,sid,baud,"motion")
+        self._motion_feedback(s,sid,baud,base,0)
         # Preload only the verified current position; never HOME/2048.
         goal=116 if s["kind"]=="xl330" else 42
         self._step(s,job,goal,p["registers"][goal][0],base,sid,baud,"motion")
         self._step(s,job,p["torque"],1,1,sid,baud,"motion")
+        self._motion_feedback(s,sid,baud,base,1)
         samples=[];started=self.clock();previous=base
         for deg in [3,-3,0]*3:
             target=base+round(deg*4096/360)
@@ -176,11 +190,7 @@ class Actions:
                     raise Refused("TEST_STOP","取消、心跳超时或任务超时")
                 value=round(previous+(target-previous)*step/n)
                 self._step(s,job,goal,p["registers"][goal][0],value,sid,baud,"motion")
-                snap=self.snapshot(sid,baud);m=snap["metrics"]
-                if m["fault"]!=0 or m["current_ma"] is None or abs(m["current_ma"])>300 or m["temperature_c"] is None or m["temperature_c"]>=55:
-                    raise Refused("TEST_PROTECTION","故障、耗流或温度触发台架停止条件")
-                if m["voltage_v"] is None or not p["voltage_range"][0]<=m["voltage_v"]<=p["voltage_range"][1]:
-                    raise Refused("VOLTAGE","测试中电压异常")
+                snap=self._motion_feedback(s,sid,baud,base,1);m=snap['metrics']
                 samples.append(dict(t=self.clock(),target_raw=value,actual_raw=m["position_raw"],
                                     current_ma=m["current_ma"],temperature_c=m["temperature_c"]))
                 if not self.bus.simulated:time.sleep(.05)
@@ -200,3 +210,19 @@ class Actions:
                             simulated=s["simulated"],
                             caveat="有限无负载轨迹；不能证明额定速度、扭矩、剩余寿命")
         return after
+
+    def _motion_feedback(self,s,sid,baud,base,torque):
+        p=profile(s['kind'])
+        snap=self.snapshot(sid,baud,addresses={p[k] for k in ('position','current','velocity','voltage','temperature','fault','torque','mode_addr')})
+        m=snap['metrics']
+        if m['position_raw'] is None or m['speed_deg_s'] is None or m['current_ma'] is None or abs(m['current_ma'])>300 or m['temperature_c'] is None or m['temperature_c']>=55 or m['fault']!=0:
+            raise Refused('TEST_PROTECTION','位置/速度/电流/温度/故障反馈缺失或触发停止条件')
+        if abs(m['position_raw']-base)*360/4096>5:
+            raise Refused('TEST_TRAVEL','实际位置超出台架±5°观测边界')
+        if torque==0 and abs(m['position_raw']-base)>4:
+            raise Refused('CHANGED','准备阶段位置已变化，禁止按旧位置上扭矩；请重新固定并预览')
+        if m['torque']!=torque or snap['raw'].get(str(p['mode_addr']))!=p['mode']:
+            raise Refused('TEST_STATE','实际扭矩或模式与本次台架状态不同')
+        if m['voltage_v'] is None or not p['voltage_range'][0]<=m['voltage_v']<=p['voltage_range'][1]:
+            raise Refused('VOLTAGE','测试中电压异常或缺失')
+        return snap

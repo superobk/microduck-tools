@@ -69,7 +69,7 @@ class Remote:
                     text=True, bufsize=1)
                 threading.Thread(target=self._reader, args=(self.proc,), daemon=True).start()
             info = self._call('hello', {}, 'connection', timeout=8, connect=False)
-            if info.get('protocol') != PROTOCOL or info.get('component_version') != '0.1.0' or info.get('authority') != 'board':
+            if info.get('protocol') != PROTOCOL or info.get('component_version') != '0.1.1' or info.get('authority') != 'board':
                 self.close()
                 raise Refused('AGENT_VERSION', '板端代理版本不匹配；不会自动部署或升级')
             self.remote_info = info
@@ -115,7 +115,7 @@ class Remote:
                 return dict(session=None, agent_state='reconnecting', remote=self.host,
                             error=str(error), code=error.code, remote_authority=True)
         return self._call(method, body or {}, owner,
-                          timeout=45 if method in ('apply', 'verify', 'scan') else 12)
+                          timeout=240 if method=='scan' else 90 if method=='verify' else 45 if method=='apply' else 12)
 
     def close(self):
         with self.lock:

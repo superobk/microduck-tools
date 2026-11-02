@@ -26,7 +26,7 @@ def client(port, method, body=None):
     req = urllib.request.Request(url + method,
                                 data=None if body is None else json.dumps(body).encode(),
                                 headers=headers)
-    with opener.open(req, timeout=60) as response:
+    with opener.open(req, timeout=240 if method=='scan' else 90) as response:
         return json.load(response)
 
 

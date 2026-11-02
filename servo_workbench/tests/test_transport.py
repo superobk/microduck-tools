@@ -13,6 +13,7 @@ class Wire:
         self.partial = False
         self.no_ack = False
         self.frames = []
+        self.echo=False;self.status=0
         self.port = None
         self.baudrate = kwargs.get('baudrate')
 
@@ -41,11 +42,12 @@ class Wire:
                 return len(data)
             result = b''
         if dxl:
-            p = b'\xff\xff\xfd\x00' + bytes([ident]) + (len(result) + 4).to_bytes(2, 'little') + bytes([0x55, 0]) + result
+            p = b'\xff\xff\xfd\x00' + bytes([ident]) + (len(result) + 4).to_bytes(2, 'little') + bytes([0x55, self.status]) + result
             p += crc16(p).to_bytes(2, 'little')
         else:
-            p = bytes([ident, len(result) + 2, 0]) + result
+            p = bytes([ident, len(result) + 2, self.status]) + result
             p = b'\xff\xff' + p + bytes([(~sum(p)) & 255])
+        if self.echo:self.buffer.extend(data)
         self.buffer.extend(p)
         return len(data)
 
@@ -56,6 +58,31 @@ class Wire:
 
 
 class SerialTests(unittest.TestCase):
+    def test_feetech_read_ignores_adapter_request_echo(self):
+        b=self.bus('hd1910');self.wire.echo=True;self.wire.regs[56]=2048
+        self.assertEqual(b.read(1,1000000,56,2),2048)  # Echo alone would decode to 0x0238.
+
+    def test_error_status_cannot_become_valid_register_data(self):
+        for kind in ('xl330','hd1910'):
+            b=self.bus(kind);self.wire.status=2
+            if kind=='hd1910':self.wire.regs[0]=3
+            with self.assertRaisesRegex(Refused,'0x02'):b.read(1,1000000,0,2 if kind=='xl330' else 1)
+
+    def test_pinned_transaction_never_reopens_a_closed_port(self):
+        b=self.bus();b.read(1,1000000,0,2);epoch=b.connection_epoch
+        b.begin_transaction(epoch);b.close();n=len(self.wire.written)
+        with self.assertRaises(ConnectionError):b.read(1,1000000,0,2)
+        self.assertEqual(len(self.wire.written),n)
+        b.end_transaction();b.read(1,1000000,0,2)
+        self.assertGreater(b.connection_epoch,epoch)
+
+    def test_cancel_guard_runs_after_board_checks_before_actual_packet(self):
+        b=self.bus(board=True,guard=lambda *a:None);b.reconnect()
+        def stop():raise Refused('CANCELLED','cancelled while checking ownership')
+        b.pre_write_guard=stop
+        with self.assertRaises(Refused):b.write(1,1000000,9,1,0)
+        self.assertEqual(self.wire.written,[])
+
     def bus(self, kind='xl330', board=False, guard=None):
         row = dict(device='MOCK', vid=1, pid=2, serial_number='mock')
         self.wire = Wire()

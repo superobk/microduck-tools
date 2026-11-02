@@ -15,7 +15,7 @@ def build(root,out):
     files=[root/'VERSION',root/'README.md',root/'duck.sh',root/'CODE-MANIFEST.json',root/'tools/microduck-dryrun.py',root/'tools/upgrade-review.py',root/'tools/duck-manager.py']+list((root/'docs').glob('*.md'))
     files += [p for p in (root/'installer').glob('*.py')]
     files += [root/'tools/studio.sh',root/'tools/build-studio-assets.py']
-    files += [root/'workbench.sh',root/'workbench.cmd']
+    files += [root/'workbench.sh',root/'workbench.cmd',root/'tools/setup-workbench.py']
     files += [p for p in (root/'servo_workbench').rglob('*') if p.is_file() and '__pycache__' not in p.parts and 'tests' not in p.parts and p.suffix!='.pyc']
     files += [p for p in (root/'studio').rglob('*') if p.is_file() and '__pycache__' not in p.parts and 'tests' not in p.relative_to(root/'studio').parts and p.suffix!='.pyc']
     files += [p for p in (root/'deploy').rglob('*') if p.is_file()]

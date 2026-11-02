@@ -1,10 +1,10 @@
 {
   "date_local": "2026-11-02",
   "tool_version": "0.6.0",
-  "stage": "dual-protocol-servo-workbench-0.1.0",
+  "stage": "servo-workbench-0.1.1-safety-review-native-upgrade",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "git_base": "8bc7fc0c590561693ca07aff6d6031ba4dd99777",
-  "scope": "independent persistent servo wizard; historical Studio reports; original calibration/native/frozen upgrade unchanged; hardware NOT_RUN",
+  "git_base": "054378e3a8269a5660506c3d4ee26365d8b507c9",
+  "scope": "PR7 safety review; pinned serial transactions, echo/status validation, interrupt/rollback/bench safety; native upgrade and recovery guide; real hardware NOT_RUN",
   "files": [
     {
       "path": ".gitattributes",
@@ -20,7 +20,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "653215610b992f1628493ffc5550bae99b30edadbbb3ab796cb51b3ef835985a"
+      "sha256": "17ce57ac2c726a06a8b185ca42cf69d42e18347c369af5a9f86b68f67c0377c0"
     },
     {
       "path": "VERSION",
@@ -492,7 +492,7 @@
     },
     {
       "path": "deploy/workbench/install-agent.py",
-      "sha256": "dfaba008a04a4f8b69bde71a20879627d26b501351cd115fd874d67b2540652e"
+      "sha256": "bd8b448162ed6c09e9bd0e8d403b70a762f9e4e3431d79a09d3a3e1b37a50756"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -512,7 +512,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "233f72429d02e7d6d744459610cb5aca1b45b0d716a9bca6f546184a43029489"
+      "sha256": "af6433fe2d58040097ebd6810522c3fad96497b32709f4238c98cdeca0ffe201"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -551,20 +551,32 @@
       "sha256": "3b29e18538f3c1e9e1769b9bd71ca08481d7f95cfc065f1ca902eef5cc84cdb0"
     },
     {
+      "path": "docs/native-upgrade-0163-to-0183.zh-CN.md",
+      "sha256": "e5a56b7dba3a8afc9d98a6b51b15d8a390bd08e214d33052818dc65fa5b53444"
+    },
+    {
+      "path": "docs/native-upgrade-recovery.zh-CN.md",
+      "sha256": "d271a149a23ef34cb6eefb052e7e71966b4c40a563078786892c7e4b853b578b"
+    },
+    {
       "path": "docs/script-manager.zh-CN.md",
       "sha256": "c1bc5a0043f4e24c1b8020e394eb237c2db50020d11ac1c04f1e45eef3da678b"
     },
     {
       "path": "docs/servo-workbench-design.zh-CN.md",
-      "sha256": "2f19b333f45be9c58b680a34412f81a29f84261a2031070c14c0c8e559775302"
+      "sha256": "fa00a97fac89d052334dc89048b90692e3bae801f08a2fd7af677de6bcd096e0"
     },
     {
       "path": "docs/servo-workbench-guide.zh-CN.md",
-      "sha256": "27047c0d3a3bb2b427bd70be69ebeb70af97d77aec2c956c258ea7ac2530b5f6"
+      "sha256": "dc1883f33a4f9f5aee6399ecc1a83ece4c3b006894e326dc653f04d52835f702"
     },
     {
       "path": "docs/servo-workbench-recovery.zh-CN.md",
-      "sha256": "846b5e571f30ee471b7d44167bf839307806b9c57c5d14868adf0728c6f5396a"
+      "sha256": "9b0342ce1c8a5eae1c1323645dfecef875f3d0d0766dd19bc8ba07fc529e40e1"
+    },
+    {
+      "path": "docs/servo-workbench-safety-review.zh-CN.md",
+      "sha256": "f26486aa109720ad76563922cef3805d2a5924b05a9ab05520e2020b65071882"
     },
     {
       "path": "docs/servo-workbench-sources.zh-CN.md",
@@ -616,35 +628,35 @@
     },
     {
       "path": "servo_workbench/__init__.py",
-      "sha256": "7a5e5e9151a5c261230998e8479bb98490087060f8c695b6e0bfd0608c526eac"
+      "sha256": "dad05493f5835543508acff14be93280d771bd5773ff611e73d0f60760670137"
     },
     {
       "path": "servo_workbench/__main__.py",
-      "sha256": "db93734836bb7ab97753a97449471f9b7dcd565c0de4c82bf15bd2b7b9d19a85"
+      "sha256": "8cb2101086c17424fc2ee2a0ffa347b1dda829ad37f6b47cc89441b8fb80e063"
     },
     {
       "path": "servo_workbench/actions.py",
-      "sha256": "ac4ffc31e28e886b4ab730ed30af99b22c0a4b15f4afa2ca0e8c44ed37356983"
+      "sha256": "adb4163f60dd51f66161c4d95de03b35b84cc4b4c4055fcb9d82fcc3ce2697d5"
     },
     {
       "path": "servo_workbench/agent.py",
-      "sha256": "74374854f025aa3e6f8320ece34b3d611110ae92cf777161c061cc3dbe44e462"
+      "sha256": "895aaa9bd28237a74ff095c1283e19b427fa551ebccdc7b788b9933ccb8d0f62"
     },
     {
       "path": "servo_workbench/engine.py",
-      "sha256": "eb1ff423bfd38ba47a56ea69d2b630859c80fc7f26f4e6b0a4f8b7cddb98d299"
+      "sha256": "aa65f3e0d98c34187bda01ef836d2dcfdbd2e8a68575e3dab860b58d1b318fb3"
     },
     {
       "path": "servo_workbench/profiles.py",
-      "sha256": "719be43dc8cd55c31076bdc94085d6c45410782b53e815816473552a7b246997"
+      "sha256": "8a8b14458153980a172a4400805a8770d4e7ff7c4a1fe951876a53f0001fee98"
     },
     {
       "path": "servo_workbench/protocol.py",
-      "sha256": "7cebe93b4a3a28038cc87bafe16b6ba7be597c1f25b34eb97bdb2d15a5b220ff"
+      "sha256": "09b440637e62f9768b87825973b4d99a6119be67cc9f7eb73a4e7f6556f366c3"
     },
     {
       "path": "servo_workbench/remote.py",
-      "sha256": "b8920b9c2f015160e19517f02ab7129ed3c6318300bbce25b0d5612dd1cd6b60"
+      "sha256": "da2e1d4a5fb64d674a401c5fdd29be346eecfc810922fd532cab8e4f0965cd17"
     },
     {
       "path": "servo_workbench/reports.py",
@@ -660,11 +672,11 @@
     },
     {
       "path": "servo_workbench/service.py",
-      "sha256": "d80fd4cc4a071271b0cf8cf666f5c2101948847d005cce0161b9520d5c714572"
+      "sha256": "d861d38af3ab85b41417dd71d74759afe067999db720e9f6b1bd9d7eff2cf3f5"
     },
     {
       "path": "servo_workbench/simulation.py",
-      "sha256": "b8b6d834faf65b36ba98be0b38e371760e809cd3c45c379e07eee9392d7f0889"
+      "sha256": "c10ea7c079cb0356888b20756775e3678bba4a0e991927d391fb1a67e6308bc4"
     },
     {
       "path": "servo_workbench/static/app.js",
@@ -672,7 +684,7 @@
     },
     {
       "path": "servo_workbench/static/index.html",
-      "sha256": "98839b0104f63c1cd0b97c00b09a6a85a907b5927c40b2f9d275c3d98d0f61f4"
+      "sha256": "c363da13552d7fb293feeedd180487237c9ec93863b521879065a18daa4b1c43"
     },
     {
       "path": "servo_workbench/static/style.css",
@@ -692,15 +704,19 @@
     },
     {
       "path": "servo_workbench/tests/test_install.py",
-      "sha256": "373f0768502d9d324cbb48c4c354cbe9e03d40b4ba440a7bc469311a235ba543"
+      "sha256": "c39750386d79a855e84be0a6ae1173b1dabe1c6216c219f8247025f5f84808f7"
     },
     {
       "path": "servo_workbench/tests/test_recovery.py",
       "sha256": "ddf3afa134897b0b34fcae3189cb5e5e80d3dae4958d5344e309ca5d351df86f"
     },
     {
+      "path": "servo_workbench/tests/test_safety_review.py",
+      "sha256": "d35012265607e5f7026fe0b703ed4c68374da9586724ef85aea191f955273270"
+    },
+    {
       "path": "servo_workbench/tests/test_transport.py",
-      "sha256": "eb7d02e24d6307981f386ce873651aae9f651e33a78dc797237da9d77b7aede2"
+      "sha256": "fe674a4277fd95abc7359c68141925e07fcec148828ba9f09aa1f37210b34979"
     },
     {
       "path": "servo_workbench/tests/test_workflow.py",
@@ -708,7 +724,7 @@
     },
     {
       "path": "servo_workbench/transport.py",
-      "sha256": "c874696219dc4a3f9b01a2acb628efe065ddd517e7d8079c04b3f669e92dda36"
+      "sha256": "d36f29af512e0673a7515c576dd3ac666f8c03ef666638f2440268f1a2f0ec59"
     },
     {
       "path": "studio/__init__.py",
@@ -736,7 +752,7 @@
     },
     {
       "path": "studio/manage.py",
-      "sha256": "e69a9551192d167fa09b9780792211b6fba9838a8587319e4fa9c8d1c4df520c"
+      "sha256": "c9db3b6dc3428b312b463d35ce31548b4ef4395aed8a8834005d3b3938be0b0d"
     },
     {
       "path": "studio/package-lock.json",
@@ -824,7 +840,7 @@
     },
     {
       "path": "studio/tests/test_studio.py",
-      "sha256": "8a9822734fb71b069ddbaef40393080ebd485a80aa3440ea449a74b526d2a582"
+      "sha256": "36da63bd290657bea36c622da76983a2297e8e88f7095e7a248e96753518cdad"
     },
     {
       "path": "tools/build-install-kit.py",
@@ -832,7 +848,7 @@
     },
     {
       "path": "tools/build-release.py",
-      "sha256": "ace2435920d9fd7a313db71b1d850f4eccb3fdd06a7a957cc0f9c30de61b5dc3"
+      "sha256": "464259ce9dd9e94590956e121cb1b2654b47c62209eb5ea4e82dad7e6c7f5742"
     },
     {
       "path": "tools/build-studio-assets.py",
@@ -844,7 +860,7 @@
     },
     {
       "path": "tools/build-workbench.py",
-      "sha256": "92b000e8b5aa4ba2538fe1735cc06a194500fe076ea4f894f3e2ae42d0baa8bd"
+      "sha256": "e513db010d071d472b71bc67e30003ad626cd95782f85b67bac572a47eba8432"
     },
     {
       "path": "tools/check-native.py",

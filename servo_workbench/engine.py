@@ -16,6 +16,7 @@ class Engine(Actions):
         self.store=store;self.bus=bus;self.clock=clock;self.authority=authority
         self.lock=threading.Lock();self.cancel=threading.Event()
         self.disconnected=threading.Event()
+        self.writer_lock=threading.Lock();self.tx_epoch=None;self.seen_bus_epoch=None
         self.candidate=None;self.stable=None;self.connected=False;self.last_seen=None
         self.fault_hook=fault_hook or (lambda stage:None)
         self.active=None;self.retry_at=0.;self.wait_started=clock();self.attempt=0
@@ -54,16 +55,18 @@ class Engine(Actions):
         return self.status()
 
     def claim(self,owner):
-        now=self.clock()
-        if self.writer and self.writer!=owner and now<self.writer_until:
-            raise Refused("VIEW_ONLY","另一操作端拥有批次；当前仅可查看")
-        self.writer=owner;self.writer_until=now+30
+        with self.writer_lock:
+            now=self.clock()
+            if self.writer and self.writer!=owner and (now<self.writer_until or self.lock.locked()):
+                raise Refused("VIEW_ONLY","另一操作端拥有批次或仍有作业；当前仅可查看")
+            self.writer=owner;self.writer_until=now+30
         return dict(owner=True,lease_s=30)
 
     def require_writer(self,owner):
-        if self.writer!=owner or self.clock()>=self.writer_until:
-            raise Refused("WRITER","请先接管操作端")
-        self.writer_until=self.clock()+30
+        with self.writer_lock:
+            if self.writer!=owner or self.clock()>=self.writer_until:
+                raise Refused("WRITER","请先接管操作端")
+            self.writer_until=self.clock()+30
 
     def _s(self):
         if not self.active:raise Refused("SESSION","请先创建或打开批次")
@@ -82,7 +85,7 @@ class Engine(Actions):
         return self.status()
 
     def status(self):
-        if not self.active:return dict(session=None,sessions=self.store.list(),component_version="0.1.0")
+        if not self.active:return dict(session=None,sessions=self.store.list(),component_version="0.1.1")
         s=self._s()
         out=clone(s)
         out["observed"]=clone(self.candidate)
@@ -109,7 +112,9 @@ class Engine(Actions):
         if self.clock()-self.wait_started>60:delay=5
         self.retry_at=self.clock()+delay
 
-    def snapshot(self,ident,baud,full=True):
+    def snapshot(self,ident,baud,full=True,addresses=None):
+        self.bus.reconnect()
+        epoch=self.bus.connection_epoch
         p=profile(self.bus.kind);raw={};errors=[]
         identity_addrs=[0,6] if self.bus.kind=="xl330" else [0,1,2,3]
         for a in identity_addrs:
@@ -118,8 +123,10 @@ class Engine(Actions):
         if full and ident_info["compatible"]:
             for a,(size,_) in p["registers"].items():
                 if str(a) in raw:continue
+                if addresses is not None and a not in addresses:continue
                 try:raw[str(a)]=self.bus.read(ident,baud,a,size)
-                except (OSError,ConnectionError,Refused) as e:errors.append(f"{a}: {e}")
+                except Refused as e:errors.append(f"{a}: {e}")
+        if self.bus.connection_epoch!=epoch:raise ConnectionError('读取途中连接发生变化；快照作废')
         return dict(id=ident,baud=baud,raw=raw,identity=ident_info,read_errors=errors,
                     metrics=metrics(self.bus.kind,raw),sampled_at=time.time())
 
@@ -130,21 +137,29 @@ class Engine(Actions):
             if s["paused"] or (not force and self.clock()<self.retry_at):return
             try:
                 if hasattr(self.bus,"reconnect"):self.bus.reconnect()
+                if self.seen_bus_epoch!=self.bus.connection_epoch:
+                    if self.seen_bus_epoch is not None:self._lost('适配器连接已更新，重新核对')
+                    self.seen_bus_epoch=self.bus.connection_epoch;s=self._s()
                 p=profile(s["kind"])
                 plans=s.get("plan") or (self.store.job(s["running_job"]) or {}).get("plan",{}) if s.get("running_job") else s.get("plan") or {}
-                ids=list(dict.fromkeys([plans.get("source_id",1),plans.get("target_id",1),1,
+                changes=plans.get('changes',[]);hint=s.get('discovery_hint') or {}
+                ids=list(dict.fromkeys([plans.get("source_id",1),plans.get("target_id",1),hint.get('id',1),1,
                       s["slots"][min(s["cursor"],14)]["id"]]+
+                      [c['value'] for c in changes if c['address']==p['id_addr']]+
                       [x["id"] for x in s["slots"] if x["state"]!="pending"]))
-                speeds=list(dict.fromkeys([plans.get("source_baud",1000000),1000000]+
+                speeds=list(dict.fromkeys([plans.get("source_baud",1000000),hint.get('baud',1000000),1000000]+
+                        [BAUDS[s['kind']][c['value']] for c in changes if c['address']==p['baud_addr'] and c['value'] in BAUDS[s['kind']]]+
                         ([57600] if s["kind"]=="xl330" else [])))
-                found=[]
+                found=[];unsupported=[]
                 for baud in speeds:
                     for ident in ids:
                         try:
                             snap=self.snapshot(ident,baud,False)
                             if snap["identity"]["compatible"]:found.append(snap)
+                            else:unsupported.append(snap)
                         except (ConnectionError,OSError):continue
-                if len(found)>1:raise Refused("MULTIPLE","检测到多个候选；初始化要求物理上只连接一个舵机")
+                if len(found)+len(unsupported)>1:raise Refused("MULTIPLE","检测到多个候选；初始化要求物理上只连接一个舵机")
+                if not found and unsupported:raise Refused('IDENTITY','设备有回应，但型号/固件不在契约中：'+json.dumps(unsupported[0]['identity'],ensure_ascii=False))
                 if not found:
                     self._lost("等待舵机回应；请核对供电和连接，工具不能判断电源是否关闭")
                     return
@@ -166,7 +181,8 @@ class Engine(Actions):
                     self.attempt=0;self.wait_started=self.clock()
                 self.retry_at=self.clock()+.25
             except Refused as e:
-                self._lost(str(e),"ambiguous" if e.code=="ADAPTER_AMBIGUOUS" else "blocked")
+                adapter='ambiguous' if e.code=='ADAPTER_AMBIGUOUS' else 'blocked' if e.code in ('PORT_BUSY','ROBOTD_ACTIVE','ROBOTD_PROCESS','BOARD_ROOT','BOARD_OS') else 'present'
+                self._lost(str(e),adapter)
                 s=self._s();self._save_state(s,connection_state="blocked",error_code=e.code)
             except (OSError,ConnectionError) as e:
                 self._lost(str(e),"missing")
@@ -188,22 +204,31 @@ class Engine(Actions):
         self.tick(True)
         return self.status()
 
-    def scan(self):
+    def scan(self,bauds=None):
         if not self.lock.acquire(False):raise Refused("BUSY","当前总线正在工作")
         try:
             if self._s()["paused"]:raise Refused("PAUSED","先恢复只读检测")
-            self.cancel.clear();found=[]
-            for baud in ([1000000,57600] if self.bus.kind=="xl330" else [1000000]):
+            if bauds is None:bauds=list(dict.fromkeys(BAUDS[self.bus.kind].values()))
+            if not isinstance(bauds,list) or not bauds or len(bauds)>len(BAUDS[self.bus.kind]) or any(type(b) is not int or b not in BAUDS[self.bus.kind].values() for b in bauds):
+                raise Refused('BAUD','扫描速率必须来自所选型号的速率表')
+            self.cancel.clear();found=[];complete=True;deadline=self.clock()+180
+            self._lost('正在完整只读扫描；旧预览已失效')
+            for baud in dict.fromkeys(bauds):
                 for ident in range(254 if self.bus.kind=="hd1910" else 253):
-                    if self.cancel.is_set():break
+                    if self.cancel.is_set() or self.disconnected.is_set() or self.clock()>=deadline:
+                        complete=False;break
                     try:
                         x=self.snapshot(ident,baud,False)
                         found.append(x)
                     except (ConnectionError,OSError):continue
-            return dict(found=found,read_only=True)
+                if not complete:break
+            s=self._s();s['discovery_hint']=dict(id=found[0]['id'],baud=found[0]['baud']) if complete and len(found)==1 and found[0]['identity']['compatible'] else None
+            self.store.save(s,'scan_completed',dict(complete=complete,found=len(found)))
+            self.retry_at=0
+            return dict(found=found,read_only=True,complete=complete,auto_selected=bool(s['discovery_hint']))
         finally:self.lock.release()
 
-    def _guard_snapshot(self,s,snap,model_confirmed=False):
+    def _guard_snapshot(self,s,snap,model_confirmed=False,allow_unlocked=False):
         p=profile(s["kind"]);r=snap["raw"]
         if not snap["identity"]["compatible"]:raise Refused("IDENTITY","型号或固件不在已评审契约中")
         if s["kind"]=="hd1910" and not model_confirmed:
@@ -215,7 +240,7 @@ class Engine(Actions):
             raise Refused("VOLTAGE","供电不在型号规格内或读数缺失")
         if m["temperature_c"] is None or m["temperature_c"]>=55:
             raise Refused("TEMPERATURE","温度未知或达到55°C；先检查并冷却")
-        if s["kind"]=="hd1910" and r.get("55")!=1:
+        if s["kind"]=="hd1910" and r.get("55") not in ((0,1) if allow_unlocked else (1,)):
             raise Refused("LOCK","EPROM锁未确认关闭写入窗口；请先核对中断任务")
 
     def plan(self,index=None,label="",model_confirmed=False,same_servo=False):
@@ -254,6 +279,7 @@ class Engine(Actions):
                       desired={str(a):v for a,v in wanted.items()},binding=binding,
                       model_confirmed=model_confirmed,identity=snap["identity"],
                       connection_epoch=s["connection_epoch"],preset_hash=s["preset_hash"])
+            plan['transport_epoch']=self.bus.connection_epoch
             plan["hash"]=digest(plan)
             slot["backup"]=slot["backup"] or snap
             slot["label"]=label.strip()
@@ -267,9 +293,23 @@ class Engine(Actions):
         if not plan or request.get("revision")!=s["revision"] or request.get("connection_epoch")!=s["connection_epoch"] or request.get("plan_hash")!=plan["hash"]:
             raise Refused("STALE_PLAN","计划已过期；请重新读取和预览")
         if s["paused"] or s["connection_state"]!="ready":raise Refused("NOT_READY","连接尚未就绪")
+        if plan.get('transport_epoch')!=self.bus.connection_epoch:raise Refused('STALE_PLAN','原始串口连接已变化')
+        self.bus.begin_transaction(plan['transport_epoch']);self.tx_epoch=plan['transport_epoch']
         return s,plan
 
+    def _end_transaction(self):
+        self.tx_epoch=None;self.bus.end_transaction()
+
+    def _before_write(self,purpose,job):
+        if self.tx_epoch is None or self.bus.connection_epoch!=self.tx_epoch:
+            raise ConnectionError('原始事务连接已变化；禁止写入及重连收尾')
+        if purpose!='cleanup':
+            if self.disconnected.is_set() or self.cancel.is_set():raise Refused('CANCELLED','发包前已取消或断开')
+            if job.get('kind')=='motion' and (self.clock()>=getattr(self,'motion_until',0) or self.clock()>=getattr(self,'motion_deadline',0)):
+                raise Refused('TEST_STOP','台架心跳或总时限已到，禁止继续发包')
+
     def _step(self,s,job,addr,size,value,ident,baud,purpose="configuration"):
+        self._before_write(purpose,job)
         if self.disconnected.is_set() and purpose!="cleanup":raise Refused("DISCONNECTED","代理连接已断开；冻结未发送写入")
         if self.cancel.is_set() and purpose!="cleanup":raise Refused("CANCELLED","已取消，停止发送后续写入")
         p=profile(s["kind"])
@@ -278,6 +318,8 @@ class Engine(Actions):
         job["steps"].append(dict(address=addr,value=value,id=ident,baud=baud,state="intent"))
         self.store.save_job(job)  # FULL synchronous commit before TX.
         self.fault_hook("after_intent")
+        self.bus.pre_write_guard=lambda:self._before_write(purpose,job)
+        self._before_write(purpose,job)
         if (self.disconnected.is_set() or self.cancel.is_set()) and purpose!="cleanup":
             raise Refused("CANCELLED","发包前已取消或断开")
         try:
@@ -308,6 +350,7 @@ class Engine(Actions):
         if not self.lock.acquire(False):raise Refused("BUSY","已有配置或检查正在进行")
         job=None
         try:
+            self.cancel.clear()
             s,plan=self._fresh(request)
             snap=self.snapshot(plan["source_id"],plan["source_baud"])
             self._guard_snapshot(s,snap,plan["model_confirmed"])
@@ -318,7 +361,7 @@ class Engine(Actions):
             self.store.save_job(job)
             s["phase"]="configuring";s["running_job"]=ident
             s["slots"][plan["index"]]["state"]="configuring";self.store.save(s,"apply_started")
-            self.cancel.clear();p=profile(s["kind"]);sid=plan["source_id"];baud=plan["source_baud"]
+            p=profile(s["kind"]);sid=plan["source_id"];baud=plan["source_baud"]
             if s["kind"]=="hd1910" and plan["changes"]:
                 sid,baud=self._step(s,job,55,1,0,sid,baud)
             for c in plan["changes"]:
@@ -348,7 +391,8 @@ class Engine(Actions):
                 self.store.save(s,"apply_interrupted",dict(error=str(e)))
                 self.connected=True;self._lost(str(e))
             raise
-        finally:self.lock.release()
+        finally:
+            self._end_transaction();self.lock.release()
 
     def reconcile(self,same_servo=False,model_confirmed=False):
         if not same_servo:raise Refused("IDENTITY_RECONFIRM","请核对实物标签，确认仍是中断的那只")
@@ -359,22 +403,28 @@ class Engine(Actions):
             old=s.get("running_job");job=self.store.job(old) if old else None
             snap=self.snapshot(self.candidate["id"],self.candidate["baud"])
             p=profile(s["kind"])
+            self._guard_snapshot(s,snap,model_confirmed,allow_unlocked=True)
+            self.bus.begin_transaction(self.bus.connection_epoch);self.tx_epoch=self.bus.connection_epoch
             # A relock is an explicit recovery action, never a reconnect side effect.
             if snap["raw"].get(str(p["torque"]))!=0:raise Refused("TORQUE","仍有扭矩或未知；禁止恢复")
             if s["kind"]=="hd1910" and snap["raw"].get("55")==0:
-                recovery=dict(id=new_id(),session=s["id"],kind="relock",state="running",steps=[])
+                recovery=dict(id=new_id(),session=s["id"],kind="relock",state="running",steps=[],plan=dict(source_id=snap['id'],source_baud=snap['baud']))
                 self.cancel.clear()
-                self._step(s,recovery,55,1,1,snap["id"],snap["baud"],purpose="cleanup")
+                try:self._step(s,recovery,55,1,1,snap["id"],snap["baud"],purpose="cleanup")
+                except Exception as error:
+                    recovery.update(state='uncertain',error=str(error));self.store.save_job(recovery);raise
                 recovery["state"]="verified";self.store.save_job(recovery)
                 snap=self.snapshot(snap["id"],snap["baud"])
             self._guard_snapshot(s,snap,model_confirmed)
             if job:
                 job["state"]="reconciled_read_only";job["observed_after_reconnect"]=snap;self.store.save_job(job)
+                if 'index' in job.get('plan',{}):s['cursor']=job['plan']['index']
             s["running_job"]=None;s["needs_identity"]=False;s["plan"]=None;s["phase"]="confirmation"
             self.store.save(s,"reconciled",dict(parent_job=old))
             self.candidate=snap
             return dict(observed=snap,remaining_requires_new_plan=True)
-        finally:self.lock.release()
+        finally:
+            self._end_transaction();self.lock.release()
 
     def verify_all(self,power_cycle_confirmed=False,model_confirmed=False):
         if not power_cycle_confirmed:raise Refused("POWER_CYCLE","请人工确认整组已断电重上电")
@@ -384,6 +434,8 @@ class Engine(Actions):
             if s["running_job"]:raise Refused("RECOVERY","先核对中断任务")
             if any(x["state"] not in ("readback","verified") for x in s["slots"]):
                 raise Refused("INCOMPLETE","15个槽位尚未全部完成单只读回")
+            self.bus.reconnect();self.bus.begin_transaction(self.bus.connection_epoch)
+            self.tx_epoch=self.bus.connection_epoch
             self.cancel.clear();s["phase"]="verifying_all";self.store.save(s,"power_cycle_claim",dict(basis="operator_claim_not_electrical_measurement"))
             rows=[]
             for slot in s["slots"]:
@@ -406,11 +458,12 @@ class Engine(Actions):
             s["power_cycle_evidence"]=dict(operator_confirmed=True,at=time.time(),readbacks=rows)
             self.store.save(s,"group_verified",dict(ok=s["phase"]=="complete"))
             return dict(rows=rows,hardware_acceptance=False,simulated=s["simulated"])
-        finally:self.lock.release()
+        finally:
+            self._end_transaction();self.lock.release()
 
     def report(self):
         s=self._s()
-        report=dict(schema="microduck-servo-workbench/v1",component_version="0.1.0",
+        report=dict(schema="microduck-servo-workbench/v1",component_version="0.1.1",
                     exported_at=time.time(),session=s,events=self.store.events(s["id"]),
                     jobs=[],event_window="first_200; full history in authority SQLite",
                     historical=True,live=False,identity="operator_labels_and_protocol_evidence",

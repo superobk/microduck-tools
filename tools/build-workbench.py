@@ -8,7 +8,7 @@ from pathlib import Path
 import tarfile
 import zipfile
 
-VERSION='0.1.0'
+VERSION='0.1.1'
 WHEEL='pyserial-3.5-py2.py3-none-any.whl'
 SHA='c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0'
 
@@ -21,6 +21,8 @@ def build(root,out,wheelhouse):
     paths += [p for p in (root/'servo_workbench').rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix!='.pyc']
     paths += list((root/'deploy/workbench').glob('*'))
     paths += list((root/'docs').glob('servo-workbench*.md'))
+    paths += list((root/'docs').glob('native-upgrade*.md'))
+    paths += [root/'docs/studio-0.6.0-guide.zh-CN.md']
     entries={str(p.relative_to(root)):p.read_bytes() for p in paths}
     entries['README.zh-CN.md']=(root/'docs/servo-workbench-guide.zh-CN.md').read_bytes()
     entries['wheels/'+WHEEL]=wheel.read_bytes()

@@ -1,10 +1,10 @@
-# 舵机工作台 0.1.0：先演练，再逐只配置
+# 舵机工作台 0.1.1：先演练，再逐只配置
 
 这是独立电脑工具，Tools主版本仍是0.6.0。支持XL330-M288与Feetech HD1910-C001，批次固定15个关节。它直接维护舵机寄存器，不修改robotd、IMU校正或升级管理器。**本轮仅完成本地软件验证，所有实机操作仍NOT_RUN，等待另行通知。**
 
 ## 先打开无硬件演练
 
-解压便携ZIP或tar.gz，进入其中 `microduck-servo-workbench-0.1.0` 文件夹。电脑需已安装Python3.11+；模拟不需任何第三方包。
+解压便携ZIP或tar.gz，进入其中 `microduck-servo-workbench-0.1.1` 文件夹。电脑需已安装Python3.11+；模拟不需任何第三方包。
 
 macOS / Linux：
 
@@ -64,7 +64,7 @@ Windows第一条用 `py -3.11 tools/setup-workbench.py`，第二条用 `workbenc
 python3 deploy/workbench/install-agent.py --kind hd1910 --port /dev/REPLACE_WITH_VERIFIED_UART
 ```
 
-`--port`必须替换为核实过的UART；XL330改 `--kind xl330`。此命令只校验包和显示目标，不安装、不打开串口。另获现场通知后，才可以在Linux板上以root执行同命令加 `--apply`，安装Python源码和离线pyserial到 `/opt/microduck-servo-workbench/releases/0.1.0`，建立 `current` 指针。不会安装自启动服务或修改robotd。
+`--port`必须替换为核实过的UART；XL330改 `--kind xl330`。此命令只校验包和显示目标，不安装、不打开串口。另获现场通知后，才可以在Linux板上以root执行同命令加 `--apply`，安装Python源码和离线pyserial到 `/opt/microduck-servo-workbench/releases/0.1.1`，建立 `current` 指针。不会安装自启动服务或修改robotd。
 
 板端需Python3.11+及venv/ensurepip；本包不是新的daemon二进制，不需编译robotd。板端ARM64环境、串口与实机尚未验证。代理安装失败保留部分版本供审查，旧current不切换；不要盲目重复安装或删除回滚材料。
 
@@ -118,3 +118,7 @@ sudo -n -- /opt/microduck-servo-workbench/current/agent.sh --stdio
 ```
 
 前者读取已运行网页后端，后者导出当前批次到新文件；不会启动一个新的串口后台。多个浏览器可查看，同一时刻只有一个操作端。页面刷新保留会话；会话丢失时重新接管，仍须重新预览。
+
+## 0.1.1复审变化
+
+写入确认固定到同一适配器连接，事务中不能自动重开串口。Feetech回显和错误应答不当读数；完整扫描可选择型号速率表，最长180秒且可取消，唯一完整候选才接回只读稳定检测。ID/波特率回退中断后重新定位并只处理剩余差异。台架实际发包前复查750ms心跳和20秒总时限，准备阶段也计时；缺位置/速度或实际超出±5°观测窗口时停止，不能把请求5°/s当实测速率。只允许原连接明确卸力收尾，断链不重连写扭矩。旧0.1.0代理须结束维护会话后单独升级，0.1.1不静默兼容。

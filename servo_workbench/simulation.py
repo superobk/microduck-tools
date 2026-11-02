@@ -24,6 +24,7 @@ class SimBus:
         self.sends=0
         self.mid_noop=False
         self.closed=False
+        self.connection_epoch=0;self.pinned_epoch=None;self.pre_write_guard=None
         self.create("A")
 
     def create(self,label,ident=1):
@@ -71,6 +72,8 @@ class SimBus:
         return d["raw"].get(addr,0)
 
     def write(self,ident,baud,addr,size,value,purpose="configuration"):
+        if self.closed:raise Offline('模拟连接已关闭')
+        if self.pre_write_guard:self.pre_write_guard()
         self.sends+=1
         if self.fail_at==self.sends and self.failure=="before":
             raise Offline("模拟发包前断流")
@@ -91,6 +94,8 @@ class SimBus:
             raise Offline("模拟已发包、应答前断流")
 
     def reset_mid(self,ident,baud):
+        if self.closed:raise Offline('模拟连接已关闭')
+        if self.pre_write_guard:self.pre_write_guard()
         d=self._device(ident,baud)
         self.sent.append(dict(id=ident,instruction=11,purpose="midpoint"))
         if not self.mid_noop:
@@ -101,7 +106,17 @@ class SimBus:
         self.closed=True
 
     def reconnect(self):
+        if self.closed and self.pinned_epoch is not None:raise Offline('事务内禁止重连')
+        if self.closed:self.connection_epoch+=1
         self.closed=False
+
+    def begin_transaction(self,epoch):
+        if self.closed or self.pinned_epoch is not None or self.connection_epoch!=epoch:
+            raise Offline('预览对应的模拟连接已变化')
+        self.pinned_epoch=epoch
+
+    def end_transaction(self):
+        self.pinned_epoch=None;self.pre_write_guard=None
 
     def ports(self):
         return [clone(self.adapter)] if self.usb else []

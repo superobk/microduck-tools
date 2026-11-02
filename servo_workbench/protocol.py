@@ -27,6 +27,7 @@ def packet(protocol, ident, instruction, params=b""):
         return b"\xff\xff"+body+bytes([(~sum(body))&255])
     if protocol!="dxl2":
         raise Refused("PROTOCOL","未知协议")
+    if ident>252:raise Refused('PACKET','DYNAMIXEL保留ID不可用于单播')
     body=stuff(bytes([instruction])+bytes(params))
     data=b"\xff\xff\xfd\x00"+bytes([ident])+(len(body)+2).to_bytes(2,"little")+body
     return data+crc16(data).to_bytes(2,"little")
@@ -66,5 +67,5 @@ class Decoder:
                 if len(body)<2 or body[0]!=0x55:
                     self.bad+=1;continue
                 body=body[1:]
-            out.append(dict(id=ident,error=body[0],data=body[1:]))
+            out.append(dict(id=ident,error=body[0],data=body[1:],packet=p))
         return out

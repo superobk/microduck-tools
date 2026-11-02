@@ -14,7 +14,7 @@ Microduck 校准与配置工具 **0.6.0**。保留 daemon-v0.16.3 的 IMU、15 �
 
 先看 [简单操作指南](docs/studio-0.6.0-guide.zh-CN.md)，再看 [统一设计与工作流](docs/studio-0.6.0-plan.zh-CN.md) / [本地测试和现场待验收](docs/studio-0.6.0-validation.zh-CN.md)。完整离线浏览器/模型/ARM64 wheels在本地deliverables，Git只存源码、依赖锁和文档。本轮没有连接板端，实际手柄/手机权限、运动与性能均NOT_RUN。
 
-## 舵机工作台0.1.0：电脑配置，板端联动
+## 舵机工作台0.1.1：电脑配置，板端联动
 
 新增独立XL330/HD1910双协议15关节向导，USB电脑或固定SSH板端执行；SQLite保存批次，上下电与USB改名后只读接续，每只配置明确确认，整组掉电复核。可选Reset Mid、有限台架测试、参数回退分别授权，Studio只导入历史报告，不抢正式总线。三个daemon版本的XL330预设保留，HD1910维护能力不等于robotd运动支持。所有硬件仍NOT_RUN。
 
@@ -102,3 +102,5 @@ python3 tools/microduck-dryrun.py cycle
 ```
 
 0.4.2补充可靠性审查：中断遗留临时文件不再阻塞恢复，切换前确认测试服务停止/任务结束，拒绝systemd别名和对外依赖联动，Linux验证绑定socket对端PID；包装入口仅允许Web只读monitor。详见[审查与修复](docs/dryrun-review.zh-CN.md)。
+
+PR #7安全复审已升级工作台0.1.1：原始连接固定、回显过滤、ID/速率中断恢复和动作保护，详见[复审说明](docs/servo-workbench-safety-review.zh-CN.md)。从当前0.16.3直接升级并安装Tools的[原生命令指南](docs/native-upgrade-0163-to-0183.zh-CN.md)和[完整回退](docs/native-upgrade-recovery.zh-CN.md)独立提供；板端仍NOT_RUN。

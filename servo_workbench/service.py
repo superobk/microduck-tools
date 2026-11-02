@@ -167,7 +167,7 @@ class Controller:
             if method=="pause":return e.pause(True)
             if method=="resume":return e.pause(False)
             if method=="detect":return e.detect()
-            if method=="scan":return e.scan()
+            if method=="scan":return e.scan(b.get('bauds'))
             if method=="reconcile":
                 return e.reconcile(b.get("same_servo") is True,b.get("model_confirmed") is True)
             if method=="verify":
