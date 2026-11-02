@@ -3,7 +3,7 @@
   "tool_version": "0.6.0",
   "stage": "dual-protocol-servo-workbench-0.1.0",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "git_base": "ab9e20366546db784f516d3ac34faadcd70149e6",
+  "git_base": "b34053d4a6238a79e67930635562a5627d6132ca",
   "scope": "independent persistent servo wizard; historical Studio reports; original calibration/native/frozen upgrade unchanged; hardware NOT_RUN",
   "files": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "path": ".github/workflows/servo-workbench.yml",
-      "sha256": "5b3fd8d4eb057d58f26d4d15fd428a5c8b4c73781349fb243a45de43834842a7"
+      "sha256": "5b9a603645489629a423ebb0a23eb9f80ea3a8783e35563a76b9e5e9e293c1c8"
     },
     {
       "path": ".gitignore",
@@ -572,7 +572,7 @@
     },
     {
       "path": "docs/servo-workbench-validation.zh-CN.md",
-      "sha256": "322ce081b3a0339ad5f2349a2d0b16743512601d489cb53e619cc56b01d778ee"
+      "sha256": "f52fb298b7d4b1f4af1eb4b44e8f68e60970c7fc9680a81ab02560dcc271aa3c"
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
@@ -692,7 +692,7 @@
     },
     {
       "path": "servo_workbench/tests/test_install.py",
-      "sha256": "7cbb823724834862b735e5fc1f763e182e9d1a0259ec1e1f4be5b8cf11c2b3c5"
+      "sha256": "373f0768502d9d324cbb48c4c354cbe9e03d40b4ba440a7bc469311a235ba543"
     },
     {
       "path": "servo_workbench/tests/test_recovery.py",

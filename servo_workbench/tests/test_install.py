@@ -13,7 +13,7 @@ class InstallerTests(unittest.TestCase):
         source=Path(d)/'source';source.mkdir()
         files={'deploy/workbench/agent.sh':'#!/bin/sh\n','tools/setup-workbench.py':'# fixture\n'}
         for n,text in files.items():
-            p=source/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+            p=source/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(text.encode('utf-8'))
         (source/'WORKBENCH-MANIFEST.json').write_text(json.dumps(dict(component_version='0.1.0',files=[dict(path=n,sha256=hashlib.sha256(v.encode()).hexdigest()) for n,v in files.items()])))
         return source
     def test_install_isolated_root_no_services_and_refuses_overwrite(self):

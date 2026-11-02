@@ -17,6 +17,8 @@
 
 共396项Python与11项Node，无测试跳过。实际本机为macOS/Python3.14.7；最低声明Python3.11，另提供macOS/Windows/Linux + Python3.11 CI，托管CI以PR实际结果为准，不能把本机结果称作Windows通过。
 
+首次托管Windows CI发现安装测试夹具的write_text被系统换行转换为CRLF，造成预期哈希与文件字节不一致；已改为固定UTF-8字节写入，保留生产校验强度。Linux工作台82项通过，macOS测试步骤通过但被矩阵fail-fast取消；后续设置三个平台独立完成，最终状态与运行链接登记在交付release-record，初次失败不覆盖。
+
 完整原始输出位于工作区中央审计session `20261102T075521Z-100f26a21344/commands/`，关联运行证据 `logs/servo-workbench-20261102T075521Z/`。本轮早期Plan只读核查与压缩恢复时README直读缺口已如实note，未补造工具收据。测试中预期错误HTTP响应与ResourceWarning不等于产品失败；初期loopback sandbox权限、SDK stuffing参考差异、状态落盘失败及浏览器截图超时均保留原记录，修复/替代后重新验证。
 
 写中断覆盖：写前intent、发包后、应答缺失、读回后、完成提交前；本地子进程 `os._exit(19)` 后SQLite integrity_check为ok，重开只读，不重发。该实验不是物理断电、不证明存储硬件掉电保障。
