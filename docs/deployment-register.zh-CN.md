@@ -62,3 +62,11 @@ Tools active PID2174、Studio10262/助手2185；robotd1071、mediad1220未被本
 ToF未通过：tofd0.18.3 PID753 active/NRestarts0，曾发现VL53L5CX/0x29并15Hz测距，板端19:49:22记录停止回应；当前tof.stream返回“the sensor stopped answering; retrying”，不是单纯前端断开。fuser快照仅见tofd持有i2c-3；尚不能归因升级或确定供电/接线/I2C/驱动根因。Studio通用不可用未呈现完整原文，登记为限制。ToF重启、总线扫描和硬件恢复NOT_RUN，后续在板端初始化范围继续；active或工具安装通过不能冒充传感器验收。
 
 此前HTTPS显式CA严格验证通过；macOS信任命令超时、CLI NOT_TRUSTED，后来IAB曾可打开HTTPS配对页，不宣称全部信任检查通过。用户选择HTTP后无需继续CA设置；原证书/私钥与https-before-loopback-http备份保留，HTTPS8444停止监听。证据logs/tools-board1-resume-20261103T114916Z/resume-status.json；回归321dd5c5842448f3、HTTP部署f78d01181e0e45ae、ToF原文079a551e5eea4aa3、持有者b5180ec832cd4a9f。外层历史tar.gz未刷新，本地解包交付清单已更新；本轮不推送。
+
+## 2026-11-03：默认LAN HTTP与一键访问码（待上板）
+
+用户要求默认HTTP/0.0.0.0、不与duck服务冲突、推送PR；随后确认板端暂时关闭，先完成代码/PR。本轮首次SSH超时，未进行远端变更。新setup默认lan-http/8790，--port实际生效、拒绝8443/8765/8766并检查占用；默认不生成CA，HTTPS可选、旧无transport的HTTPS配置兼容。精确Host/Origin、认证和CSRF保留，HTTP仅可信局域网，不能替代安全上下文。
+
+已有Studio用http-configure.sh登记兼容启动器和pair-code.sh，冻结运行包/venv/资产不覆盖，功能开关不变；保持停止，明确start。network-rollback只恢复网络字段/unit，保留独立功能设置，中断和漂移均验证；不触碰robotd/tofd/mediad/工作台。75项Studio回归和本地冻结源码HTTP认证全流程通过；首次夹具失败和审计误判均保留。目标板LAN访问/应用/回退NOT_RUN，ToF未修复。
+
+原逐条指南三份同步，未新增指南；本轮网络源码归档置于既有交付packages/studio-lan-http-20261103，原transfer/旧包保留。验证logs/tools-studio-lan-http-20261103T132518Z/http-smoke.json；审计20261103T132518Z-01cb64a497cc。PR沿用#8并重写说明，不合并。

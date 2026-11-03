@@ -71,3 +71,5 @@ agent-browser --session studioedge eval --stdin < tools/studio-semantic-qa.js
 ```
 
 语义样本测试需便携包内 `assets/validation`，生产Worker本身不依赖样本。原Web移动检查用 `tools/studio-legacy-mobile-qa.py`，会先拒绝非loopback或非DEMO，再注入显示CSS/标签，全程不提交表单。实际设备与板端命令绝不由这些测试自动启动。
+
+2026-11-03 LAN HTTP增量：75项Studio测试通过，新增17项端点/端口/旧HTTPS/冻结运行包迁移/中断及仅网络回退用例，shell语法通过。独立本地进程以冻结36de9bb源码运行新启动器，页面200、未登录401、错误Host/Origin403、配对200/重用409、已登录200、无CSRF403，凭据只在内存，进程已停止。首次测试夹具因macOS目录符号链接及systemd路径映射失败，修正后通过；实际保护未放宽。板端本轮关闭，LAN访问、板端迁移/回退、手机设备和性能NOT_RUN，ToF此前故障未恢复。

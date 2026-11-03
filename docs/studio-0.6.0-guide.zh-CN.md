@@ -1,6 +1,6 @@
 # Studio 0.6.0：安装、看状态、配置、停止与回退
 
-**本次没有执行板端命令。以下板端命令先留审阅，等现场另行通知。** Studio是独立附加界面；0.16.3→0.18.3升级继续使用冻结0.5.0包的 [升级脚本](manual-upgrade-0183.zh-CN.md)，不要把新源码替换进旧管理器会话。
+**本轮LAN HTTP代码已本地验证，板端关闭、尚未部署；此前第一板安装/SSH配对记录见逐条指南，勿混为同一验收。** Studio是独立附加界面；0.16.3→0.18.3升级继续使用冻结0.5.0包的 [升级脚本](manual-upgrade-0183.zh-CN.md)，不要把新源码替换进旧管理器会话。
 
 **首次升级并安装Studio推荐[统一安装套件](install-upgrade-simple.zh-CN.md)：一次上传、一个 `sudo ./duck.sh`，按N逐步继续。下文保留独立Studio命令及完整路径说明。**
 
@@ -22,11 +22,11 @@ python3 -m venv .venv-studio
 
 | 动作 | 命令 | 意义与预期 |
 |---|---|---|
-| 安装预览 | `sudo ./studio.sh setup --server-ip 192.168.1.56 --assets "$PWD/runtime-assets" --wheels "$PWD/wheels"` | 只显示将安装，不改服务。先核对CPython3.11或3.13 ARM64及匹配的wheel/锁文件、systemd、robot组、离线wheels、venv/openssl可用。 |
-| 明确安装 | 上一条末尾加 `--apply --confirm EXECUTE` | 独立复制版本、离线建venv、生成局域网CA/证书、写三份Studio unit和两个手柄启动条件保护；不启动Studio或robotd。已有未知文件不覆盖。 |
+| 安装预览 | `sudo ./studio.sh setup --server-ip 192.168.1.56 --assets "$PWD/runtime-assets" --wheels "$PWD/wheels"` | 只显示将安装，不改服务。先核对CPython3.11或3.13 ARM64及匹配的wheel/锁文件、systemd、robot组、离线wheels、venv可用；默认HTTP不需要证书。 |
+| 明确安装 | 上一条末尾加 `--apply --confirm EXECUTE` | 独立复制版本、离线建venv、默认0.0.0.0:8790 HTTP、安装pair-code.sh、写三份Studio unit和两个手柄启动条件保护；不启动Studio或robotd。已有未知文件不覆盖。 |
 | 启动 | `sudo ./studio.sh start --apply --confirm EXECUTE` | 只启动Studio及其助手，不开舵机、不自动接管手柄；也不设开机自启。 |
 | 查看 | `sudo ./studio.sh status` | 看安装阶段、登记哈希、入口、控制/相机开关、两个进程、slice限额和交接状态。异常时停止，不盲目重装。 |
-| 登录 | `sudo ./studio.sh pair --apply --confirm EXECUTE` | 生成5分钟一次性登录码，不是蓝牙配对。每台显示端各生成一次，最多两个活跃显示端。 |
+| 登录 | `sudo /opt/microduck-tools/studio/pair-code.sh` | 生成5分钟一次性登录码，不是蓝牙配对。每台显示端各生成一次，最多两个活跃显示端。 |
 
 默认真实控制和Camera均关闭。只看状态不需要打开它们。要为后续现场验收配置开关：
 
@@ -39,9 +39,37 @@ sudo ./studio.sh status
 
 第一条预览。第二条先停Studio，再只改独立配置、更新登记哈希；保持停止。第三条明确重新启动读取配置。第四条核对磁盘设置；网页仍须通过运行身份、健康与校正核验才开放真实控制。关闭开关用 `--controls off --camera off`。不要手改已登记文件绕过校验，否则status/start/rollback会因外部漂移拒绝。
 
-## HTTPS第一次连接
+## 默认局域网HTTP与一键访问码
 
-setup打印 `https://实际IP:8443/studio/`、CA证书位置及SHA256指纹。通过你已信任的本地/SSH文件通道取回 `/etc/microduck-studio/ca.crt`，对照终端指纹后安装到该手机/电脑的可信证书存储；iOS安装描述文件后还需在证书信任设置明确开启完全信任。浏览器必须显示可信HTTPS，再允许手机姿态。证书错误不要用忽略警告作为验收。CA私钥 `/etc/microduck-studio/ca.key` 只留板端root，不能复制到手机、Git或证据包。地址变化/证书一年到期须另行维护证书，不自动扩大信任。仅限可信局域网。
+新源码setup默认监听0.0.0.0:8790，打开http://实际板端IP:8790/studio/；无需SSH转发或证书。0.0.0.0是绑定地址，不是浏览器地址。--port可指定其他空闲端口；新配置拒绝8443/8765/8766，分别保留给mediad/Tools/USB工作台。实际占用检查失败会拒绝继续，不停止其他服务。精确Host/Origin、配对及CSRF保留，未登录数据接口401。
+
+~~~sh
+sudo /opt/microduck-tools/studio/pair-code.sh
+~~~
+
+一条命令在本人终端显示页面及5分钟单次码，使用安装登记中的venv，不固定Python小版本。每个显示端各配对一次，最多两个活跃端，会话8小时；服务重启后重新配对。码不进入Git、日志或截图。
+
+已有冻结Studio不要重跑setup。从本轮新源码解包目录执行：
+
+~~~sh
+sudo ./deploy/studio/http-configure.sh ACTUAL_BOARD_IPV4
+sudo ./tools/studio.sh start --apply --confirm EXECUTE
+sudo ./tools/studio.sh status
+~~~
+
+第一条只改Studio网络并保持停止；不修改原不可变运行源码/venv/daemon，不改变功能开关。网络中断恢复或回退用同一新源码：
+
+~~~sh
+sudo ./tools/studio.sh network-rollback --apply --confirm EXECUTE
+~~~
+
+仅恢复先前网络字段和unit，不卸载Studio，不覆盖独立功能设置；回退后保持停止，明确start再生效。network-before.json保存在安装登记目录；外部漂移会拒绝覆盖。本轮板端暂时关闭，以上迁移/回退尚未执行。
+
+HTTP只用于可信局域网，配对及会话不经TLS加密，不暴露公网。手机姿态/Gamepad等需要安全上下文的能力仍受浏览器限制，不能将HTTP当作解除权限限制。
+
+HTTPS仍可选择：新安装setup增加--transport https，默认8790，也可--port指定空闲端口。仅HTTPS安装生成CA/叶证书并打印位置/指纹；旧HTTPS配置无transport字段也继续识别为HTTPS。通过已信任SSH取回/etc/microduck-studio/ca.crt并核对指纹，浏览器信任后再验收权限；不忽略证书警告，不复制ca.key。IP变化/证书过期需另核对和维护SAN。
+
+冻结旧归档保留原HTTPS默认及端口/证书问题的历史快照，不能当作已得到新默认。
 
 ## 网页怎么用
 
@@ -100,7 +128,7 @@ sudo ./studio.sh recover --apply --confirm EXECUTE
 | 内容 | 位置 / 状态 |
 |---|---|
 | 独立源码/venv/浏览器资产 | `/opt/microduck-tools/studio/releases/0.6.0/`；setup后创建，尚未板端执行 |
-| Studio开关/HTTPS路径 | `/etc/microduck-studio/config.json` |
+| Studio网络/功能开关/可选HTTPS路径 | `/etc/microduck-studio/config.json` |
 | 独立服务 | `/etc/systemd/system/microduck-studio{,-helper}.service`、`microduck-studio.slice` |
 | 普通服务数据/配对哈希 | `/var/lib/microduck-studio/`；码/会话不进Git或证据 |
 | 安装登记/独占锁 | `/var/lib/microduck-studio-install/install.json`、`lifecycle.lock` |
@@ -109,7 +137,7 @@ sudo ./studio.sh recover --apply --confirm EXECUTE
 | 原工具插件 | `/etc/microduck-tools/plugins.json`，原IMU/关节校正仍按旧指南指定路径；不会自动改写 |
 | 原daemon配置层 | `/etc/robot/robotd.toml`、`/var/lib/robot/robotd.toml`及其指向的校正文件；Studio不迁移/覆盖 |
 
-Python/Web为源码，不需要板端C/Rust编译。交付已准备Three/Transformers/ORT浏览器文件、固定q8模型和**CPython3.11 Linux ARM64**原有二进制wheels，以及本轮独立准备的**CPython3.13 Linux ARM64普通GIL** wheels（10个固定依赖、逐文件哈希）。它们没有在本机执行ARM64动态加载；Python其他ABI/32位/不同Linux运行库不能宣称可用，脚本直接拒绝不匹配Python。板端需有与所选解释器一致的venv/ensurepip（例如python3.13-venv）、systemd/systemd-analyze、openssl、robot组及native Unix socket权限；脚本不自动apt安装系统包。官方13个程序与两个native校正候选沿用冻结0.5.0包，已准备/编译，但本轮不重编译或替换，现场动态库及物理验收仍未执行。
+Python/Web为源码，不需要板端C/Rust编译。交付已准备Three/Transformers/ORT浏览器文件、固定q8模型和**CPython3.11 Linux ARM64**原有二进制wheels，以及本轮独立准备的**CPython3.13 Linux ARM64普通GIL** wheels（10个固定依赖、逐文件哈希）。它们没有在本机执行ARM64动态加载；Python其他ABI/32位/不同Linux运行库不能宣称可用，脚本直接拒绝不匹配Python。板端需有与所选解释器一致的venv/ensurepip（例如python3.13-venv）、systemd/systemd-analyze、robot组（可选HTTPS另需openssl）及native Unix socket权限；脚本不自动apt安装系统包。官方13个程序与两个native校正候选沿用冻结0.5.0包，已准备/编译，但本轮不重编译或替换，现场动态库及物理验收仍未执行。
 
 
 ## Python3.13板端安装增量（2026-11-03）

@@ -955,7 +955,7 @@ asyncio.run(h.take())
             j.write = write
             with patch(
                 "studio.preflight.check", return_value=dict(ok=True)
-            ), patch.object(manage, "BASE", root / "addon"), patch.object(
+            ), patch("studio.network.ensure_port_available"), patch.object(manage, "BASE", root / "addon"), patch.object(
                 manage, "CONFIG", root / "config/config.json"
             ), patch.object(
                 manage, "run", side_effect=run
@@ -980,6 +980,12 @@ asyncio.run(h.take())
                     j,
                 )
             self.assertEqual(j.data["phase"], "installed")
+            installed = json.loads((root / "config/config.json").read_text())
+            self.assertEqual(installed["public_origin"], "http://192.168.9.9:8790")
+            self.assertEqual(installed["listen"], "0.0.0.0")
+            self.assertFalse(any(c[0] == "openssl" for c in commands))
+            self.assertFalse((root / "config/ca.key").exists())
+            self.assertTrue((root / "addon/pair-code.sh").exists())
             release=Path(j.data['release'])
             pip_calls = [c for c in commands if "pip" in c and "install" in c]
             self.assertEqual(len(pip_calls), 1)

@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 import resource
 import secrets
-import ssl
 import struct
 import time
 import urllib.parse
@@ -26,9 +25,10 @@ DEFAULTS = dict(
     demo=False,
     controls_enabled=False,
     camera_enabled=False,
-    listen="127.0.0.1",
-    port=8443,
-    public_origin="https://127.0.0.1:8443",
+    listen="0.0.0.0",
+    port=8790,
+    public_origin="http://127.0.0.1:8790",
+    transport="lan-http",
     state_dir="/var/lib/microduck-studio",
     asset_dir=str(ROOT / "studio/vendor"),
     model_dir=str(ROOT / "studio/models"),
@@ -1346,10 +1346,12 @@ def main():
     context = None
     if not cfg["demo"]:
         if not a.config:
-            raise SystemExit("真实服务须使用本地setup生成的HTTPS配置，默认不启用控制")
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        context.minimum_version = ssl.TLSVersion.TLSv1_2
-        context.load_cert_chain(cfg["cert"], cfg["key"])
+            raise SystemExit("真实服务须使用本地setup生成的配置，默认不启用控制")
+        from .network import tls_context
+        # Infer legacy HTTPS only when its saved configuration has no transport.
+        if "transport" not in (json.loads(a.config.read_text()) if a.config else {}):
+            cfg.pop("transport", None)
+        context = tls_context(cfg)
     print(
         "Studio "
         + (

@@ -1,8 +1,92 @@
 # 第一块板 Tools + Studio + 舵机工作台：逐条命令、原因与预期结果
 
+**2026-11-03 本轮状态：代码和本地验证已完成；用户确认板端暂时关闭，本轮未部署LAN HTTP。** 上次已安装的仍是SSH回环HTTP配置；不能把下方目标地址当成板端已经生效。robotd0.18.3+calv3、舵机工作台和舵机参数不在本轮变更范围。
+
+**新默认方案：** Studio监听 **0.0.0.0:8790**，电脑/手机直接打开 **http://192.168.1.56:8790/studio/**。0.0.0.0是绑定地址，浏览器填写实际板端IP。8790避开mediad8443、Tools8765与工作台8766；应用/启动前还会检查实际占用，冲突则拒绝，不停止其他服务。精确Host/Origin、配对、CSRF、HttpOnly/SameSite会话保留。HTTP仅用于可信局域网，配对及会话不受TLS加密；不开放公网。手机姿态等要求安全上下文的浏览器能力仍需可选HTTPS，不宣称HTTP能解除浏览器限制。
+
+**板端开机后第一次应用（以下全部待执行）**
+
+Mac上当前交付目录为：
+/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103/packages/studio-lan-http-20261103
+
+```bash
+cd /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103/packages/studio-lan-http-20261103
+shasum -a 256 -c microduck-tools-0.6.0-http-network.tar.gz.sha256
+scp microduck-tools-0.6.0-http-network.tar.gz microduck-tools-0.6.0-http-network.tar.gz.sha256 root@192.168.1.56:/tmp/
+```
+
+用途：先核对本轮源码增量，再传给已有板端；不会安装/替换daemon。板端目前关闭，本轮未执行SCP。
+
+SSH进入板端root终端后：
+
+```bash
+cd /tmp
+sha256sum -c microduck-tools-0.6.0-http-network.tar.gz.sha256
+install -d -m 700 /var/lib/microduck-tools-install/board1-20261103/studio-lan-http-20261103
+tar -xzf microduck-tools-0.6.0-http-network.tar.gz -C /var/lib/microduck-tools-install/board1-20261103/studio-lan-http-20261103
+cd /var/lib/microduck-tools-install/board1-20261103/studio-lan-http-20261103/microduck-tools-0.6.0
+./deploy/studio/http-configure.sh 192.168.1.56
+```
+
+用途：对已有Studio应用一次网络配置，不执行setup，不重装依赖。新入口在原Journal独占锁下验证冻结版本、检查端口、保存网络回退材料、仅停Studio并登记新启动器与一键码脚本，**保持停止**。原137份运行源码、venv、浏览器资产、证书/私钥和daemon不覆盖。第二参数可指定其他空闲端口，例如8791；访问地址随之变化。IP变化须以新IP重新配置，不能扩大Host为通配。
+
+**日常启动、访问码与检查（应用后使用）**
+
+```bash
+systemctl start microduck-studio-helper microduck-studio
+```
+
+用途：启动Studio及其已有受限助手，不启动舵机工作台、不启用控制、不重启robotd，也不设置开机自启。
+
+```bash
+/opt/microduck-tools/studio/pair-code.sh
+```
+
+用途：一条命令显示访问页面和5分钟一次性码。用安装登记所指向版本的venv，不固定旧源码路径或Python3.11。码只填网页，不发聊天、截图或日志；每个显示端单独配对，旧码被使用后失效。
+
+也可以在Mac直接一键生成：
+
+```bash
+ssh -t root@192.168.1.56 /opt/microduck-tools/studio/pair-code.sh
+```
+
+```bash
+systemctl status microduck-studio microduck-studio-helper --no-pager
+ss -lntp 'sport = :8790'
+```
+
+用途：应见active与0.0.0.0:8790。再打开目标网页并配对，应显示LIVE实体反馈；未登录状态接口应401、非配置Host/Origin应403。控制与Camera开关保持false。必须实际完成这些步骤才可登记板端生效；本轮仅本地验证。
+
+```bash
+systemctl stop microduck-studio
+```
+
+用途：仅停止Studio。助手和手柄保护保留，不自动恢复手柄；停止工具不代表实体断电。
+
+**只回退本次网络设置（不是卸载Tools或回滚daemon）**
+
+从上面的新解包源码目录运行：
+
+```bash
+./tools/studio.sh network-rollback --apply --confirm EXECUTE
+```
+
+用途：恢复上一次Studio的监听、端口、Origin、transport及unit，保留之后独立修改的功能开关。网络变更中断时也先用它恢复，不重发未完成配置；外部文件漂移会拒绝覆盖。恢复后保持停止，再明确start。此前配置若为SSH回环HTTP，回退后重新用原SSH通道；不能继续用LAN地址。
+
+网络配置文件仍为/etc/microduck-studio/config.json，启动器位于/opt/microduck-tools/studio/launchers/{studio-http.py,network.py}，回退快照位于/var/lib/microduck-studio-install/network-before.json。旧快照按时间改名保留。不要手改install.json，也不要用完整rollback/recover替代网络回退。
+
+**本轮验证与边界**
+
+75项Studio回归通过；真实本地HTTP进程使用冻结36de9bb源码经新启动器启动，验证页面200、未登录401、错误Host/Origin403、正确配对200、重用码409、已登录200、缺CSRF403，测试进程已停止。没有把模拟或本地无机器人测试当成板端验收。首次测试夹具路径/映射失败已修正并保留输出，实际安装保护未放宽。
+
+当前ToF仍按上次只读证据登记为“sensor stopped answering; retrying”，未修复或归因升级；本轮未连接板端、未重启tofd、未启动工作台、未写舵机或运动。交付里的transfer和旧包仍冻结；本轮独立网络源码归档不含wheel或资产，复用已安装版本。下面保留上次实际安装/配对记录及更早的安装历史，不能当成本轮LAN部署结果。
+
+
+**上次已部署SSH回环HTTP和配对（历史）**
+
 日期：2026-11-03（Asia/Shanghai）。当前目标：**root@192.168.1.56**，已通过原SSH主机密钥核验为同一Radxa ZERO 3。Debian13/aarch64/glibc2.41，板端继续使用现有 **Python3.13.5**，不增加3.11环境。robotd已是0.18.3+calv3，本页只管理Tools/Studio，不重跑daemon升级。
 
-**当前结论：Tools与Studio已安装运行，用户已完成配对，实际浏览器已显示LIVE实体反馈。ToF单独存在传感器无回应故障，尚未恢复。** 电脑舵机工作台保持停止；本轮无舵机写入、扭矩/Policy/HOME或运动操作。
+**上次已验证结论（历史）：Tools与Studio已安装运行，用户已完成配对，实际浏览器已显示LIVE实体反馈。ToF单独存在传感器无回应故障，尚未恢复。** 电脑舵机工作台保持停止；本轮无舵机写入、扭矩/Policy/HOME或运动操作。
 
 **日常使用只需三个入口**
 

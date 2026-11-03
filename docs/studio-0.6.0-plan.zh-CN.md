@@ -77,7 +77,7 @@ ToF仅核对8×8：status5/9有效、255无目标，其他无效；以源时间�
 
 ## 接口、隔离与资源
 
-`/api/studio/v1/` 提供 pair/status/stream/model/query/action/jobs/diagnostics/logs/camera/resources；真实反馈 `source=live`，模拟 `source=simulation`，环境为 `estimated=true`。未认证只能看登录壳和静态UI；数据/资产/模型需一次性配对登录。可信HTTPS、同源Host/Origin、HttpOnly/SameSite cookie、CSRF写校验、WS同源，登录码5分钟一次性、会话8小时；不要暴露公网。
+`/api/studio/v1/` 提供 pair/status/stream/model/query/action/jobs/diagnostics/logs/camera/resources；真实反馈 `source=live`，模拟 `source=simulation`，环境为 `estimated=true`。未认证只能看登录壳和静态UI；数据/资产/模型需一次性配对登录。默认可信局域网HTTP（0.0.0.0:8790）、可选HTTPS；同源Host/Origin、HttpOnly/SameSite cookie、CSRF写校验、WS同源，登录码5分钟一次性、会话8小时；不要暴露公网。
 
 一条共享robot状态订阅5Hz、一条共享ToF、一条按需生命周期内的pad.input和1Hz健康轮询；两端共享缓存和结果，不逐浏览器启动原生客户端。pad输入仅保留最新附着/轴键帧，不保留高频IMU批次。没有活跃可见实体显示端3秒后释放订阅。原始每帧262KiB读取上限、字段裁剪、最新值覆盖、2MiB遥测缓存预算；慢端限速/超时断开，不累积历史队列。相机缓存独立3MiB。
 
@@ -98,3 +98,5 @@ ToF仅核对8×8：status5/9有效、255无目标，其他无效；以源时间�
 本地测试包括重复/回退时间戳、缺失/非法数值、超时、交接失败/恢复意图、安装中断/文件漂移、HTTP/WS认证、原Web CSRF代理、白名单和演练隔离、旧236项回归、客户端投影/语义质量门槛、真实浏览器七场景与响应式检查。六张独立公共照片只作语义冒烟，不足以验收实机场景准确率；真实手柄/手机权限、实际身体/里程计对齐、失联物理停车、机身朝向和资源限额实际生效均须现场测试。
 
 交付见 [使用与部署指南](studio-0.6.0-guide.zh-CN.md)、[验收登记](studio-0.6.0-validation.zh-CN.md)、[总部署登记](deployment-register.zh-CN.md)。独立 `studio.sh setup/configure/start/status/pair/stop/hand-back/recover/rollback/demo`，默认预览，真实变更另加明确执行参数。本地交付含源运行包、离线ARM64 wheels、浏览器资产和模型、逐文件哈希、截图与测试证据。旧0.5.0管理器/原生程序/核心校正代码保持冻结，不迁移正在进行的旧管理会话。
+
+2026-11-03网络修订：按用户要求默认HTTP，保留认证/CSRF和明确功能开关；明文局域网访问不替代安全上下文能力。旧运行包经外置受控启动器和Journal适配，无需原位覆盖；network-rollback只回退网络。板端关闭，本次LAN部署和性能NOT_RUN。

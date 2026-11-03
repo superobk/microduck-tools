@@ -171,7 +171,7 @@ def native_gate():
         raise RuntimeError(
             "本交付支持CPython3.11或3.13 ARM64普通GIL版本；需要匹配的离线wheel和锁文件"
         )
-    for tool in ("systemctl", "openssl", "useradd", "usermod"):
+    for tool in ("systemctl", "useradd", "usermod"):
         shutil.which(tool) or (_ for _ in ()).throw(RuntimeError("缺少 " + tool))
 
 
@@ -295,15 +295,101 @@ def prepare_release(journal, assets, wheels):
     return release
 
 
+def configure_network(args, journal):
+    """Change only Studio transport. Keep the frozen runtime and a recoverable before image."""
+    from .network import settings, ensure_port_available, validate
+    if journal.data["phase"] != "installed":
+        raise RuntimeError("安装状态不完整；先查看status/网络回退")
+    journal.verify()
+    verify_release(journal.data["release"])
+    if args.controls is not None or args.camera is not None:
+        raise RuntimeError("网络配置和功能开关请分别操作")
+    cfg = cfg_read()
+    endpoint = settings(args.server_ip, args.port, args.transport or "lan-http")
+    cfg.update(endpoint)
+    validate(cfg)
+    if endpoint["transport"] == "https" and not all(Path(cfg.get(k, "/nonexistent")).is_file() for k in ("cert", "key")):
+        raise RuntimeError("当前安装无HTTPS证书；请保持HTTP，或审阅独立HTTPS安装流程")
+    snapshot = journal.state / "network-before.json"
+    if snapshot.exists():
+        previous = json.loads(snapshot.read_text())
+        if previous["phase"] == "prepared":
+            raise RuntimeError("上次网络变更未完成，先network-rollback；不要重复应用")
+    # Check a different port before stopping anything. Same-port changes must release our listener first.
+    if cfg["port"] != cfg_read().get("port"):
+        ensure_port_available(cfg["port"])
+    unit = Path("/etc/systemd/system") / SERVICES[0]
+    before = dict(phase="prepared", created=time.time(), config=CONFIG.read_text(),
+                  unit=unit.read_text(), target=endpoint)
+    if snapshot.exists():
+        snapshot.rename(snapshot.with_name("network-before-" + str(time.time_ns()) + ".json"))
+    atomic(snapshot, json.dumps(before, indent=2).encode())
+    run("systemctl", "stop", SERVICES[0])
+    ensure_port_available(cfg["port"])
+    launcher = BASE / "launchers/studio-http.py"
+    module = launcher.with_name("network.py")
+    pairs = [(launcher, ROOT / "deploy/studio/studio-http.py", 0o644),
+             (module, ROOT / "studio/network.py", 0o644),
+             (BASE / "pair-code.sh", ROOT / "deploy/studio/pair-code.sh", 0o755)]
+    for dest, source, mode in pairs:
+        if any(row["path"] == str(dest) for row in journal.data["files"]):
+            journal.update_config(dest, source.read_bytes())
+        else:
+            journal.write(dest, source.read_bytes(), mode)
+    release = journal.data["release"]
+    raw = (ROOT / "deploy/studio/microduck-studio.service").read_text()
+    raw = raw.replace("@RELEASE@", release).replace(
+        "-m studio.server", str(launcher) + " --release " + release
+    ).replace("/etc/microduck-studio/config.json", str(CONFIG))
+    journal.update_config(CONFIG, json.dumps(cfg, indent=2).encode())
+    journal.update_config(unit, raw.encode())
+    run("systemctl", "daemon-reload")
+    before["phase"] = "applied"
+    atomic(snapshot, json.dumps(before, indent=2).encode())
+    print("网络配置已保存，Studio保持停止；明确start后生效：" + cfg["public_origin"] + "/studio/")
+    if endpoint["transport"] == "lan-http":
+        print("HTTP仅用于可信局域网；配对和会话未经TLS加密。未启用控制、未恢复手柄。")
+
+
+def rollback_network(journal):
+    """Restore only the previous Studio config/unit; preserve daemon, data, keys and runtime."""
+    if journal.data["phase"] not in ("installed", "configuring"):
+        raise RuntimeError("网络回退只适用于已有安装，不能恢复已卸载的Studio")
+    snapshot = journal.state / "network-before.json"
+    before = json.loads(snapshot.read_text())
+    if before["phase"] not in ("prepared", "applied"):
+        raise RuntimeError("没有待恢复的网络配置")
+    journal.verify()  # Includes interrupted before/after bytes, never accepts foreign edits.
+    run("systemctl", "stop", SERVICES[0])
+    cfg = cfg_read()
+    saved = json.loads(before["config"])
+    for key in ("listen", "port", "transport", "public_origin"):
+        if key in saved:
+            cfg[key] = saved[key]
+        else:
+            cfg.pop(key, None)
+    journal.update_config(CONFIG, json.dumps(cfg, indent=2).encode())
+    journal.update_config(Path("/etc/systemd/system") / SERVICES[0], before["unit"].encode())
+    run("systemctl", "daemon-reload")
+    before["phase"] = "restored"
+    atomic(snapshot, json.dumps(before, indent=2).encode())
+    print("上一次Studio网络配置已恢复；服务保持停止，明确start后生效。")
+
+
 def setup(args, journal):
     if journal.data["phase"] not in ("new", "rolled_back"):
         raise RuntimeError("已有安装/中断登记；先status，再recover或rollback")
+    from .network import settings, ensure_port_available
+    endpoint = settings(args.server_ip, getattr(args, "port", 8790), getattr(args, "transport", None) or "lan-http")
+    ensure_port_available(endpoint["port"])
+    if endpoint["transport"] == "https" and not shutil.which("openssl"):
+        raise RuntimeError("可选HTTPS安装需要openssl；尚未修改系统")
     ip = ipaddress.ip_address(args.server_ip)
     if ip.is_unspecified or ip.is_multicast or str(ip) == "255.255.255.255":
         raise RuntimeError("需要实际固定IPv4，不能使用监听通配/组播/广播地址")
     address = str(ip)
     if ":" in address:
-        raise RuntimeError("首版部署仅审阅IPv4 HTTPS地址")
+        raise RuntimeError("首版部署仅审阅IPv4地址")
     if not args.assets or not args.wheels:
         raise RuntimeError("setup需要--assets和--wheels离线目录")
     from .preflight import check
@@ -329,7 +415,8 @@ def setup(args, journal):
     handoff = Handoff()
     planned = [
         CONFIG,
-        *[CONFIG.parent / n for n in ("ca.key", "ca.crt", "server.key", "server.crt")],
+        BASE / "pair-code.sh",
+        *([CONFIG.parent / n for n in ("ca.key", "ca.crt", "server.key", "server.crt")] if endpoint["transport"] == "https" else []),
         *[handoff.guard_path(u) for u in UNITS],
         *[
             Path("/etc/systemd/system") / u
@@ -377,72 +464,76 @@ def setup(args, journal):
     )
     journal.save()
     release = prepare_release(journal, args.assets, args.wheels)
-    # Keep keys out of source/runtime archives; generated only on the target.
-    with tempfile.TemporaryDirectory(prefix="studio-cert-") as temporary:
-        tmp = Path(temporary)
-        run(
-            "openssl",
-            "req",
-            "-x509",
-            "-newkey",
-            "rsa:3072",
-            "-nodes",
-            "-keyout",
-            tmp / "ca.key",
-            "-out",
-            tmp / "ca.crt",
-            "-days",
-            "3650",
-            "-subj",
-            "/CN=Microduck Local Studio CA",
-        )
-        run(
-            "openssl",
-            "req",
-            "-newkey",
-            "rsa:2048",
-            "-nodes",
-            "-keyout",
-            tmp / "server.key",
-            "-out",
-            tmp / "server.csr",
-            "-subj",
-            "/CN=Microduck Studio",
-        )
-        (tmp / "extensions").write_text(
-            "subjectAltName=IP:"
-            + address
-            + ",IP:127.0.0.1\nextendedKeyUsage=serverAuth\n"
-        )
-        run(
-            "openssl",
-            "x509",
-            "-req",
-            "-in",
-            tmp / "server.csr",
-            "-CA",
-            tmp / "ca.crt",
-            "-CAkey",
-            tmp / "ca.key",
-            "-CAcreateserial",
-            "-out",
-            tmp / "server.crt",
-            "-days",
-            "365",
-            "-extfile",
-            tmp / "extensions",
-        )
-        for name, mode, gid in [
-            ("ca.key", 0o600, 0),
-            ("ca.crt", 0o644, 0),
-            ("server.key", 0o640, user.pw_gid),
-            ("server.crt", 0o644, 0),
-        ]:
-            journal.write(CONFIG.parent / name, (tmp / name).read_bytes(), mode, 0, gid)
+    if endpoint["transport"] == "https":
+        # Keep keys out of source/runtime archives; generated only on the target.
+        with tempfile.TemporaryDirectory(prefix="studio-cert-") as temporary:
+            tmp = Path(temporary)
+            run(
+                "openssl",
+                "req",
+                "-x509",
+                "-newkey",
+                "rsa:3072",
+                "-nodes",
+                "-keyout",
+                tmp / "ca.key",
+                "-out",
+                tmp / "ca.crt",
+                "-days",
+                "3650",
+                "-subj",
+                "/CN=Microduck Local Studio CA",
+                "-addext", "basicConstraints=critical,CA:TRUE",
+                "-addext", "keyUsage=critical,keyCertSign,cRLSign",
+            )
+            run(
+                "openssl",
+                "req",
+                "-newkey",
+                "rsa:2048",
+                "-nodes",
+                "-keyout",
+                tmp / "server.key",
+                "-out",
+                tmp / "server.csr",
+                "-subj",
+                "/CN=Microduck Studio",
+            )
+            (tmp / "extensions").write_text(
+                "subjectAltName=IP:"
+                + address
+                + ",IP:127.0.0.1\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n"
+            )
+            run(
+                "openssl",
+                "x509",
+                "-req",
+                "-in",
+                tmp / "server.csr",
+                "-CA",
+                tmp / "ca.crt",
+                "-CAkey",
+                tmp / "ca.key",
+                "-CAcreateserial",
+                "-out",
+                tmp / "server.crt",
+                "-days",
+                "365",
+                "-extfile",
+                tmp / "extensions",
+            )
+            for name, mode, gid in [
+                ("ca.key", 0o600, 0),
+                ("ca.crt", 0o644, 0),
+                ("server.key", 0o640, user.pw_gid),
+                ("server.crt", 0o644, 0),
+            ]:
+                journal.write(CONFIG.parent / name, (tmp / name).read_bytes(), mode, 0, gid)
     cfg = dict(
         listen="0.0.0.0",
-        port=8443,
-        public_origin=f"https://{address}:8443",
+        port=endpoint["port"],
+        public_origin=endpoint["public_origin"],
+        transport=endpoint["transport"],
         controls_enabled=args.enable_controls,
         camera_enabled=args.enable_camera,
         state_dir="/var/lib/microduck-studio",
@@ -454,6 +545,7 @@ def setup(args, journal):
         camera_port=8080,
     )
     journal.write(CONFIG, json.dumps(cfg, indent=2).encode(), 0o640, 0, user.pw_gid)
+    journal.write(BASE / "pair-code.sh", (ROOT / "deploy/studio/pair-code.sh").read_bytes(), 0o755)
     handoff.private()
     handoff.manager.mkdir(mode=0o700, parents=True, exist_ok=True)
     for unit in UNITS:
@@ -475,23 +567,21 @@ def setup(args, journal):
     journal.data["phase"] = "installed"
     journal.save()
     print("已安装独立Studio；尚未启动服务。旧Tools、robotd和原管理器会话未改写。")
-    print(
-        "HTTPS入口: "
-        + cfg["public_origin"]
-        + "/studio/；信任证书: "
-        + str(CONFIG.parent / "ca.crt")
-    )
-    print(
-        run(
-            "openssl",
-            "x509",
-            "-in",
-            CONFIG.parent / "ca.crt",
-            "-noout",
-            "-fingerprint",
-            "-sha256",
-        ).stdout.strip()
-    )
+    print("访问入口: " + cfg["public_origin"] + "/studio/")
+    print("生成访问码: sudo /opt/microduck-tools/studio/pair-code.sh")
+    if endpoint["transport"] == "https":
+        print("信任证书: " + str(CONFIG.parent / "ca.crt"))
+        print(
+            run(
+                "openssl",
+                "x509",
+                "-in",
+                CONFIG.parent / "ca.crt",
+                "-noout",
+                "-fingerprint",
+                "-sha256",
+            ).stdout.strip()
+        )
 
 
 def rollback_install(journal):
@@ -568,7 +658,7 @@ def status_report():
             cfg = cfg_read()
             result["settings"] = {
                 k: cfg.get(k)
-                for k in ("public_origin", "controls_enabled", "camera_enabled")
+                for k in ("public_origin", "listen", "port", "transport", "controls_enabled", "camera_enabled")
             }
         if platform.system() == "Linux":
             raw = run(
@@ -700,6 +790,7 @@ def main():
             "pair",
             "hand-back",
             "configure",
+            "network-rollback",
             "demo",
         ],
     )
@@ -707,6 +798,7 @@ def main():
     p.add_argument("--apply", action="store_true")
     p.add_argument("--confirm", default="")
     p.add_argument("--server-ip")
+    p.add_argument("--transport", choices=["lan-http", "ssh-loopback-http", "https"], help="setup默认lan-http；configure可切换已有Studio网络")
     p.add_argument("--assets", type=Path)
     p.add_argument("--wheels", type=Path)
     p.add_argument("--enable-controls", action="store_true")
@@ -788,6 +880,12 @@ def main():
                     asyncio.run(call("return", confirm=True)), ensure_ascii=False
                 )
             )
+        elif args.command == "network-rollback":
+            rollback_network(journal)
+        elif args.command == "configure" and (args.transport is not None or args.server_ip is not None):
+            if not args.server_ip:
+                raise RuntimeError("网络配置需要--server-ip实际板端IPv4")
+            configure_network(args, journal)
         elif args.command == "configure":
             if journal.data["phase"] != "installed":
                 raise RuntimeError("安装状态不完整，先recover")
@@ -805,12 +903,21 @@ def main():
                 "独立配置已更新；Studio保持停止。明确start后生效，不自动恢复运动/手柄。"
             )
         elif args.command == "pair":
-            issue_pair(cfg_read()["state_dir"], pwd.getpwnam("microduck-studio"))
+            if journal.data["phase"] != "installed":
+                raise RuntimeError("安装未就绪，先查看status")
+            journal.verify()
+            cfg = cfg_read()
+            print("访问页面：" + cfg["public_origin"] + "/studio/")
+            issue_pair(cfg["state_dir"], pwd.getpwnam("microduck-studio"))
         elif args.command == "start":
             if journal.data["phase"] != "installed":
                 raise RuntimeError("安装不完整，先recover并重新setup")
             journal.verify()
             verify_release(journal.data["release"])
+            active = run("systemctl", "show", SERVICES[0], "-p", "ActiveState", "--value").stdout.strip()
+            if active != "active":
+                from .network import ensure_port_available
+                ensure_port_available(cfg_read()["port"])
             run("systemctl", "start", *reversed(SERVICES))
             print(
                 "Studio已启动（非开机自启）；使用pair生成登录码；未启用动力或恢复手柄"

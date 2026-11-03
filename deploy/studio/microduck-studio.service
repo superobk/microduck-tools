@@ -1,5 +1,5 @@
 [Unit]
-Description=Microduck Studio HTTPS gateway (nonroot, optional)
+Description=Microduck Studio HTTP/HTTPS gateway (nonroot, optional)
 Requires=microduck-studio-helper.service
 After=microduck-studio-helper.service
 [Service]
