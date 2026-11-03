@@ -913,6 +913,12 @@ asyncio.run(h.take())
             self.assertNotIn("ExecStart=/opt/robot", text)
 
     async def test_installer_setup_rollback_does_not_touch_native_service(self):
+        await self.installer_round_trip("lan-http")
+
+    async def test_installer_ssh_loopback_keeps_loopback_bind(self):
+        await self.installer_round_trip("ssh-loopback-http")
+
+    async def installer_round_trip(self, transport):
         from studio import manage
         from types import SimpleNamespace
 
@@ -972,6 +978,7 @@ asyncio.run(h.take())
                 manage.setup(
                     SimpleNamespace(
                         server_ip="192.168.9.9",
+                        transport=transport,
                         assets=assets,
                         wheels=root / "wheels",
                         enable_controls=False,
@@ -981,8 +988,9 @@ asyncio.run(h.take())
                 )
             self.assertEqual(j.data["phase"], "installed")
             installed = json.loads((root / "config/config.json").read_text())
-            self.assertEqual(installed["public_origin"], "http://192.168.9.9:8790")
-            self.assertEqual(installed["listen"], "0.0.0.0")
+            expected_ip = "127.0.0.1" if transport == "ssh-loopback-http" else "192.168.9.9"
+            self.assertEqual(installed["public_origin"], "http://" + expected_ip + ":8790")
+            self.assertEqual(installed["listen"], "127.0.0.1" if transport == "ssh-loopback-http" else "0.0.0.0")
             self.assertFalse(any(c[0] == "openssl" for c in commands))
             self.assertFalse((root / "config/ca.key").exists())
             self.assertTrue((root / "addon/pair-code.sh").exists())

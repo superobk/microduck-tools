@@ -516,7 +516,7 @@
     },
     {
       "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
-      "sha256": "51b35741afdf6fae6c96b41485ac83c57d88faf2952c575951e149e5de389fca"
+      "sha256": "477b3bdbae2c0b1649430654aaf3517615d22799129b7bb2306da4f682050ecd"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -536,7 +536,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "826b90af6838c7b9fdd67aa52735163ecd7c0274f72b11e639310c8d306955ee"
+      "sha256": "079e6dcb3e5c43e492b1a9dcb3c84687db020722344cca80dadbc5cf5c2c019a"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -620,7 +620,7 @@
     },
     {
       "path": "docs/studio-0.6.0-validation.zh-CN.md",
-      "sha256": "666607bbb4029ba50e2db4b36bf479e7ab17f3887f9a9747b48839aa3755928c"
+      "sha256": "65bbfba38c499d2afb8caae0d7486fd46cb6bf4c94425745a91239d9720aa21f"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -780,7 +780,7 @@
     },
     {
       "path": "studio/manage.py",
-      "sha256": "195f3d850b630380d70a62a274fd4ff75f57bb58a78e9a5339efb03d17bbe038"
+      "sha256": "6059124fed69cdec1adb2e524475c29ea3ba12c206fd63c0a004bb26e521097b"
     },
     {
       "path": "studio/network.py",
@@ -892,7 +892,7 @@
     },
     {
       "path": "studio/tests/test_studio.py",
-      "sha256": "8b7e6953c4ce8b9cf7667e8c1da19e4ab7882fbd1c53c906761ac591a4b19399"
+      "sha256": "b0d1a59a1eeec1d634beb689382758ce3d9bf1abe9f96df51f0b37860dba3405"
     },
     {
       "path": "tools/build-install-kit.py",

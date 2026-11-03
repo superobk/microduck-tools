@@ -530,7 +530,7 @@ def setup(args, journal):
             ]:
                 journal.write(CONFIG.parent / name, (tmp / name).read_bytes(), mode, 0, gid)
     cfg = dict(
-        listen="0.0.0.0",
+        listen=endpoint["listen"],
         port=endpoint["port"],
         public_origin=endpoint["public_origin"],
         transport=endpoint["transport"],

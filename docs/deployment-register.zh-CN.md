@@ -67,7 +67,7 @@ ToF未通过：tofd0.18.3 PID753 active/NRestarts0，曾发现VL53L5CX/0x29并15
 
 用户要求默认HTTP/0.0.0.0、不与duck服务冲突、推送PR；随后确认板端暂时关闭，先完成代码/PR。本轮首次SSH超时，未进行远端变更。新setup默认lan-http/8790，--port实际生效、拒绝8443/8765/8766并检查占用；默认不生成CA，HTTPS可选、旧无transport的HTTPS配置兼容。精确Host/Origin、认证和CSRF保留，HTTP仅可信局域网，不能替代安全上下文。
 
-已有Studio用http-configure.sh登记兼容启动器和pair-code.sh，冻结运行包/venv/资产不覆盖，功能开关不变；保持停止，明确start。network-rollback只恢复网络字段/unit，保留独立功能设置，中断和漂移均验证；不触碰robotd/tofd/mediad/工作台。75项Studio回归和本地冻结源码HTTP认证全流程通过；首次夹具失败和审计误判均保留。目标板LAN访问/应用/回退NOT_RUN，ToF未修复。
+已有Studio用http-configure.sh登记兼容启动器和pair-code.sh，冻结运行包/venv/资产不覆盖，功能开关不变；保持停止，明确start。network-rollback只恢复网络字段/unit，保留独立功能设置，中断和漂移均验证；不触碰robotd/tofd/mediad/工作台。76项Studio回归和本地冻结源码HTTP认证全流程通过；首次夹具失败和审计误判均保留。目标板LAN访问/应用/回退NOT_RUN，ToF未修复。
 
 原逐条指南三份同步，未新增指南；本轮网络源码归档置于既有交付packages/studio-lan-http-20261103，原transfer/旧包保留。验证logs/tools-studio-lan-http-20261103T132518Z/http-smoke.json；审计20261103T132518Z-01cb64a497cc。PR沿用#8并重写说明，不合并。
 
