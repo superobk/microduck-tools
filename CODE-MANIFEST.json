@@ -1,7 +1,7 @@
 {
   "date_local": "2026-11-03",
   "tool_version": "0.6.0",
-  "stage": "default-lan-http-ready-board-off",
+  "stage": "pr8-merged-board1-lan-http-applied",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
   "git_base": "b125823d3a891330732dfa870582cdae0300eaf4",
   "scope": "DefaultLAN HTTP8790, installed-release pair helper, managed frozen-runtime network migration/rollback; board off, no deployment or hardware actions this round.",
@@ -24,7 +24,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "4ece04d87796542f3a19c6b8862ef584ec16697792bbdbd73a4e929a9954fe15"
+      "sha256": "1db9b11cad7d56d25e4d88506eb215177ff66ad0547f60660953f633a0a0bf43"
     },
     {
       "path": "VERSION",
@@ -516,7 +516,7 @@
     },
     {
       "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
-      "sha256": "477b3bdbae2c0b1649430654aaf3517615d22799129b7bb2306da4f682050ecd"
+      "sha256": "9ff2e1f45a76ea3c78fb43a0fbd67eaef1c71e061446e93183f7ad201690ba44"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -536,7 +536,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "8f7f9b3750f869613cd57cc3619f2f14f4e2f303d47bda0345214670ecf40fad"
+      "sha256": "29806729ad2462c721f35c3a6c1ef5f0171fe8c4651d67853ef8723488b0fdc9"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -612,7 +612,7 @@
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
-      "sha256": "3cd16c10745520a9afce14cb52c1f200e272d581e5fabb8db028a1faab3aa5c7"
+      "sha256": "6b6f23fa324e107f349a3ee97b28c5711b39a1440db40aa2821c2e94379cb6b2"
     },
     {
       "path": "docs/studio-0.6.0-plan.zh-CN.md",
@@ -620,7 +620,7 @@
     },
     {
       "path": "docs/studio-0.6.0-validation.zh-CN.md",
-      "sha256": "65bbfba38c499d2afb8caae0d7486fd46cb6bf4c94425745a91239d9720aa21f"
+      "sha256": "65e71b52076a177263ba95b3205beb02a3fc6ea0362356bda9ad1fc73383827d"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -960,5 +960,6 @@
     }
   ],
   "runtime_payload_commit": "36de9bb39c9e3c84c57908efe74f2311585a04d7",
-  "workbench_component_version": "0.1.2"
+  "workbench_component_version": "0.1.2",
+  "main_merge_commit": "c418c8bdfea7eb958c342a09b8d5ad796bd4964c"
 }

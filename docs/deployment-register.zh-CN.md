@@ -72,3 +72,17 @@ ToF未通过：tofd0.18.3 PID753 active/NRestarts0，曾发现VL53L5CX/0x29并15
 原逐条指南三份同步，未新增指南；本轮网络源码归档置于既有交付packages/studio-lan-http-20261103，原transfer/旧包保留。验证logs/tools-studio-lan-http-20261103T132518Z/http-smoke.json；审计20261103T132518Z-01cb64a497cc。PR沿用#8并重写说明，不合并。
 
 交付收尾：本轮更新[PR #8](https://github.com/superobk/microduck-tools/pull/8)，待审阅、未合并。首版HTTP代码95faba5的[Python安装CI](https://github.com/superobk/microduck-tools/actions/runs/41647543406)和[工作台CI](https://github.com/superobk/microduck-tools/actions/runs/41647543423)通过；随后发现并修正可选SSH安装的监听绑定，当前76项Studio本地测试通过。最终源码提交、142负载网络包SHA和最新CI链接以交付packages/studio-lan-http-20261103/NETWORK-UPDATE.json及PR Checks为准；之前的网络包保留在该目录history中，不能混作当前包。原176/175传输清单保持，板端仍关闭、LAN应用/回退NOT_RUN。指南同时列出microduck-tools启动以供原校正代理使用，不设开机自启。
+
+## 2026-11-03：PR #8已合并，启动指引同步
+
+GitHub实查PR #8 merged=true、state=closed，合并时间2026-11-03 22:16:29（Asia/Shanghai），main合并提交c418c8bdfea7eb958c342a09b8d5ad796bd4964c。已fetch并将本地main从d447af0快进到该提交；git diff --quiet验证其文件树与4cdd397915b5626be8468275a82495a45e66bd80相同。既有142文件网络归档SHA仍e46ca386b221864fe666608eb4e1628581597f7776c7cbaa8b013e448d9dfc62，无需重新编译/重跑依赖安装；此前76项Studio与两项最终CI证据继续有效，合并本身不视为板端验收。
+
+已原地更新原指南三份、交付PR状态和manifest，明确“首次上传/配置”和“日常启动/生成码”两条路径。日常启动为systemctl start microduck-tools microduck-studio-helper microduck-studio，一键码为/opt/microduck-tools/studio/pair-code.sh；应用后目标http://192.168.1.56:8790/studio/。最近一次板端状态为关闭，本轮未连接、SCP、应用或启动服务，LAN迁移/回退仍NOT_RUN；不启动工作台、不执行舵机写入或运动。
+
+## 2026-11-03：第一板LAN HTTP增量已应用
+
+用户随后确认已开机、IP仍192.168.1.56，并明确可按指南应用。身份Radxa ZERO3/aarch64/glibc2.41/Python3.13.5、robotd0.18.3+calv3/API47；原安装完整且controls/camera关闭、无手柄交接。已备份到/var/backups/microduck/tools-install-board1-20261103/lan-http-20261103T150634Z，按原指南上传e46ca386...网络包、校验、解包、运行http-configure.sh，随后启动基础Tools/Studio/助手。
+
+实际0.0.0.0:8790，http://192.168.1.56:8790/studio/可从Mac直连；Tools127.0.0.1:8765仅经Studio代理使用，mediad8443保留、8766无监听。PID分别2729/2733/2731，Journal files_verified=true、problems=[]；普通服务账号/原slice限额保留，未设开机自启。页面200、未登录401、错误Host/Origin403、码助手/正确配对200、重复码409、缺CSRF403、WS和LIVE15关节新鲜208ms通过。最初缓存帧龄/身份尚未刷新不作最终判定；等待活动订阅后身份verified=true、健康218ms。登录值仅内存，API测试不冒充本人浏览器配对；请本人另生成新码登录。
+
+robotd1007、mediad1232、tofd727前后不变；原生程序/unit/robot配置SHA与校正回执不变，137份冻结运行文件通过。控制/Camera仍false，calibration_verified=false不冒充实物校正；当前ToF仍未收帧，本轮不修复、不重启tofd。不启动工作台、不写舵机或运动；实际网络回退、手机设备及正式资源验收NOT_RUN。实际证据logs/tools-pr8-merged-20261103T150634Z，应用e334b562335845eb、启动a6b7bfdecc2a4911、最后反馈5c37275e74cc4e82、原生保护189cc95b6be04baf。

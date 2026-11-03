@@ -1,6 +1,6 @@
 # Microduck Tools
 
-Studio新源码默认 **HTTP / 0.0.0.0:8790**，pair-code.sh一条命令生成访问码；已有安装可只迁移网络并单独回退。见[当前安装及使用指引](docs/board1-tools-workbench-step-by-step.zh-CN.md)。本轮板端关闭，LAN部署待执行；冻结旧包不自动获得新默认。
+Studio新源码默认 **HTTP / 0.0.0.0:8790**，pair-code.sh一条命令生成访问码；已有安装可只迁移网络并单独回退。见[当前安装及使用指引](docs/board1-tools-workbench-step-by-step.zh-CN.md)。第一板已按指南应用LAN增量并启动；其他板须单独部署，冻结旧包不自动获得新默认。
 
 Microduck 校准与配置工具 **0.6.0**。保留 daemon-v0.16.3 的 IMU、15 舵机软件映射、摄像头四向配置和黑橙统一 Web；增加官方新版只读能力适配、独立插件配置与相机 CLI 适配，并提供固定 0.17.9 / 0.18.3 基线的原生校正候选。
 

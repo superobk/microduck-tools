@@ -1,6 +1,6 @@
 # Studio 0.6.0：安装、看状态、配置、停止与回退
 
-**本轮LAN HTTP代码已本地验证，板端关闭、尚未部署；此前第一板安装/SSH配对记录见逐条指南，勿混为同一验收。** Studio是独立附加界面；0.16.3→0.18.3升级继续使用冻结0.5.0包的 [升级脚本](manual-upgrade-0183.zh-CN.md)，不要把新源码替换进旧管理器会话。
+**第一板LAN HTTP已按原指南应用并启动，正式接口配对和真实反馈已验证；本人浏览器需新码登录。其他板部署须单独核对。** Studio是独立附加界面；0.16.3→0.18.3升级继续使用冻结0.5.0包的 [升级脚本](manual-upgrade-0183.zh-CN.md)，不要把新源码替换进旧管理器会话。
 
 **首次升级并安装Studio推荐[统一安装套件](install-upgrade-simple.zh-CN.md)：一次上传、一个 `sudo ./duck.sh`，按N逐步继续。下文保留独立Studio命令及完整路径说明。**
 
@@ -63,7 +63,7 @@ sudo ./tools/studio.sh status
 sudo ./tools/studio.sh network-rollback --apply --confirm EXECUTE
 ~~~
 
-仅恢复先前网络字段和unit，不卸载Studio，不覆盖独立功能设置；回退后保持停止，明确start再生效。network-before.json保存在安装登记目录；外部漂移会拒绝覆盖。本轮板端暂时关闭，以上迁移/回退尚未执行。
+仅恢复先前网络字段和unit，不卸载Studio，不覆盖独立功能设置；回退后保持停止，明确start再生效。network-before.json保存在安装登记目录；外部漂移会拒绝覆盖。第一板迁移已执行并验证；实际网络回退仍NOT_RUN。
 
 HTTP只用于可信局域网，配对及会话不经TLS加密，不暴露公网。手机姿态/Gamepad等需要安全上下文的能力仍受浏览器限制，不能将HTTP当作解除权限限制。
 

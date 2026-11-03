@@ -1,10 +1,18 @@
 # 第一块板 Tools + Studio + 舵机工作台：逐条命令、原因与预期结果
 
-**2026-11-03 本轮状态：代码和本地验证已完成；用户确认板端暂时关闭，本轮未部署LAN HTTP。** 上次已安装的仍是SSH回环HTTP配置；不能把下方目标地址当成板端已经生效。robotd0.18.3+calv3、舵机工作台和舵机参数不在本轮变更范围。
+**2026-11-03 合并后状态：PR #8已于22:16:29（Asia/Shanghai）合并main，合并提交c418c8bdfea7eb958c342a09b8d5ad796bd4964c，本地main已快进同步。** 合并源码树与已验证4cdd397交付完全一致，继续使用现有142负载网络包，不需重新编译或重建依赖。
+
+**板端HTTP更新已实际完成。** 用户随后确认板端开机且仍为192.168.1.56；已按本页上传、校验、应用并启动，当前入口为[Studio](http://192.168.1.56:8790/studio/)，监听0.0.0.0:8790，无需SSH隧道或证书。
+
+- **首次更新已完成**：下面上传/解包/http-configure命令保留作复现记录，日常不要重复执行，也不重跑setup。
+- **现在使用**：打开上面的LAN网址，在本人终端执行pair-code.sh生成新码并输入网页。接口端配对已验证，不冒充本人浏览器已经配对。
+- **以后重启板端**：只运行“日常启动、访问码与检查”。仍未设置开机自启。
+- **实测结果**：Tools/Studio/助手active，PID2729/2733/2731；身份0.18.3+calv3/API47核验通过、15关节、活动订阅帧龄208ms。控制/Camera均false，calibration_verified=false；ToF仍无帧，本次未处理ToF。
+- **原服务保持**：robotd1007、mediad1232、tofd727及原生哈希、校正回执不变，137份冻结源码校验通过。未启动工作台、未写舵机或运动。实际网络回退及手机/性能验收仍NOT_RUN。
 
 **新默认方案：** Studio监听 **0.0.0.0:8790**，电脑/手机直接打开 **http://192.168.1.56:8790/studio/**。0.0.0.0是绑定地址，浏览器填写实际板端IP。8790避开mediad8443、Tools8765与工作台8766；应用/启动前还会检查实际占用，冲突则拒绝，不停止其他服务。精确Host/Origin、配对、CSRF、HttpOnly/SameSite会话保留。HTTP仅用于可信局域网，配对及会话不受TLS加密；不开放公网。手机姿态等要求安全上下文的浏览器能力仍需可选HTTPS，不宣称HTTP能解除浏览器限制。
 
-**板端开机后第一次应用（以下全部待执行）**
+**首次应用已完成（以下保留本次操作命令，日常不要重复）**
 
 Mac上当前交付目录为：
 /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103/packages/studio-lan-http-20261103
@@ -15,7 +23,7 @@ shasum -a 256 -c microduck-tools-0.6.0-http-network.tar.gz.sha256
 scp microduck-tools-0.6.0-http-network.tar.gz microduck-tools-0.6.0-http-network.tar.gz.sha256 root@192.168.1.56:/tmp/
 ```
 
-用途：先核对本轮源码增量，再传给已有板端；不会安装/替换daemon。板端目前关闭，本轮未执行SCP。
+用途：先核对本轮源码增量，再传给已有板端；不会安装/替换daemon。本轮已上传并在板端再次通过SHA校验，审计step adc84b7772b04c1f/e334b562335845eb。
 
 SSH进入板端root终端后：
 
@@ -28,7 +36,7 @@ cd /var/lib/microduck-tools-install/board1-20261103/studio-lan-http-20261103/mic
 ./deploy/studio/http-configure.sh 192.168.1.56
 ```
 
-用途：对已有Studio应用一次网络配置，不执行setup，不重装依赖。新入口在原Journal独占锁下验证冻结版本、检查端口、保存网络回退材料、仅停Studio并登记新启动器与一键码脚本，**保持停止**。原137份运行源码、venv、浏览器资产、证书/私钥和daemon不覆盖。第二参数可指定其他空闲端口，例如8791；访问地址随之变化。IP变化须以新IP重新配置，不能扩大Host为通配。
+本次结果：已应用成功，随后另行启动并验证。用途：对已有Studio应用一次网络配置，不执行setup，不重装依赖。新入口在原Journal独占锁下验证冻结版本、检查端口、保存网络回退材料、仅停Studio并登记新启动器与一键码脚本，**保持停止**。原137份运行源码、venv、浏览器资产、证书/私钥和daemon不覆盖。第二参数可指定其他空闲端口，例如8791；访问地址随之变化。IP变化须以新IP重新配置，不能扩大Host为通配。
 
 **日常启动、访问码与检查（应用后使用）**
 
@@ -36,7 +44,7 @@ cd /var/lib/microduck-tools-install/board1-20261103/studio-lan-http-20261103/mic
 systemctl start microduck-tools microduck-studio-helper microduck-studio
 ```
 
-用途：启动基础Tools、Studio及其已有受限助手，不启动舵机工作台、不启用控制、不重启robotd，也不设置开机自启。
+本次结果：三项服务均active。用途：启动基础Tools、Studio及其已有受限助手，不启动舵机工作台、不启用控制、不重启robotd，也不设置开机自启。
 
 ```bash
 /opt/microduck-tools/studio/pair-code.sh
@@ -55,7 +63,7 @@ systemctl status microduck-tools microduck-studio microduck-studio-helper --no-p
 ss -lntp 'sport = :8790'
 ```
 
-用途：应见active与0.0.0.0:8790。再打开目标网页并配对，应显示LIVE实体反馈；未登录状态接口应401、非配置Host/Origin应403。控制与Camera开关保持false。必须实际完成这些步骤才可登记板端生效；本轮仅本地验证。
+用途：应见active与0.0.0.0:8790。再打开目标网页并配对，应显示LIVE实体反馈；未登录状态接口应401、非配置Host/Origin应403。控制与Camera开关保持false。本轮已从Mac直连验证页面200、未登录401、错误Host/Origin403；正式码助手/配对/WS/真实15关节和新鲜帧均通过，登录值未留存。生成测试码已被消费，本人浏览器须另生成新码配对。
 
 ```bash
 systemctl stop microduck-studio
@@ -79,7 +87,7 @@ systemctl stop microduck-studio
 
 76项Studio回归通过；真实本地HTTP进程使用冻结36de9bb源码经新启动器启动，验证页面200、未登录401、错误Host/Origin403、正确配对200、重用码409、已登录200、缺CSRF403，测试进程已停止。没有把模拟或本地无机器人测试当成板端验收。首次测试夹具路径/映射失败已修正并保留输出，实际安装保护未放宽。
 
-当前ToF仍按上次只读证据登记为“sensor stopped answering; retrying”，未修复或归因升级；本轮未连接板端、未重启tofd、未启动工作台、未写舵机或运动。交付里的transfer和旧包仍冻结；本轮独立网络源码归档不含wheel或资产，复用已安装版本。下面保留上次实际安装/配对记录及更早的安装历史，不能当成本轮LAN部署结果。
+本轮ToF仍未收到帧，旧传感器停止回应问题不宣称已修复；未重启或修改tofd。本轮已连接板端并完成HTTP更新，未启动工作台、未写舵机或运动。交付里的transfer和旧包仍冻结；本轮独立网络源码归档不含wheel或资产，复用已安装版本。本轮实际结果见上方及logs/tools-pr8-merged-20261103T150634Z/summary.json；下面仅保留此前安装/配对历史。
 
 
 **上次已部署SSH回环HTTP和配对（历史）**
