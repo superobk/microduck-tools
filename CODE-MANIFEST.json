@@ -1,10 +1,10 @@
 {
   "date_local": "2026-11-03",
   "tool_version": "0.6.0",
-  "stage": "board1-deployment-user-paused",
+  "stage": "board1-ssh-http-paired-live-tof-unavailable",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
   "git_base": "b125823d3a891330732dfa870582cdae0300eaf4",
-  "scope": "Actualboard1 Tools/Studio deployment with documented managed port/TLS repairs; desktop workbench stopped. Daemon untouched; no servo writes or motion.",
+  "scope": "Managed HTTP display supplement; actual board pairing/UI verified, ToF fault documented; daemon/core runtime unchanged; no servo writes/motion.",
   "files": [
     {
       "path": ".gitattributes",
@@ -491,6 +491,14 @@
       "sha256": "9acb5100332a5776e4d6c74db2d7a158c4294f6865a8f7fdacef843d89acc7d3"
     },
     {
+      "path": "deploy/studio/pair-code.sh",
+      "sha256": "b134d3f3f17a71afc8a7d8d31aefe324a7a454015eda1bb3cafb515f1b7f8b61"
+    },
+    {
+      "path": "deploy/studio/studio-ssh-http.py",
+      "sha256": "a7d63fa5daa1c81382ecefec873820a30bca80ebb48db179f3ffdc891a197855"
+    },
+    {
       "path": "deploy/workbench/agent.sh",
       "sha256": "5ef45f376eb84bcfa8b5fc2c5a727c033dda0561dcbb2e5c17f9347e301da061"
     },
@@ -500,7 +508,7 @@
     },
     {
       "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
-      "sha256": "7ca00bd7f50fff2609d8c913be40dc1b5463c454f3046873206286eb889b4989"
+      "sha256": "c6a5df6a416de67c42390f72748f9b5f648384efd75e82ba42ee7a50dff3d67c"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -520,7 +528,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "ef249779609152bd05abe7eed1af59ee621723a3fcd3660e0d895dc8aecd3d8d"
+      "sha256": "3f80875b27589a979ce0db0176cabb81c45798d77c803c1d4388052d8ffb8199"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -861,6 +869,10 @@
     {
       "path": "studio/tests/test_python_runtime.py",
       "sha256": "4ceec751e6443140b6821a65f6943e71a50871d216dd2dbf875fd5a876dbe2ce"
+    },
+    {
+      "path": "studio/tests/test_ssh_http.py",
+      "sha256": "f9ea5058f9132c3f4a64e4fcd9554f516563442abef7e0c19292a3d99510792b"
     },
     {
       "path": "studio/tests/test_studio.py",

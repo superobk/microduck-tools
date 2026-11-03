@@ -51,3 +51,14 @@
 2026-11-03板端实际部署完成：Tools/Studio0.6.0，Python3.13.5；175负载/137源码校验，ToolsPID4352，StudioPID7135、助手5242。Studio改8444以保留mediad8443，严格TLS CA/叶扩展经Journal更新，Mac3.14严格验证HTTP200；公开CA指纹82:2F:8C:82:A1:95:52:D8:15:86:C5:09:BE:FE:B8:D4:FE:49:35:3D:57:5A:78:13:34:B0:58:C4:34:1E:23:E3。原daemonPID1007/mediad1208及native哈希、unit、robot配置和校正回执不变。控件/Camera关闭，15关节健康新鲜；原生身份跨UID核验被/proc拒绝，校正保存保持只读，未放宽权限。USB工作台已停、0配置；无舵机写入或运动，未设开机自启；Studio显示端信任CA及配对仍需本人完成。冻结36de9bb安装器端口与初次CA问题按原指南受控补充处理，不宣称原setup可直接无补充复用。证据：/Users/bou/Workspace/Duckduck/logs/tools-board1-install-20261103T104500Z/summary.json
 
 用户要求暂停并保存：后续远程操作、测试、推送停止；已有服务保持当前状态。板端部署已完成的摘要与待办见原逐条指南及logs/tools-board1-install-20261103T104500Z/summary.json。外层便携归档尚未包含本轮板端实装登记，待通知继续后再刷新；当前目录清单按暂停保存状态更新。
+
+
+## 2026-11-03恢复完成：SSH回环HTTP、实际配对与ToF故障
+
+新IP192.168.1.56，原主机密钥核验一致。用户选择电脑优先SSH+本机HTTP，Studio入口http://127.0.0.1:8790/studio/；板端仅127.0.0.1:8790，mediad8443保留。新增deploy/studio/studio-ssh-http.py和pair-code.sh，经原Journal登记启动器、unit和配置；137份冻结源码不改，files_verified=true。controls/camera关闭，普通账号和资源组保留；58项Studio测试及shell语法通过，HTTP200/未登录401/跨Origin403通过。本人执行pair-code.sh并在实际IAB配对，LIVE总览、3D/IMU/15关节反馈已验证，无控制权，请求/应用速度均0。命令和配置路径直接更新原逐条指南，不新增指南。
+
+Tools active PID2174、Studio10262/助手2185；robotd1071、mediad1220未被本轮重启，原生程序/配置哈希保持，回执跨此前重启仅pid变化。普通Tools原生校正验证跨UID/proc拒绝保持只读，不放宽权限。未启动工作台，未写舵机、未运动，未设置开机自启。
+
+ToF未通过：tofd0.18.3 PID753 active/NRestarts0，曾发现VL53L5CX/0x29并15Hz测距，板端19:49:22记录停止回应；当前tof.stream返回“the sensor stopped answering; retrying”，不是单纯前端断开。fuser快照仅见tofd持有i2c-3；尚不能归因升级或确定供电/接线/I2C/驱动根因。Studio通用不可用未呈现完整原文，登记为限制。ToF重启、总线扫描和硬件恢复NOT_RUN，后续在板端初始化范围继续；active或工具安装通过不能冒充传感器验收。
+
+此前HTTPS显式CA严格验证通过；macOS信任命令超时、CLI NOT_TRUSTED，后来IAB曾可打开HTTPS配对页，不宣称全部信任检查通过。用户选择HTTP后无需继续CA设置；原证书/私钥与https-before-loopback-http备份保留，HTTPS8444停止监听。证据logs/tools-board1-resume-20261103T114916Z/resume-status.json；回归321dd5c5842448f3、HTTP部署f78d01181e0e45ae、ToF原文079a551e5eea4aa3、持有者b5180ec832cd4a9f。外层历史tar.gz未刷新，本地解包交付清单已更新；本轮不推送。

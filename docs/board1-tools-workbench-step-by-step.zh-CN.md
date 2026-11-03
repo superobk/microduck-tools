@@ -1,13 +1,105 @@
 # 第一块板 Tools + Studio + 舵机工作台：逐条命令、原因与预期结果
 
-日期：2026-11-03（Asia/Shanghai）。目标：root@172.19.8.218，Radxa ZERO 3，Armbian/Debian13、aarch64、glibc2.41，**板端统一使用现有CPython3.13.5**。本文沿用[已完成的0.18.3+calv3指南](/Users/bou/Workspace/Duckduck/docs/robot/zero3w-board1-0183-step-by-step-20261103T063932Z.md)的“单条命令后紧接用途、为什么、结果”格式。
+日期：2026-11-03（Asia/Shanghai）。当前目标：**root@192.168.1.56**，已通过原SSH主机密钥核验为同一Radxa ZERO 3。Debian13/aarch64/glibc2.41，板端继续使用现有 **Python3.13.5**，不增加3.11环境。robotd已是0.18.3+calv3，本页只管理Tools/Studio，不重跑daemon升级。
 
-**当前状态：用户已于本轮明确要求“先终止并保存现有进度，我将通知继续”，后续操作已停止。板端Tools0.6.0及Studio0.6.0已经运行，Python3.13.5；现有服务保持当前状态，不再远程操作。电脑USB工作台已停止，记录保留。**
+**当前结论：Tools与Studio已安装运行，用户已完成配对，实际浏览器已显示LIVE实体反馈。ToF单独存在传感器无回应故障，尚未恢复。** 电脑舵机工作台保持停止；本轮无舵机写入、扭矩/Policy/HOME或运动操作。
 
+**日常使用只需三个入口**
 
-**暂停恢复入口**：等待用户另行通知。已完成Tools8765和Studio8444实际部署、15关节健康数据及严格TLS验证。尚未进行显示端CA系统信任/配对登录、开机自启、任何舵机写入/运动。最后本地文档变更将在本次保存提交中保留，不继续Git推送。当前目录manifest/SHA将按保存状态刷新；外层tar.gz仍是此前USB交付快照，尚未重打包含板端实装结果的新归档，不能把旧归档当最新板端登记。下一次继续先读本页、/Users/bou/Workspace/Duckduck/logs/tools-board1-install-20261103T104500Z/summary.json和本轮审计session，核对实时服务而不重装。
+1. 打开 [Studio真实总览](http://127.0.0.1:8790/studio/)。当前已配对，不必重复生成码。
+2. 若Mac重启或SSH通道断开，在Mac终端运行下面命令，并保持该终端打开：
 
-**现在怎样使用（安装已经完成）**
+```bash
+ssh -N -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -L 127.0.0.1:8790:127.0.0.1:8790 root@192.168.1.56
+```
+
+用途：把Mac的8790端口安全转发到板端回环8790。终端无输出属正常；Ctrl+C仅结束这条通道。若提示端口已占用，先使用现有入口，不重复开通道。网络传输由SSH加密，HTTP只在两端回环使用，无需导入证书。此入口仅供当前电脑，手机不能直接访问板端8790。
+
+3. 只有网页要求重新配对时，另开Mac终端执行：
+
+```bash
+ssh -t root@192.168.1.56 /opt/microduck-tools/studio/pair-code.sh
+```
+
+用途：本人生成5分钟、单次使用的配对码，只填入Studio页面并点“配对此显示端”。不发到聊天、Git、截图或日志。显示端会话有效期8小时；服务重启后需重新配对。当前已由本人完成并验证，不再额外生成码。
+
+基础校正/健康工具仍在 [Tools页面](http://127.0.0.1:8765/)。当前通道已连接；断开后可在另一个Mac终端恢复：
+
+```bash
+ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:8765:127.0.0.1:8765 root@192.168.1.56
+```
+
+用途：访问原有Tools，与Studio分开运行。本轮只查看，不保存/应用校正。SSH可直接使用已核验的新IP，不需要HostKeyAlias，也不忽略主机密钥告警。
+
+**本次实际验证**
+
+| 项目 | 实际结果及含义 |
+|---|---|
+| 原生身份 | robotd0.18.3+calv3，revision=b2b0d213-calv3-30452a086d1e，API47；robotdPID1071、mediadPID1220未被本轮重启 |
+| 完整性 | daemon/CLI/robotd unit/robotd.toml哈希与备份相同；此前板端重启后校正回执仅pid1007→1071，其余字段一致 |
+| Tools | microduck-tools.service active，PID2174，回环8765，15关节数据已连接；约7.2V汇总平滑电压告警保留，原始采样新鲜度未知 |
+| Studio/助手 | active，PID10262/2185；安装登记files_verified=true、problems=[]；普通账号运行 |
+| 实际界面 | 已连接显示端、LIVE·实体反馈；3D小鸭、真实IMU和15关节；无控制权，请求/应用速度均0；未用模拟数据替换 |
+| ToF | **未通过**：8×8无有效数据；原服务报告“the sensor stopped answering; retrying”，详见下节 |
+| 权限 | controls_enabled=false、camera_enabled=false；普通Tools跨UID读取/proc/1071/exe被拒绝，校正保存保持禁用，不放宽系统权限 |
+| HTTP | 页面200，未登录status401，跨Origin配对请求403；实际浏览器配对成功 |
+| 回归 | 本轮58项Studio测试通过，含6项HTTP回环/只读约束测试；pair-code.sh语法通过 |
+| 资源范围 | 页面一次快照约12FPS/24绘制；CPU/RSS仅现场快照，未完成正式性能、多客户端或运动验收 |
+| 未执行 | 工作台启动、舵机写入/动作、IMU或相机配置应用、ToF重启/总线探测、开机自启 |
+
+板端已安装，不要重复下面历史setup。板端重启后若工具未启动，先核对状态，再仅启动三个工具服务：
+
+```bash
+ssh root@192.168.1.56 'systemctl status microduck-tools microduck-studio microduck-studio-helper --no-pager'
+```
+
+用途：查看工具状态，inactive时可能返回非0；先读具体原因，不把它当作daemon需要重装。
+
+```bash
+ssh root@192.168.1.56 'systemctl start microduck-tools microduck-studio-helper microduck-studio'
+```
+
+用途：仅启动已安装工具，不启动工作台或重启robotd。本轮已active，无需再执行；仍未设置开机自启。
+
+**ToF：进程运行，传感器没有正常出帧**
+
+官方tofd0.18.3曾识别VL53L5CX，地址0x29，/dev/i2c-pihat→/dev/i2c-3，启动15Hz测距；日志于2026-11-03 19:49:22（板端显示时间）报告“lost the sensor / the sensor stopped answering”。当前tof.stream状态为“the sensor stopped answering; retrying”。tofdPID753、NRestarts=0；fuser快照仅发现tofd持有i2c-3，未见robotd/mediad持有该设备，不能据此排除所有瞬时总线冲突。
+
+```bash
+ssh root@192.168.1.56 'systemctl status tofd --no-pager -l'
+```
+
+用途：查看进程与最近错误。**active只证明进程存活，不证明有传感器帧。**
+
+```bash
+ssh root@192.168.1.56 'journalctl -u tofd -b -n 30 --no-pager'
+```
+
+用途：查看识别、测距及断流证据。健康验收须恢复新鲜ToF帧、有效测距或明确无目标状态，不能仅以active为准。0.18.3没有“robotctl tof”子命令；原生monitor可通过--tof-socket选项读取独立服务。
+
+当前仅定位到传感器停止回应，**尚不能判定由升级导致，也未证实供电、接线、I2C或驱动中的哪一项是根因**。Studio能提示不可用，但现版本未直接显示上述完整服务原文，登记为诊断展示限制。本轮不重启tofd、不运行i2cdetect、不改I2C/供电；后续板端初始化排查另行确认。工具安装完成不等于ToF通过。
+
+**配置与回退材料**
+
+| 路径 | 当前作用 |
+|---|---|
+| /etc/microduck-studio/config.json | listen=127.0.0.1，port=8790，public_origin=http://127.0.0.1:8790，transport=ssh-loopback-http，demo=false；控制/Camera关闭 |
+| /opt/microduck-tools/studio/launchers/studio-ssh-http.py | 新增受控启动补充，复用原create_app，拒绝非回环、模拟和控制/Camera启用 |
+| /opt/microduck-tools/studio/pair-code.sh | 本人SSH生成一次性配对码 |
+| /etc/systemd/system/microduck-studio.service | 已登记为上述启动器；普通账号、原资源限制保留 |
+| /opt/microduck-tools/studio/releases/0.6.0 | 原Studio版本/venv；原137份源码负载保持不变 |
+| /var/lib/microduck-studio-install | 安装Journal与哈希，status已通过；不得手改install.json绕过核验 |
+| /etc/robot/robotd.toml | 原daemon配置未改；[head_imu]未启用，不代表机身IMU故障 |
+
+电脑优先模式由用户明确选择：HTTPS8444已停止监听，mediad8443保持原样。此前新IP证书SAN与显式CA严格验证通过，但macOS信任命令两次等待授权超时，CLI仍NOT_TRUSTED；后来IAB曾可打开HTTPS配对页。不把这写成系统信任全部通过，也不再要求其作为HTTP入口前置条件。原CA、私钥和证书保留，未绕过浏览器安全警告。
+
+切换前配置/unit保存在板端 /var/backups/microduck/tools-install-board1-20261103/resume-20261103T114916Z/https-before-loopback-http/。未来恢复局域网HTTPS需经同一Journal受控更新并验证，不能仅覆盖配置文件；本轮未恢复。停止工具不代表实体断电。
+
+补充源码/测试在交付目录packages/studio-ssh-http-board1-20261103/，供审阅，不含密钥，不自动应用其他板。transfer和原运行包仍冻结36de9bb；外层历史tar.gz尚未刷新，当前文档/清单以解包目录为准。
+
+本轮真实输出与审计索引：[resume-status.json](/Users/bou/Workspace/Duckduck/logs/tools-board1-resume-20261103T114916Z/resume-status.json)。原完整安装输出：[summary.json](/Users/bou/Workspace/Duckduck/logs/tools-board1-install-20261103T104500Z/summary.json)。下方首次安装与USB内容只保留历史，不是当前待执行清单。
+
+**首次安装时的使用说明（历史；当前状态以上面的新IP恢复记录为准）**
 
 - **基础Tools：[直接打开](http://127.0.0.1:8765/)**。本次已建立Mac→板端SSH回环通道。浏览器实际页面已验证；可查看IMU、摄像头方向草稿、15关节映射、舵机健康和运行状态。本轮不保存/应用机器人校正；普通账号无法读取root的/proc/PID/exe，因此保存按钮保持禁用并显示原因，不放宽系统权限。
 - **Studio：[HTTPS入口](https://172.19.8.218:8444/studio/)**。注意是**8444**，原8443属于mediad。Mac Python3.14默认严格X509、CA链和IP校验均已通过，HTTP200。尚未修改Mac/手机系统信任，也未生成或记录配对码；首次浏览器登录仍需本人完成下面两步。
@@ -15,7 +107,7 @@
 - 在自己的SSH终端进入 `/opt/microduck-tools/releases/0.6.0-py313-board1-20261103`，执行第48步 `/usr/bin/python3.13 -m studio.manage pair --apply --confirm EXECUTE`，把5分钟一次性码只填入Studio登录页；不发送到聊天、截图、Git或日志。服务端已就绪不等于该显示端已登录。
 - 当前Tools/Studio为明确手动启动，**未设开机自启**。若MacSSH通道退出，按第36步重建；若板端重启，按第32、44步启动工具。原robotd不需要重装或重启。
 
-**板端实际结果**
+**首次安装时的板端结果（历史）**
 
 | 核对项 | 本次实测 |
 |---|---|
@@ -60,7 +152,7 @@
 
 
 
-**现在先只配置一只（不执行其余槽位）**
+**电脑USB工作台历史记录（当前已停止；本轮不启动）**
 
 打开[正式USB工作台](http://127.0.0.1:8766/?preset=xl330-image)，选择“使用图示 XL330 预设”。本次安装位置是 `/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-servo-workbench-0.1.2`，真实状态独立保存在同级 `usb-real-state/`。
 
@@ -93,7 +185,7 @@ cd /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-
 ./workbench.sh serve --real --state-dir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/usb-real-state --open
 ```
 
-用途：打开同一真实状态库；不能另起第二个后台或删除锁。预期显示LIVE与本机8766入口。前台运行用Ctrl+C停止后端；网页“停止当前任务”只取消当前操作，不退出后端，也不是物理断电。本轮已后台启动，PID69941；停止前先用 `ps -p 69941 -o command=` 核对其包含本篇usb-real-state绝对路径，再用 `kill -INT 69941`，不能对重用的PID误发信号。状态库不删除，重新启动会只读恢复且旧预览失效。
+用途：打开同一真实状态库；不能另起第二个后台或删除锁。预期显示LIVE与本机8766入口。前台运行用Ctrl+C停止后端；网页“停止当前任务”只取消当前操作，不退出后端，也不是物理断电。此前曾后台启动，PID69941；现已停止，不能再按历史PID发信号。历史停止操作为：停止前先用 `ps -p 69941 -o command=` 核对其包含本篇usb-real-state绝对路径，再用 `kill -INT 69941`，不能对重用的PID误发信号。状态库不删除，重新启动会只读恢复且旧预览失效。
 
 
 **一、只在本地准备完成后，才连接第一板**
