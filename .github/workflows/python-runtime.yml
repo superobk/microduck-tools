@@ -1,0 +1,22 @@
+name: Python runtime installation (no hardware)
+on:
+  push:
+    branches: ['feat/python313-board-tools-install']
+  pull_request:
+    paths: ['studio/**', 'installer/**', 'tools/build-studio-bundle.py', '.github/workflows/python-runtime.yml']
+jobs:
+  python-runtime:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -r studio/requirements.txt pyserial==3.5 dynamixel-sdk==3.8.4
+      - run: python -B -m unittest discover -s studio/tests -q
+      - run: python -B -m unittest discover -s installer/tests -q
+      - run: python -B -m unittest discover -s servo_workbench/tests -q

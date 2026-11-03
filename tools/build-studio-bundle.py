@@ -15,7 +15,7 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def build(runtime, assets, wheels, out, commit):
+def build(runtime, assets, wheels, out, commit, python_version="3.11"):
     import sys
 
     sys.path.insert(0, str(ROOT))
@@ -26,6 +26,14 @@ def build(runtime, assets, wheels, out, commit):
     if not re.fullmatch("[0-9a-f]{40}", commit):
         raise ValueError("require exact source commit")
     manifest = verify_assets(assets)
+    if python_version not in ("3.11", "3.13"):
+        raise ValueError("unsupported wheel target")
+    from studio.preflight import check
+    from studio.python_runtime import requirements_lock
+    result = check(assets, wheels, require_target=False,
+                   lock=requirements_lock(tuple(map(int, python_version.split(".")))))
+    if not result["ok"]:
+        raise ValueError("offline assets/wheels failed validation: " + str(result["checks"]))
     out.mkdir(parents=True)
     bundle = out / "microduck-studio-0.6.0"
     bundle.mkdir()
@@ -68,7 +76,7 @@ def build(runtime, assets, wheels, out, commit):
         daemon_bundled=False,
         hardware_acceptance="NOT_RUN",
         model_sha=manifest["model_sha"],
-        wheel_target="CPython3.11 Linux ARM64",
+        wheel_target="CPython" + python_version + " Linux ARM64",
         files=files,
     )
     (bundle / "MANIFEST.json").write_text(
@@ -90,8 +98,9 @@ if __name__ == "__main__":
     p.add_argument("--wheels", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--source-commit", required=True)
+    p.add_argument("--python-version", choices=["3.11", "3.13"], default="3.11")
     a = p.parse_args()
-    r = build(a.runtime, a.assets, a.wheels, a.out, a.source_commit)
+    r = build(a.runtime, a.assets, a.wheels, a.out, a.source_commit, a.python_version)
     print(
         json.dumps(
             dict(

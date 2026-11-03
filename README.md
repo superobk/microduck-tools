@@ -1,5 +1,7 @@
 # Microduck Tools
 
+Studio新源码默认 **HTTP / 0.0.0.0:8790**，pair-code.sh一条命令生成访问码；已有安装可只迁移网络并单独回退。见[当前安装及使用指引](docs/board1-tools-workbench-step-by-step.zh-CN.md)。本轮板端关闭，LAN部署待执行；冻结旧包不自动获得新默认。
+
 Microduck 校准与配置工具 **0.6.0**。保留 daemon-v0.16.3 的 IMU、15 舵机软件映射、摄像头四向配置和黑橙统一 Web；增加官方新版只读能力适配、独立插件配置与相机 CLI 适配，并提供固定 0.17.9 / 0.18.3 基线的原生校正候选。
 
 这是软件准备和审阅版本，尚未执行实机回滚、部署或物理验收。Web 不自动重启 robotd；摄像头应用需单独启用并明确确认，只重启 mediad。IMU/关节校正依赖匹配的原生补丁；两版 calv3 均实现加载、16.4 解码与真实回执；0.18.3 另适配持久用户层。官方未打补丁的 0.17.9 仍禁止校正写入，监测与相机不需要原生校正补丁。
@@ -104,3 +106,6 @@ python3 tools/microduck-dryrun.py cycle
 0.4.2补充可靠性审查：中断遗留临时文件不再阻塞恢复，切换前确认测试服务停止/任务结束，拒绝systemd别名和对外依赖联动，Linux验证绑定socket对端PID；包装入口仅允许Web只读monitor。详见[审查与修复](docs/dryrun-review.zh-CN.md)。
 
 PR #7安全复审已升级工作台0.1.1：原始连接固定、回显过滤、ID/速率中断恢复和动作保护，详见[复审说明](docs/servo-workbench-safety-review.zh-CN.md)。从当前0.16.3直接升级并安装Tools的[原生命令指南](docs/native-upgrade-0163-to-0183.zh-CN.md)和[完整回退](docs/native-upgrade-recovery.zh-CN.md)独立提供；板端仍NOT_RUN。
+
+
+Python3.13板端安装：Studio现支持CPython3.11/3.13 Linux ARM64普通GIL版本，各自使用独立锁和wheel。第一板已完成0.18.3+calv3后，按[逐条安装指南](docs/board1-tools-workbench-step-by-step.zh-CN.md)安装Tools、Studio与独立舵机工作台；不需再装Python3.11，不重跑daemon升级。板端安装仍待执行，桌面工作台仅需Python3.11+。

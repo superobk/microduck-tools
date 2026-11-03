@@ -160,7 +160,7 @@ class SerialBus:
 
     def write(self,ident,baud,addr,size,value,purpose="configuration"):
         p=profile(self.kind)
-        configuration=({7,8,9,11,20,62,63} if self.kind=="xl330" else
+        configuration=({7,8,9,10,11,20,62,63} if self.kind=="xl330" else
                        {5,6,19,21,22,28,33,55})
         motion=({64,98,100,108,112,116} if self.kind=="xl330" else
                 {40,41,42,44,46,48})

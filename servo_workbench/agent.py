@@ -50,7 +50,7 @@ def serve_stdio(controller, kind, source=sys.stdin, sink=sys.stdout):
             if not isinstance(ident, str) or len(ident) > 80 or not isinstance(owner, str) or len(owner) > 80 or not isinstance(body, dict):
                 raise Refused('FRAME', '消息身份或参数错误')
             if method == 'hello':
-                result = dict(protocol=PROTOCOL, component_version='0.1.1',
+                result = dict(protocol=PROTOCOL, component_version='0.1.2',
                               authority='board', kind=kind, hardware_acceptance=False)
             else:
                 if method not in MUTATIONS | READS or method in ('simulation', 'report-import'):

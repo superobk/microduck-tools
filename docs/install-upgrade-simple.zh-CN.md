@@ -84,3 +84,5 @@ sudo ./duck.sh studio-stop     # 预览：只停止Studio的范围
 - Studio配置 `/etc/microduck-studio/config.json`；安装登记 `/var/lib/microduck-studio-install/`；机器人升级登记 `/var/lib/microduck-tools-manager/`；新向导只多一个互斥锁目录 `/var/lib/microduck-install-assistant/`，不另造升级完成标记。
 
 完整页面、HTTPS信任和生效检查见 [Studio指南](studio-0.6.0-guide.zh-CN.md)。底层命令和原校正维护细节见 [冻结升级器指南](script-manager.zh-CN.md)。本轮的软件验证和交付目录见 [部署登记](deployment-register.zh-CN.md)；板端安装、交接、运动、恢复及性能全部 **NOT_RUN**。
+
+2026-11-03：新源码Studio默认局域网HTTP/8790、pair-code.sh一键码；冻结旧统一套件未重打包，仍按其原HTTPS快照。已有Studio只用本轮网络增量，不重跑机器人升级器或setup，详见[Studio当前指南](studio-0.6.0-guide.zh-CN.md)和[第一板逐条指引](board1-tools-workbench-step-by-step.zh-CN.md)。

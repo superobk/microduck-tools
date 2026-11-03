@@ -36,7 +36,7 @@ def build(root,out):
     with tarfile.open(out,'w:gz') as archive:
         for name,raw in entries:
             info=tarfile.TarInfo('microduck-tools-'+version+'/'+name);info.size=len(raw)
-            info.mode=0o755 if name in ('duck.sh','workbench.sh','tools/microduck-dryrun.py','tools/studio.sh','deploy/robotctl-dryrun') or name.startswith(('deploy/manager/','deploy/workbench/')) and name.endswith('.sh') else 0o644
+            info.mode=0o755 if name in ('duck.sh','workbench.sh','tools/microduck-dryrun.py','tools/studio.sh','deploy/robotctl-dryrun') or name.startswith(('deploy/manager/','deploy/workbench/','deploy/studio/')) and name.endswith('.sh') else 0o644
             archive.addfile(info,io.BytesIO(raw))
     digest=hashlib.sha256(out.read_bytes()).hexdigest()
     out.with_name(out.name+'.sha256').write_text(digest+'  '+out.name+'\n')

@@ -1,14 +1,18 @@
 {
-  "date_local": "2026-11-02",
+  "date_local": "2026-11-03",
   "tool_version": "0.6.0",
-  "stage": "servo-workbench-0.1.1-safety-review-native-upgrade",
+  "stage": "default-lan-http-ready-board-off",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "git_base": "054378e3a8269a5660506c3d4ee26365d8b507c9",
-  "scope": "PR7 safety review; pinned serial transactions, echo/status validation, interrupt/rollback/bench safety; native upgrade and recovery guide; real hardware NOT_RUN",
+  "git_base": "b125823d3a891330732dfa870582cdae0300eaf4",
+  "scope": "DefaultLAN HTTP8790, installed-release pair helper, managed frozen-runtime network migration/rollback; board off, no deployment or hardware actions this round.",
   "files": [
     {
       "path": ".gitattributes",
       "sha256": "dfbb2a3c99575e7a069922096835e6a1f1c3684a1fa64eab165179b3f7c53636"
+    },
+    {
+      "path": ".github/workflows/python-runtime.yml",
+      "sha256": "5d1ee2ff1009a2d1bf8ce479ff67aac216fc91d30091cc91f49419614dc6bd09"
     },
     {
       "path": ".github/workflows/servo-workbench.yml",
@@ -20,7 +24,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "17ce57ac2c726a06a8b185ca42cf69d42e18347c369af5a9f86b68f67c0377c0"
+      "sha256": "4ece04d87796542f3a19c6b8862ef584ec16697792bbdbd73a4e929a9954fe15"
     },
     {
       "path": "VERSION",
@@ -475,16 +479,32 @@
       "sha256": "b47894ce056a9395f67c07787543c3ae2cc80371861a80a2b44fe07400a5bcd6"
     },
     {
+      "path": "deploy/studio/http-configure.sh",
+      "sha256": "b915844d0b20216ee6c3d49fe7a9cb9ea93e17cb51976e07a3ce616a77696538"
+    },
+    {
       "path": "deploy/studio/microduck-studio-helper.service",
       "sha256": "369b85e94ed3f1628504152e7f5af94a3a03b368b6a301dab7e6867d496459f9"
     },
     {
       "path": "deploy/studio/microduck-studio.service",
-      "sha256": "ba8a0f8b19a866ba3b08a79cb80e65589b7295e493f26d0b53c5c3217535d9db"
+      "sha256": "e54212175d49472eefe64500f44cbd151dbb4cea973b084d9ec10d20fd6cf734"
     },
     {
       "path": "deploy/studio/microduck-studio.slice",
       "sha256": "9acb5100332a5776e4d6c74db2d7a158c4294f6865a8f7fdacef843d89acc7d3"
+    },
+    {
+      "path": "deploy/studio/pair-code.sh",
+      "sha256": "8d3982c6e1e30d24c9af4d9c84859d23055d2ef11fcaafc0a690d1470c4366b1"
+    },
+    {
+      "path": "deploy/studio/studio-http.py",
+      "sha256": "04fd8f7b68380ad0a1864166f129a65804376f77cfc3797af2c7e69f44bef9a9"
+    },
+    {
+      "path": "deploy/studio/studio-ssh-http.py",
+      "sha256": "a7d63fa5daa1c81382ecefec873820a30bca80ebb48db179f3ffdc891a197855"
     },
     {
       "path": "deploy/workbench/agent.sh",
@@ -492,7 +512,11 @@
     },
     {
       "path": "deploy/workbench/install-agent.py",
-      "sha256": "bd8b448162ed6c09e9bd0e8d403b70a762f9e4e3431d79a09d3a3e1b37a50756"
+      "sha256": "4fde306075894cc133a35320024f8ec965e8618fd435604400cdc5da6ad15987"
+    },
+    {
+      "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
+      "sha256": "477b3bdbae2c0b1649430654aaf3517615d22799129b7bb2306da4f682050ecd"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -512,7 +536,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "af6433fe2d58040097ebd6810522c3fad96497b32709f4238c98cdeca0ffe201"
+      "sha256": "8f7f9b3750f869613cd57cc3619f2f14f4e2f303d47bda0345214670ecf40fad"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -524,7 +548,7 @@
     },
     {
       "path": "docs/install-upgrade-simple.zh-CN.md",
-      "sha256": "2e774fa6cc0a39da96fadfb86b635b74366ad5ae3b3f42eaab44721f58f3565b"
+      "sha256": "4f708e0c5f436c37a6e1bdac788b2f960d10139671254309c6c4750ca7ccb050"
     },
     {
       "path": "docs/manual-upgrade-0183-0.4.3-history.zh-CN.md",
@@ -568,7 +592,7 @@
     },
     {
       "path": "docs/servo-workbench-guide.zh-CN.md",
-      "sha256": "dc1883f33a4f9f5aee6399ecc1a83ece4c3b006894e326dc653f04d52835f702"
+      "sha256": "3c6e6d471aa0c7e8b2c2b8b85c5043a4daf5d2951526d6b4815efa59a9f08f57"
     },
     {
       "path": "docs/servo-workbench-recovery.zh-CN.md",
@@ -588,15 +612,15 @@
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
-      "sha256": "bb479b98c580f211f278b428c8bda801ca9fad809486d452a3e9456c38473bfc"
+      "sha256": "3cd16c10745520a9afce14cb52c1f200e272d581e5fabb8db028a1faab3aa5c7"
     },
     {
       "path": "docs/studio-0.6.0-plan.zh-CN.md",
-      "sha256": "80c285a433fb54b7ddfffcf33bb5383d20f30a2c2297b012b46e47d02578238f"
+      "sha256": "72275e2a7a381c78ff4f71a3a18571ae2cd1f6796cc8f91cd756c69ec7468749"
     },
     {
       "path": "docs/studio-0.6.0-validation.zh-CN.md",
-      "sha256": "954ac47a48837f9edada64adb8681da2b9bff98793a08794769dbcacc6e39853"
+      "sha256": "65bbfba38c499d2afb8caae0d7486fd46cb6bf4c94425745a91239d9720aa21f"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -628,7 +652,7 @@
     },
     {
       "path": "servo_workbench/__init__.py",
-      "sha256": "dad05493f5835543508acff14be93280d771bd5773ff611e73d0f60760670137"
+      "sha256": "f957c52b59818e67fe79807a99e5dd543fed53d4f02cfbc3844ad3fab746d73b"
     },
     {
       "path": "servo_workbench/__main__.py",
@@ -640,15 +664,15 @@
     },
     {
       "path": "servo_workbench/agent.py",
-      "sha256": "895aaa9bd28237a74ff095c1283e19b427fa551ebccdc7b788b9933ccb8d0f62"
+      "sha256": "0b8b925ff3cc1a5445a9d5d51917893d715d7644aef11fe9553a1d38324b9e2c"
     },
     {
       "path": "servo_workbench/engine.py",
-      "sha256": "aa65f3e0d98c34187bda01ef836d2dcfdbd2e8a68575e3dab860b58d1b318fb3"
+      "sha256": "9f12ece4dc5938aded384590f688eb5f8663c28b0954a5b0d44b11831bd4c664"
     },
     {
       "path": "servo_workbench/profiles.py",
-      "sha256": "8a8b14458153980a172a4400805a8770d4e7ff7c4a1fe951876a53f0001fee98"
+      "sha256": "8a751cc42d8a80c414cfe4487ee5d50e2e1e60d21a9a50b12d2e01e669e46e86"
     },
     {
       "path": "servo_workbench/protocol.py",
@@ -656,7 +680,7 @@
     },
     {
       "path": "servo_workbench/remote.py",
-      "sha256": "da2e1d4a5fb64d674a401c5fdd29be346eecfc810922fd532cab8e4f0965cd17"
+      "sha256": "5a20acee0549beaaa6f02bdf79b3eff9d86394951634028ff407eaeaee5d9aad"
     },
     {
       "path": "servo_workbench/reports.py",
@@ -672,7 +696,7 @@
     },
     {
       "path": "servo_workbench/service.py",
-      "sha256": "d861d38af3ab85b41417dd71d74759afe067999db720e9f6b1bd9d7eff2cf3f5"
+      "sha256": "8eefd93908244e562cd53a19a940c8309c618e36dbd3d97f257a2a633e0d7ccf"
     },
     {
       "path": "servo_workbench/simulation.py",
@@ -680,11 +704,11 @@
     },
     {
       "path": "servo_workbench/static/app.js",
-      "sha256": "8e2c23b49ea8dda05c52e78b6eea163f06dc0e4e6aef9636f7268704d7f77649"
+      "sha256": "2bd081a9de49818d5eeffa6f6973a42b37b3429fcbb421eaf5d902ba41cc0ab7"
     },
     {
       "path": "servo_workbench/static/index.html",
-      "sha256": "c363da13552d7fb293feeedd180487237c9ec93863b521879065a18daa4b1c43"
+      "sha256": "1fd9105310b48eb6a9f40e352457f91d27564f5507a7089c5287c7d88d35215a"
     },
     {
       "path": "servo_workbench/static/style.css",
@@ -703,8 +727,12 @@
       "sha256": "d42185c8f9da8e864e469b6c8dc88b050929de997089e838b94e415822071688"
     },
     {
+      "path": "servo_workbench/tests/test_image_preset.py",
+      "sha256": "a372c1b72e2cd2104cc8359729a92a24e1d7ba06a9838222781a23a15e7cb728"
+    },
+    {
       "path": "servo_workbench/tests/test_install.py",
-      "sha256": "c39750386d79a855e84be0a6ae1173b1dabe1c6216c219f8247025f5f84808f7"
+      "sha256": "6739dffd86cdef4d088a76fc98a2b06c54ff7f6d37ee45422c8bc9f95e72f453"
     },
     {
       "path": "servo_workbench/tests/test_recovery.py",
@@ -716,7 +744,7 @@
     },
     {
       "path": "servo_workbench/tests/test_transport.py",
-      "sha256": "fe674a4277fd95abc7359c68141925e07fcec148828ba9f09aa1f37210b34979"
+      "sha256": "20d4c4226fbecaf892f3402cffb3344e27d48853103f373a8fab68d909e24e29"
     },
     {
       "path": "servo_workbench/tests/test_workflow.py",
@@ -724,7 +752,7 @@
     },
     {
       "path": "servo_workbench/transport.py",
-      "sha256": "d36f29af512e0673a7515c576dd3ac666f8c03ef666638f2440268f1a2f0ec59"
+      "sha256": "d6e394317f4b09203dc1fc66692a175a1ca7c6a07ee286c6e54e0e55b5bcd3f8"
     },
     {
       "path": "studio/__init__.py",
@@ -752,7 +780,11 @@
     },
     {
       "path": "studio/manage.py",
-      "sha256": "c9db3b6dc3428b312b463d35ce31548b4ef4395aed8a8834005d3b3938be0b0d"
+      "sha256": "6059124fed69cdec1adb2e524475c29ea3ba12c206fd63c0a004bb26e521097b"
+    },
+    {
+      "path": "studio/network.py",
+      "sha256": "1272c5911a02a56b926b6fa6bd0719a7392d7a6cd508cb2c71a808536e30cedd"
     },
     {
       "path": "studio/package-lock.json",
@@ -764,7 +796,15 @@
     },
     {
       "path": "studio/preflight.py",
-      "sha256": "bfe818f81c99a945b38229109ea148235348114e8d87d3e1ed187f4da816c9b1"
+      "sha256": "ec02a6d2fa6610737a177231afb4ab2e6327086cf13fb25a576999c55814aa2a"
+    },
+    {
+      "path": "studio/python_runtime.py",
+      "sha256": "f2f70c410156ca8a648fd724b661858fd014d3e18b0483824a5b8a3dea2f107b"
+    },
+    {
+      "path": "studio/requirements-linux-arm64-py313.lock",
+      "sha256": "61ea7ac879a4bf23086b12c2845a7366f9e9195605d9fcb071d0e47827707bb4"
     },
     {
       "path": "studio/requirements-linux-arm64.lock",
@@ -776,7 +816,7 @@
     },
     {
       "path": "studio/server.py",
-      "sha256": "6a54c663fccbb341df1793c923a8270267d439996640e223f22cd1423ab8a474"
+      "sha256": "bd2d3120f0685c3b943d0006cba567f10d2ba617026cfe30fe41bb944efa9037"
     },
     {
       "path": "studio/static/app.js",
@@ -839,8 +879,20 @@
       "sha256": "efec18bc8ec3b80012432695f5d8d74891acae76dcc5086e9d96472e759c46b8"
     },
     {
+      "path": "studio/tests/test_network.py",
+      "sha256": "acea11b30ee9c1c34d57dc7de3be66da0fda3af2a692194f58e499b54d212ada"
+    },
+    {
+      "path": "studio/tests/test_python_runtime.py",
+      "sha256": "4ceec751e6443140b6821a65f6943e71a50871d216dd2dbf875fd5a876dbe2ce"
+    },
+    {
+      "path": "studio/tests/test_ssh_http.py",
+      "sha256": "f9ea5058f9132c3f4a64e4fcd9554f516563442abef7e0c19292a3d99510792b"
+    },
+    {
       "path": "studio/tests/test_studio.py",
-      "sha256": "36da63bd290657bea36c622da76983a2297e8e88f7095e7a248e96753518cdad"
+      "sha256": "b0d1a59a1eeec1d634beb689382758ce3d9bf1abe9f96df51f0b37860dba3405"
     },
     {
       "path": "tools/build-install-kit.py",
@@ -848,19 +900,19 @@
     },
     {
       "path": "tools/build-release.py",
-      "sha256": "464259ce9dd9e94590956e121cb1b2654b47c62209eb5ea4e82dad7e6c7f5742"
+      "sha256": "1627242acdf5e01cfb74dcb5908eed4b5dff4b19521b3c8e972463c0e9ee9c41"
     },
     {
       "path": "tools/build-studio-assets.py",
-      "sha256": "a1f389bea7bd07334d6fce521d45f7100e35ea92965e7a50904481cad73a75c6"
+      "sha256": "ac16d99265665c6a63b92df90ce2cdabd75aa8af74c30c94f962ce425d6f6278"
     },
     {
       "path": "tools/build-studio-bundle.py",
-      "sha256": "f5aeaf490b0a5ad75973cd726a736d74e6aee13f1529b56604fe172ffca81c73"
+      "sha256": "56fc870970e7fa3dd96909f7429f76928d1c50b433c596618407cc8d41d07545"
     },
     {
       "path": "tools/build-workbench.py",
-      "sha256": "e513db010d071d472b71bc67e30003ad626cd95782f85b67bac572a47eba8432"
+      "sha256": "f44d77cf16472094221441324d9f882a41be7ccd238e8362e1e32a7de7a0298d"
     },
     {
       "path": "tools/check-native.py",
@@ -906,5 +958,7 @@
       "path": "workbench.sh",
       "sha256": "cd7d3c6c67a9727f0bd0a8227f5ad90d370b94c282cc9d14d329f59ccb0afbb1"
     }
-  ]
+  ],
+  "runtime_payload_commit": "36de9bb39c9e3c84c57908efe74f2311585a04d7",
+  "workbench_component_version": "0.1.2"
 }

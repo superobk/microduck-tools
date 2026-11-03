@@ -913,6 +913,12 @@ asyncio.run(h.take())
             self.assertNotIn("ExecStart=/opt/robot", text)
 
     async def test_installer_setup_rollback_does_not_touch_native_service(self):
+        await self.installer_round_trip("lan-http")
+
+    async def test_installer_ssh_loopback_keeps_loopback_bind(self):
+        await self.installer_round_trip("ssh-loopback-http")
+
+    async def installer_round_trip(self, transport):
         from studio import manage
         from types import SimpleNamespace
 
@@ -955,7 +961,7 @@ asyncio.run(h.take())
             j.write = write
             with patch(
                 "studio.preflight.check", return_value=dict(ok=True)
-            ), patch.object(manage, "BASE", root / "addon"), patch.object(
+            ), patch("studio.network.ensure_port_available"), patch.object(manage, "BASE", root / "addon"), patch.object(
                 manage, "CONFIG", root / "config/config.json"
             ), patch.object(
                 manage, "run", side_effect=run
@@ -965,10 +971,14 @@ asyncio.run(h.take())
                 "grp.getgrnam", return_value=object()
             ), patch.object(
                 manage, "Handoff", return_value=handoff
+            ), patch.object(
+                manage, "requirements_lock",
+                return_value=Path(manage.__file__).with_name("requirements-linux-arm64-py313.lock")
             ):
                 manage.setup(
                     SimpleNamespace(
                         server_ip="192.168.9.9",
+                        transport=transport,
                         assets=assets,
                         wheels=root / "wheels",
                         enable_controls=False,
@@ -977,7 +987,18 @@ asyncio.run(h.take())
                     j,
                 )
             self.assertEqual(j.data["phase"], "installed")
+            installed = json.loads((root / "config/config.json").read_text())
+            expected_ip = "127.0.0.1" if transport == "ssh-loopback-http" else "192.168.9.9"
+            self.assertEqual(installed["public_origin"], "http://" + expected_ip + ":8790")
+            self.assertEqual(installed["listen"], "127.0.0.1" if transport == "ssh-loopback-http" else "0.0.0.0")
+            self.assertFalse(any(c[0] == "openssl" for c in commands))
+            self.assertFalse((root / "config/ca.key").exists())
+            self.assertTrue((root / "addon/pair-code.sh").exists())
             release=Path(j.data['release'])
+            pip_calls = [c for c in commands if "pip" in c and "install" in c]
+            self.assertEqual(len(pip_calls), 1)
+            self.assertIn("--require-hashes", pip_calls[0])
+            self.assertEqual(Path(pip_calls[0][-1]).name, "requirements-linux-arm64-py313.lock")
             self.assertFalse((release/'servo_workbench/transport.py').exists())
             import subprocess,sys
             isolated=subprocess.run([sys.executable,'-I','-B','-c',
