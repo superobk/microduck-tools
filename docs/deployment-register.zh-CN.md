@@ -46,3 +46,8 @@
 正式电脑安装已完成：0.1.2便携包42文件校验通过、pyserial3.5离线安装通过；LIVE http://127.0.0.1:8766/?preset=xl330-image，PID64560，同用户运行，不自启动。真实状态目录work/board1-workbench-0.1.2-20261103/usb-real-state。隔离8776模拟向导8行完整预览通过并已停止。实际USB枚举发现/dev/cu.usbserial-FTBIHT7E，尚未绑定，不以USB枚举证明半双工接线正确。用户要求先一只真实配置，目标ID和现场条件确认待回复；不执行其余14槽位。板端Tools/Studio/代理均NOT_RUN。本次只更新已有指南，没有新增独立指南。完整证据logs/tools-workbench-usb-install-20261103T095404Z/installation-result.json。
 
 最终原生发包复核：发现新增Drive Mode计划尚需同时加入原生配置白名单，已补齐寄存器10；先用假描述符复现失败，再115项回归通过。正式安装42文件再次校验后已重启为PID69941，旧预发布包及旧安装文件留在同一logs证据目录。用户已指定单只ID24并确认现场条件，仅授权先只读；自动只读计划被harness/audit.py:308硬件门控拒绝，未打开串口。操作者可在正式UI手动绑定并预览；不绕过审计门控，写入/运动仍NOT_RUN。
+
+
+2026-11-03板端实际部署完成：Tools/Studio0.6.0，Python3.13.5；175负载/137源码校验，ToolsPID4352，StudioPID7135、助手5242。Studio改8444以保留mediad8443，严格TLS CA/叶扩展经Journal更新，Mac3.14严格验证HTTP200；公开CA指纹82:2F:8C:82:A1:95:52:D8:15:86:C5:09:BE:FE:B8:D4:FE:49:35:3D:57:5A:78:13:34:B0:58:C4:34:1E:23:E3。原daemonPID1007/mediad1208及native哈希、unit、robot配置和校正回执不变。控件/Camera关闭，15关节健康新鲜；原生身份跨UID核验被/proc拒绝，校正保存保持只读，未放宽权限。USB工作台已停、0配置；无舵机写入或运动，未设开机自启；Studio显示端信任CA及配对仍需本人完成。冻结36de9bb安装器端口与初次CA问题按原指南受控补充处理，不宣称原setup可直接无补充复用。证据：/Users/bou/Workspace/Duckduck/logs/tools-board1-install-20261103T104500Z/summary.json
+
+用户要求暂停并保存：后续远程操作、测试、推送停止；已有服务保持当前状态。板端部署已完成的摘要与待办见原逐条指南及logs/tools-board1-install-20261103T104500Z/summary.json。外层便携归档尚未包含本轮板端实装登记，待通知继续后再刷新；当前目录清单按暂停保存状态更新。

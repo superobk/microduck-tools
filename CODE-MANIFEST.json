@@ -1,10 +1,10 @@
 {
   "date_local": "2026-11-03",
   "tool_version": "0.6.0",
-  "stage": "workbench012-usb-install-image-preset",
+  "stage": "board1-deployment-user-paused",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
   "git_base": "b125823d3a891330732dfa870582cdae0300eaf4",
-  "scope": "Workbench0.1.2 Drive Mode0 and complete image-reference preview; original homing template preserved per user. Desktop USB installed; physical writes pending; board NOT_RUN.",
+  "scope": "Actualboard1 Tools/Studio deployment with documented managed port/TLS repairs; desktop workbench stopped. Daemon untouched; no servo writes or motion.",
   "files": [
     {
       "path": ".gitattributes",
@@ -500,7 +500,7 @@
     },
     {
       "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
-      "sha256": "76ec9136ef4d01f0a4a01e935ba26414f168665409795969ecc1ff8c3d514880"
+      "sha256": "7ca00bd7f50fff2609d8c913be40dc1b5463c454f3046873206286eb889b4989"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -520,7 +520,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "a177f015d3e00baea943af9e89d2afd72a2dc461e6eaa714ced5cf261198443e"
+      "sha256": "ef249779609152bd05abe7eed1af59ee621723a3fcd3660e0d895dc8aecd3d8d"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
