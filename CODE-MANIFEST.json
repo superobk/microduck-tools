@@ -4,7 +4,7 @@
   "stage": "python313-board-tools-install-guide",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
   "git_base": "b125823d3a891330732dfa870582cdae0300eaf4",
-  "scope": "Python3.13 Studio install gate and independent hashed wheels; board1 native-command installation guide; no board execution or native/calibration changes",
+  "scope": "Python3.13 Studio install gate and independent hashed wheels; board1 native-command installation guide; no board execution or native/calibration changes; validate Three core only when referenced by the verified module",
   "files": [
     {
       "path": ".gitattributes",
@@ -500,7 +500,7 @@
     },
     {
       "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
-      "sha256": "4a7eb6c10bb906f2c4be59c6a65cba88f533875a430d8642a557d0bddf34927a"
+      "sha256": "4ce864b45aa3404f150a0b7193ebe783825369cf64a6fec9e52100d61778db13"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -520,7 +520,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "7c72187e8686619e01a30895754027e989f2229f02d9387cb6c4b033c7ad8f87"
+      "sha256": "1ea037784aeb9708e0c20945a3793171bcd8c006127fde5bb5927c4a2d3c2ea5"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -772,7 +772,7 @@
     },
     {
       "path": "studio/preflight.py",
-      "sha256": "e4237d40f812e8809697b5d18c31a6cface245f9d75cef5a4195bd959284b154"
+      "sha256": "ec02a6d2fa6610737a177231afb4ab2e6327086cf13fb25a576999c55814aa2a"
     },
     {
       "path": "studio/python_runtime.py",
@@ -856,7 +856,7 @@
     },
     {
       "path": "studio/tests/test_python_runtime.py",
-      "sha256": "99a2ce3162d68296d4b57d1952784a896d822e33c97a23673b3f7049c64e41a9"
+      "sha256": "4ceec751e6443140b6821a65f6943e71a50871d216dd2dbf875fd5a876dbe2ce"
     },
     {
       "path": "studio/tests/test_studio.py",
@@ -872,7 +872,7 @@
     },
     {
       "path": "tools/build-studio-assets.py",
-      "sha256": "a1f389bea7bd07334d6fce521d45f7100e35ea92965e7a50904481cad73a75c6"
+      "sha256": "ac16d99265665c6a63b92df90ce2cdabd75aa8af74c30c94f962ce425d6f6278"
     },
     {
       "path": "tools/build-studio-bundle.py",

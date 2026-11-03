@@ -32,4 +32,6 @@
 
 第一板0.18.3+calv3已由Robot init guideline完成，前置报告在工作区logs/board1-0183-postboot-20261103T080757Z；本轮没有重新上板。Tools/Studio仍0.6.0，工作台仍0.1.1。Studio原门控确实限制板端CPython3.11，本轮增加3.13普通GIL/ARM64支持及独立锁，拒绝PyPy/free-threaded及其他未核验ABI；旧3.11锁/旧归档不改。全局系统Python指针不改，Studio/代理各自venv仍源自板端同一3.13解释器。
 
-[第一板逐条安装指引](board1-tools-workbench-step-by-step.zh-CN.md)采用“命令/用途/为什么/预期/待执行”格式，包含Tools Web、Studio、电脑工作台及可选板端代理、停止/恢复/回退。当前本地431Python（50Studio、37安装、108工作台、236原校正）及11Node通过；10个wheel跨平台离线解析和哈希通过，板端3.13 ARM64动态加载、服务、USB/串口与动作仍NOT_RUN。新本地交付为/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103，不能用原3.11包替代。原style源指南与calv3/daemon及核心校正代码未改。
+[第一板逐条安装指引](board1-tools-workbench-step-by-step.zh-CN.md)采用“命令/用途/为什么/预期/待执行”格式，包含Tools Web、Studio、电脑工作台及可选板端代理、停止/恢复/回退。当前本地433Python（52Studio、37安装、108工作台、236原校正）及11Node通过；10个wheel跨平台离线解析和哈希通过，板端3.13 ARM64动态加载、服务、USB/串口与动作仍NOT_RUN。新本地交付为/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103，不能用原3.11包替代。原style源指南与calv3/daemon及核心校正代码未改。
+
+真实材料核验另修复预检误将自包含Three0.170要求three.core.js的问题：仅对实际引用core的拆分模块要求该文件，新增缺失拒绝测试；未修改场景渲染逻辑。

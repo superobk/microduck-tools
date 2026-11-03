@@ -1117,6 +1117,6 @@ Studio登录后检查默认controls_enabled=false、camera_enabled=false，保�
 
 **证据与验收边界**
 
-本地431项Python、11项Node回归通过，包括9项新增ABI/锁文件测试。pip按CPython3.13 Linux ARM64目标对10个wheel做了离线完整依赖及require-hashes解析；5个cp313扩展文件SHA与PyPI官方文件页对照，5个通用wheel与旧已核验锁一致。原3.11锁和旧冻结包保持原始字节。本机没有安装Linux ARM64 Python3.13，不能把本地Python3.14回归和跨平台解析写成板端动态加载通过；后续真正setup内的import及服务验收仍是上板步骤。
+本地433项Python、11项Node回归通过，包括11项新增安装预检测试。pip按CPython3.13 Linux ARM64目标对10个wheel做了离线完整依赖及require-hashes解析；5个cp313扩展文件SHA与PyPI官方文件页对照，5个通用wheel与旧已核验锁一致。原3.11锁和旧冻结包保持原始字节。本机没有安装Linux ARM64 Python3.13，不能把本地Python3.14回归和跨平台解析写成板端动态加载通过；后续真正setup内的import及服务验收仍是上板步骤。
 
 本篇不重做0.18.3升级、不安装真实校正、不设置16.4或猜IMU安装四元数。完整源代码身份、材料SHA、语法检查和后续CI状态以本交付release-record.json、manifest.json及evidence为准。参考风格源文件、旧交付包和既有板端报告保持不变。

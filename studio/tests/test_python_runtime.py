@@ -89,5 +89,32 @@ class PythonRuntimeTests(unittest.TestCase):
         for name in ("aiohttp", "frozenlist", "multidict", "propcache", "yarl"):
             self.assertNotEqual(a[name], b[name])
 
+
+    def asset_report(self, split):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "assets/three").mkdir(parents=True)
+            (root / "assets/three/three.module.js").write_text(
+                "export {Object3D} from './three.core.js';" if split else
+                "export class Object3D {}")
+            required = ["assets/three/three.module.js",
+                        "assets/transformers/transformers.min.js",
+                        "assets/transformers/ort-wasm-simd-threaded.jsep.mjs",
+                        "assets/transformers/ort-wasm-simd-threaded.jsep.wasm"]
+            wheels = root / "wheels"; wheels.mkdir()
+            lock = root / "empty.lock"; lock.write_text("# fixture\n")
+            with patch.object(manage, "verify_assets",
+                              return_value={"files": [{"path": p} for p in required]}):
+                return preflight.check(root, wheels, require_target=False, lock=lock)
+
+    def test_self_contained_r170_does_not_require_nonexistent_core(self):
+        self.assertTrue(self.asset_report(False)["ok"])
+
+    def test_split_three_without_core_is_rejected(self):
+        report = self.asset_report(True)
+        self.assertFalse(report["ok"])
+        self.assertTrue(any(r["item"] == "浏览器与模型资产" and not r["ok"]
+                            for r in report["checks"]))
+
 if __name__ == "__main__":
     unittest.main()

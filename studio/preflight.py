@@ -48,11 +48,14 @@ def check(assets, wheels, require_target=True, lock=None):
         manifest = verify_assets(Path(assets))
         required = {
             "assets/three/three.module.js",
-            "assets/three/three.core.js",
             "assets/transformers/transformers.min.js",
             "assets/transformers/ort-wasm-simd-threaded.jsep.mjs",
             "assets/transformers/ort-wasm-simd-threaded.jsep.wasm",
         }
+        # r170 is self-contained; later split builds must include their core.
+        module = Path(assets) / "assets/three/three.module.js"
+        if module.is_file() and "three.core.js" in module.read_text():
+            required.add("assets/three/three.core.js")
         if not required.issubset({r["path"] for r in manifest["files"]}):
             raise ValueError("浏览器/ORT必需文件不完整")
         row(

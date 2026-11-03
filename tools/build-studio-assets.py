@@ -28,8 +28,13 @@ def build(node, out, model=False, model_cache=None):
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, dest)
 
-    for name in ("three.module.js", "three.core.js"):
-        copy(node / "three/build" / name, assets / "three" / name)
+    module = node / "three/build/three.module.js"
+    copy(module, assets / "three/three.module.js")
+    core = node / "three/build/three.core.js"
+    if core.is_file():
+        copy(core, assets / "three/three.core.js")
+    elif "three.core.js" in module.read_text():
+        raise ValueError("split Three module requires three.core.js")
     copy(node / "three/LICENSE", assets / "licenses/three-LICENSE")
     dist = node / "@huggingface/transformers/dist"
     for name in (
