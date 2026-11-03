@@ -2,7 +2,24 @@
 
 日期：2026-11-03（Asia/Shanghai）。目标：root@172.19.8.218，Radxa ZERO 3，Armbian/Debian13、aarch64、glibc2.41，**板端统一使用现有CPython3.13.5**。本文沿用[已完成的0.18.3+calv3指南](/Users/bou/Workspace/Duckduck/docs/robot/zero3w-board1-0183-step-by-step-20261103T063932Z.md)的“单条命令后紧接用途、为什么、结果”格式。
 
-**当前状态：本地材料/代码核验完成后供人工逐条执行；本篇所有板端安装命令均未执行。** 前置0.18.3+calv3的重启验收来自2026-11-03既有报告，不冒充本轮重新SSH核查。板端可先正常关机；完成本地准备并明确开始部署后再开机。不能在离线状态下验证实际服务或ARM64扩展动态加载。
+**当前状态：Mac第1、2步已于2026-11-03实际执行通过。后续板端安装命令均未执行。下一次上板从第3步开始；本次不连接板端。** 前置0.18.3+calv3的重启验收来自2026-11-03既有报告，不冒充本轮重新SSH核查。板端可先正常关机；完成本地准备并明确开始部署后再开机。不能在离线状态下验证实际服务或ARM64扩展动态加载。
+
+**本轮已经实际核验了什么**
+
+| 校验项目 | 实际结果 | 证明范围 |
+|---|---|---|
+| 第1步进入交付目录 | 退出0，pwd为本文交付目录 | 路径真实可用 |
+| 第2步上传材料SHA | **176/176 OK，失败0，退出0** | 上传前文件完整，尚未执行SCP |
+| 原交付完整SHA（更新文档前） | 225/225 OK，退出0 | 更新前的原包完整性 |
+| Mac环境及原生命令 | Python3.14.7；shasum/tar/ssh/scp/openssl/bash均存在 | Mac不要求额外安装Python3.11；仅ssh -V，没有连接主机 |
+| 工作台解包及离线setup | 41份负载哈希通过，pyserial3.5安装成功，退出0 | 在隔离目录验证；没有占用第五部分的正式运行目录 |
+| 工作台纯模拟命令 | help/status/export均退出0，网页HTTP200，导出硬件验收=false | 未用--real或--ssh；测试服务已正常停止 |
+| 基础Web与Studio CLI | 两个--help均退出0 | 可加载，不代表Linux服务已安装 |
+| 浏览器/模型及3.13 wheel | 真实资产SHA通过；10个依赖离线解析通过 | Mac使用只读预检跳过Linux/ARM64运行门控；不是板端动态加载通过 |
+
+全部原始stdout/stderr及退出码保存在[本轮原始输出目录](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/)。没有另写一份指南。下方第1、2步已填实际结果；其余步骤仍是待部署指令。安装payload仍固定为36de9bb源码；transfer内随代码冻结的文档是构建时快照，实时执行状态以本篇为准。
+
+本轮隔离演练实际路径为/Users/bou/Workspace/Duckduck/work/tools-mac-validation-20261103T092153Z/desktop/microduck-servo-workbench-0.1.1，临时端口61021。为了不覆盖正式批次记录，后文正式Mac运行目录尚未创建，--open也未触发真实浏览器。离线setup出现一次“pip缓存目录不可写，已禁用缓存”警告，实际安装退出0；不需要用sudo pip处理。
 
 版本分别为：Tools/Studio0.6.0、Servo Workbench0.1.1、robotd0.18.3+calv3。本次新包包含Python3.13安装适配；**不要使用旧cp311归档代替**。Studio的旧3.11限制确实在板端安装门控；本轮已改为支持3.11/3.13普通GIL版本，并按解释器选择独立锁。旧3.11归档/锁不改。普通Web只需标准库；Studio和可选板端代理各建一套3.13 venv隔离依赖，共用已有3.13解释器，不增加3.11。Mac工作台只需Python3.11+，不要求恰好3.11。
 
@@ -25,7 +42,13 @@ cd /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-gui
 
 预期结果：目录存在；README、transfer、证据及SHA齐全。
 
-本次结果：待执行；本轮仅本地核对指引。
+本次结果：**已执行通过，退出0。** 在cd后额外用pwd确认，实际输出如下：
+
+```text
+/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103
+```
+
+[完整stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/step-1-cwd-stdout.log)；[退出码收据](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/step-1-cwd-result.json)。
 
 **2. 核对将上传的全部文件（Mac终端）**
 
@@ -39,7 +62,19 @@ shasum -a 256 -c transfer-SHA256SUMS
 
 预期结果：所有条目为OK；任何失败都停止，不上传。
 
-本次结果：待执行；本轮仅本地核对指引。
+本次结果：**已执行通过：176条全部OK，失败0，退出0。** 以下为输出摘录，完整176条已登记：
+
+```text
+transfer/SHA256SUMS: OK
+transfer/board-config/microduck-tools-py313.conf: OK
+transfer/wheels313/aiohttp-3.13.2-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl: OK
+transfer/workbench/microduck-servo-workbench-0.1.1.tar.gz: OK
+transfer/workbench/microduck-servo-workbench-0.1.1.tar.gz.sha256: OK
+```
+
+[完整176条stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/step-2-transfer-sha-stdout.log)；[stderr](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/step-2-transfer-sha-stderr.log)；[退出码收据](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/step-2-transfer-sha-result.json)。
+
+下一步：板端可继续关机；等开始部署时再执行第3步。此处没有验证SSH可达性、主机密钥或SCP传输。
 
 **3. 连接已完成升级的第一板（Mac终端）**
 
@@ -1120,3 +1155,24 @@ Studio登录后检查默认controls_enabled=false、camera_enabled=false，保�
 本地433项Python、11项Node回归通过，包括11项新增安装预检测试。pip按CPython3.13 Linux ARM64目标对10个wheel做了离线完整依赖及require-hashes解析；5个cp313扩展文件SHA与PyPI官方文件页对照，5个通用wheel与旧已核验锁一致。原3.11锁和旧冻结包保持原始字节。本机没有安装Linux ARM64 Python3.13，不能把本地Python3.14回归和跨平台解析写成板端动态加载通过；后续真正setup内的import及服务验收仍是上板步骤。
 
 本篇不重做0.18.3升级、不安装真实校正、不设置16.4或猜IMU安装四元数。完整源代码身份、材料SHA、语法检查和后续CI状态以本交付release-record.json、manifest.json及evidence为准。参考风格源文件、旧交付包和既有板端报告保持不变。
+
+
+**本轮完整输出登记（2026-11-03，Mac离线执行）**
+
+每行的stdout、stderr和返回码均为原始记录；摘要不是对全量输出的替代。Linux上的/usr/bin/python3.13、systemctl、账号/权限、真实UART与服务启动仍等待上板验证。
+
+| 实际执行项目 | 完整输出与结果 |
+|---|---|
+| 原交付完整SHA | [225条stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/original-delivery-sha-stdout.log) · [返回码](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/original-delivery-sha-result.json) |
+| Mac环境/命令版本 | [stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/mac-environment-stdout.log) · [stderr](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/mac-environment-stderr.log) · [返回码](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/mac-environment-result.json) |
+| 工作台解包与41文件校验 | [stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/workbench-unpack-stdout.log) · [返回码](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/workbench-unpack-result.json) |
+| 实际离线setup | [stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/workbench-offline-setup-stdout.log) · [stderr](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/workbench-offline-setup-stderr.log) · [返回码](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/workbench-offline-setup-result.json) |
+| 模拟CLI help | [stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/desktop-help-stdout.log) · [stderr](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/desktop-help-stderr.log) |
+| 模拟CLI status | [完整JSON stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/desktop-status-stdout.log) · [stderr](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/desktop-status-stderr.log) |
+| 模拟CLI export | [stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/desktop-export-stdout.log) · [stderr](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/desktop-export-stderr.log) |
+| 演练网页启动与正常停止 | [服务stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/desktop-server-stdout.log) · [服务stderr](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/desktop-server-stderr.log) · [汇总含exit=0](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/desktop-smoke.json) |
+| 基础Web CLI加载 | [stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/web-cli-help-stdout.log) · [返回码](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/web-cli-help-result.json) |
+| Studio CLI加载 | [stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/studio-cli-help-stdout.log) · [返回码](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/studio-cli-help-result.json) |
+| 真实资产及3.13锁预检 | [完整JSON stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/assets-lock-preflight-stdout.log) · [返回码](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/assets-lock-preflight-result.json) |
+| 3.13 ARM64离线依赖解析 | [stdout](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/arm64-pip-dryrun-stdout.log) · [stderr](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/arm64-pip-dryrun-stderr.log) · [返回码](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/arm64-pip-dryrun-result.json) |
+| 本轮结构化汇总 | [summary.json](/Users/bou/Workspace/Duckduck/logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z/summary.json) |

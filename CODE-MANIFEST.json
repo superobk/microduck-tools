@@ -1,10 +1,10 @@
 {
   "date_local": "2026-11-03",
   "tool_version": "0.6.0",
-  "stage": "python313-board-tools-install-guide",
+  "stage": "existing-guide-mac-execution-record",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
   "git_base": "b125823d3a891330732dfa870582cdae0300eaf4",
-  "scope": "Python3.13 Studio install gate and independent hashed wheels; board1 native-command installation guide; no board execution or native/calibration changes; validate Three core only when referenced by the verified module",
+  "scope": "Documentation-only follow-up: execute Mac guide steps1/2 and isolated offline command smoke; record actual results in existing guide. All installation commands and released software payload unchanged; board NOT_RUN.",
   "files": [
     {
       "path": ".gitattributes",
@@ -500,7 +500,7 @@
     },
     {
       "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
-      "sha256": "4ce864b45aa3404f150a0b7193ebe783825369cf64a6fec9e52100d61778db13"
+      "sha256": "dac7bb4e4d811ed19e1802e7e732bc259977b27fddc9cc46e8770ca3695a1554"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -520,7 +520,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "1ea037784aeb9708e0c20945a3793171bcd8c006127fde5bb5927c4a2d3c2ea5"
+      "sha256": "ba26f5f243c814e9cb16ab13476bab17fc985046fc0050d76094daf49b73edd5"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -926,5 +926,6 @@
       "path": "workbench.sh",
       "sha256": "cd7d3c6c67a9727f0bd0a8227f5ad90d370b94c282cc9d14d329f59ccb0afbb1"
     }
-  ]
+  ],
+  "runtime_payload_commit": "36de9bb39c9e3c84c57908efe74f2311585a04d7"
 }

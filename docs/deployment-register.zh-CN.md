@@ -35,3 +35,5 @@
 [第一板逐条安装指引](board1-tools-workbench-step-by-step.zh-CN.md)采用“命令/用途/为什么/预期/待执行”格式，包含Tools Web、Studio、电脑工作台及可选板端代理、停止/恢复/回退。当前本地433Python（52Studio、37安装、108工作台、236原校正）及11Node通过；10个wheel跨平台离线解析和哈希通过，板端3.13 ARM64动态加载、服务、USB/串口与动作仍NOT_RUN。新本地交付为/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103，不能用原3.11包替代。原style源指南与calv3/daemon及核心校正代码未改。
 
 真实材料核验另修复预检误将自包含Three0.170要求three.core.js的问题：仅对实际引用core的拆分模块要求该文件，新增缺失拒绝测试；未修改场景渲染逻辑。
+
+2026-11-03原文校验登记增量：第一板安装指南第1、2步已在Mac真实执行，176份上传文件与更新前225条完整交付校验全部通过；电脑工作台离线安装/模拟网页/status/export在隔离目录通过，服务正常停止。直接在原指南写入输出索引与“完成2步/待上板72步”，不新增其他指南；传输payload仍为36de9bb不重编。原始证据在工作区logs/tools-python313-guide-20261103T083409Z/mac-validation-20261103T092153Z。板端SSH/SCP/安装和硬件均未执行。
