@@ -15,6 +15,8 @@ def build(root,out):
     files=[root/'VERSION',root/'README.md',root/'duck.sh',root/'CODE-MANIFEST.json',root/'tools/microduck-dryrun.py',root/'tools/upgrade-review.py',root/'tools/duck-manager.py']+list((root/'docs').glob('*.md'))
     files += [p for p in (root/'installer').glob('*.py')]
     files += [root/'tools/studio.sh',root/'tools/build-studio-assets.py']
+    files += [root/'workbench.sh',root/'workbench.cmd',root/'tools/setup-workbench.py']
+    files += [p for p in (root/'servo_workbench').rglob('*') if p.is_file() and '__pycache__' not in p.parts and 'tests' not in p.parts and p.suffix!='.pyc']
     files += [p for p in (root/'studio').rglob('*') if p.is_file() and '__pycache__' not in p.parts and 'tests' not in p.relative_to(root/'studio').parts and p.suffix!='.pyc']
     files += [p for p in (root/'deploy').rglob('*') if p.is_file()]
     files += list((root/'calibration/common').glob('*.py'))
@@ -34,7 +36,7 @@ def build(root,out):
     with tarfile.open(out,'w:gz') as archive:
         for name,raw in entries:
             info=tarfile.TarInfo('microduck-tools-'+version+'/'+name);info.size=len(raw)
-            info.mode=0o755 if name in ('duck.sh','tools/microduck-dryrun.py','tools/studio.sh','deploy/robotctl-dryrun') or name.startswith('deploy/manager/') and name.endswith('.sh') else 0o644
+            info.mode=0o755 if name in ('duck.sh','workbench.sh','tools/microduck-dryrun.py','tools/studio.sh','deploy/robotctl-dryrun') or name.startswith(('deploy/manager/','deploy/workbench/')) and name.endswith('.sh') else 0o644
             archive.addfile(info,io.BytesIO(raw))
     digest=hashlib.sha256(out.read_bytes()).hexdigest()
     out.with_name(out.name+'.sha256').write_text(digest+'  '+out.name+'\n')

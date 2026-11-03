@@ -6,3 +6,8 @@ __pycache__/
 .venv-studio/
 studio/vendor/
 studio/models/
+/.venv-workbench/
+/wheels/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm

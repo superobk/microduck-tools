@@ -241,6 +241,9 @@ def prepare_release(journal, assets, wheels):
         "deploy/manual-upgrade/inputs.json",
         "deploy/studio",
         "tools/studio.sh",
+        "servo_workbench/__init__.py",
+        "servo_workbench/profiles.py",
+        "servo_workbench/reports.py",
     ]
     for rel in selections:
         src = ROOT / rel

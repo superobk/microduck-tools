@@ -1,0 +1,2 @@
+# Only native serial needs this dependency. Desktop Web and simulation use stdlib.
+pyserial==3.5
