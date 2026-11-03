@@ -9,6 +9,7 @@ import platform
 import re
 import shutil
 import sys
+from .python_runtime import supported_abi, requirements_lock
 
 
 def check(assets, wheels, require_target=True, lock=None):
@@ -27,8 +28,8 @@ def check(assets, wheels, require_target=True, lock=None):
     )
     row(
         "Python ABI",
-        sys.version_info[:2] == (3, 11) if require_target else True,
-        platform.python_version() + "；板端离线wheel要求3.11",
+        supported_abi() if require_target else True,
+        platform.python_version() + "；板端支持CPython3.11/3.13普通GIL版本，各用独立锁文件",
     )
     if require_target:
         for name in ("systemctl", "systemd-analyze", "openssl", "useradd", "usermod"):
@@ -65,7 +66,7 @@ def check(assets, wheels, require_target=True, lock=None):
         lock = (
             Path(lock)
             if lock is not None
-            else Path(__file__).with_name("requirements-linux-arm64.lock")
+            else requirements_lock()
         )
         available = {}
         for path in Path(wheels).glob("*.whl"):

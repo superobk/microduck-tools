@@ -22,7 +22,7 @@ python3 -m venv .venv-studio
 
 | 动作 | 命令 | 意义与预期 |
 |---|---|---|
-| 安装预览 | `sudo ./studio.sh setup --server-ip 192.168.1.56 --assets "$PWD/runtime-assets" --wheels "$PWD/wheels"` | 只显示将安装，不改服务。先核对Python3.11 ARM64、systemd、robot组、离线wheels、venv/openssl可用。 |
+| 安装预览 | `sudo ./studio.sh setup --server-ip 192.168.1.56 --assets "$PWD/runtime-assets" --wheels "$PWD/wheels"` | 只显示将安装，不改服务。先核对CPython3.11或3.13 ARM64及匹配的wheel/锁文件、systemd、robot组、离线wheels、venv/openssl可用。 |
 | 明确安装 | 上一条末尾加 `--apply --confirm EXECUTE` | 独立复制版本、离线建venv、生成局域网CA/证书、写三份Studio unit和两个手柄启动条件保护；不启动Studio或robotd。已有未知文件不覆盖。 |
 | 启动 | `sudo ./studio.sh start --apply --confirm EXECUTE` | 只启动Studio及其助手，不开舵机、不自动接管手柄；也不设开机自启。 |
 | 查看 | `sudo ./studio.sh status` | 看安装阶段、登记哈希、入口、控制/相机开关、两个进程、slice限额和交接状态。异常时停止，不盲目重装。 |
@@ -109,4 +109,11 @@ sudo ./studio.sh recover --apply --confirm EXECUTE
 | 原工具插件 | `/etc/microduck-tools/plugins.json`，原IMU/关节校正仍按旧指南指定路径；不会自动改写 |
 | 原daemon配置层 | `/etc/robot/robotd.toml`、`/var/lib/robot/robotd.toml`及其指向的校正文件；Studio不迁移/覆盖 |
 
-Python/Web为源码，不需要板端C/Rust编译。交付已准备Three/Transformers/ORT浏览器文件、固定q8模型和**CPython3.11 Linux ARM64**二进制wheels（10个固定依赖、逐文件哈希）。它们没有在本机执行ARM64动态加载；Python其他ABI/32位/不同Linux运行库不能宣称可用，脚本直接拒绝不匹配Python。板端需有python3.11-venv、systemd/systemd-analyze、openssl、robot组及native Unix socket权限；脚本不自动apt安装系统包。官方13个程序与两个native校正候选沿用冻结0.5.0包，已准备/编译，但本轮不重编译或替换，现场动态库及物理验收仍未执行。
+Python/Web为源码，不需要板端C/Rust编译。交付已准备Three/Transformers/ORT浏览器文件、固定q8模型和**CPython3.11 Linux ARM64**原有二进制wheels，以及本轮独立准备的**CPython3.13 Linux ARM64普通GIL** wheels（10个固定依赖、逐文件哈希）。它们没有在本机执行ARM64动态加载；Python其他ABI/32位/不同Linux运行库不能宣称可用，脚本直接拒绝不匹配Python。板端需有与所选解释器一致的venv/ensurepip（例如python3.13-venv）、systemd/systemd-analyze、openssl、robot组及native Unix socket权限；脚本不自动apt安装系统包。官方13个程序与两个native校正候选沿用冻结0.5.0包，已准备/编译，但本轮不重编译或替换，现场动态库及物理验收仍未执行。
+
+
+## Python3.13板端安装增量（2026-11-03）
+
+原先的3.11限制位于Linux ARM64实际安装门控，不是Mac专属。新安装器按当前解释器选择3.11原锁或独立requirements-linux-arm64-py313.lock，拒绝PyPy、free-threaded ABI及其他未核验小版本。板端已有Python3.13时无需另装3.11；使用/usr/bin/python3.13 -m studio.manage显式执行，创建的Studio venv也来自同一3.13解释器，不能全局pip安装依赖。Mac端只需Python3.11+，无需恰好3.11。
+
+旧CPython3.11归档及锁文件保持原样；新的3.13包独立，构建时用--python-version 3.13并核对全部10个wheel。板端动态加载和真实服务验收仍须上板后完成，不以本地跨平台pip解析替代。第一板逐条命令见同目录board1-tools-workbench-step-by-step.zh-CN.md。

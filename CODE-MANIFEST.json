@@ -1,14 +1,18 @@
 {
-  "date_local": "2026-11-02",
+  "date_local": "2026-11-03",
   "tool_version": "0.6.0",
-  "stage": "servo-workbench-0.1.1-safety-review-native-upgrade",
+  "stage": "python313-board-tools-install-guide",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "git_base": "054378e3a8269a5660506c3d4ee26365d8b507c9",
-  "scope": "PR7 safety review; pinned serial transactions, echo/status validation, interrupt/rollback/bench safety; native upgrade and recovery guide; real hardware NOT_RUN",
+  "git_base": "b125823d3a891330732dfa870582cdae0300eaf4",
+  "scope": "Python3.13 Studio install gate and independent hashed wheels; board1 native-command installation guide; no board execution or native/calibration changes",
   "files": [
     {
       "path": ".gitattributes",
       "sha256": "dfbb2a3c99575e7a069922096835e6a1f1c3684a1fa64eab165179b3f7c53636"
+    },
+    {
+      "path": ".github/workflows/python-runtime.yml",
+      "sha256": "5d1ee2ff1009a2d1bf8ce479ff67aac216fc91d30091cc91f49419614dc6bd09"
     },
     {
       "path": ".github/workflows/servo-workbench.yml",
@@ -20,7 +24,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "17ce57ac2c726a06a8b185ca42cf69d42e18347c369af5a9f86b68f67c0377c0"
+      "sha256": "a4b86fd0619738aeb9d1f0e9894677e87391e0d712f758df4d489903582fd81f"
     },
     {
       "path": "VERSION",
@@ -495,6 +499,10 @@
       "sha256": "bd8b448162ed6c09e9bd0e8d403b70a762f9e4e3431d79a09d3a3e1b37a50756"
     },
     {
+      "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
+      "sha256": "4a7eb6c10bb906f2c4be59c6a65cba88f533875a430d8642a557d0bddf34927a"
+    },
+    {
       "path": "docs/compatibility.zh-CN.md",
       "sha256": "6b6bb59db32f2dca45d42c53473c8395d4391d504254fb36a9a7d94bfbdeb476"
     },
@@ -512,7 +520,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "af6433fe2d58040097ebd6810522c3fad96497b32709f4238c98cdeca0ffe201"
+      "sha256": "7c72187e8686619e01a30895754027e989f2229f02d9387cb6c4b033c7ad8f87"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -588,7 +596,7 @@
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
-      "sha256": "bb479b98c580f211f278b428c8bda801ca9fad809486d452a3e9456c38473bfc"
+      "sha256": "4138539cc0c127c207a438032572331bc31211451a35a0e0333e6eb71fc2274c"
     },
     {
       "path": "docs/studio-0.6.0-plan.zh-CN.md",
@@ -752,7 +760,7 @@
     },
     {
       "path": "studio/manage.py",
-      "sha256": "c9db3b6dc3428b312b463d35ce31548b4ef4395aed8a8834005d3b3938be0b0d"
+      "sha256": "59d737987d1290e1d42d09e1a72014b531db24838c478563d44970da9341d913"
     },
     {
       "path": "studio/package-lock.json",
@@ -764,7 +772,15 @@
     },
     {
       "path": "studio/preflight.py",
-      "sha256": "bfe818f81c99a945b38229109ea148235348114e8d87d3e1ed187f4da816c9b1"
+      "sha256": "e4237d40f812e8809697b5d18c31a6cface245f9d75cef5a4195bd959284b154"
+    },
+    {
+      "path": "studio/python_runtime.py",
+      "sha256": "f2f70c410156ca8a648fd724b661858fd014d3e18b0483824a5b8a3dea2f107b"
+    },
+    {
+      "path": "studio/requirements-linux-arm64-py313.lock",
+      "sha256": "61ea7ac879a4bf23086b12c2845a7366f9e9195605d9fcb071d0e47827707bb4"
     },
     {
       "path": "studio/requirements-linux-arm64.lock",
@@ -839,8 +855,12 @@
       "sha256": "efec18bc8ec3b80012432695f5d8d74891acae76dcc5086e9d96472e759c46b8"
     },
     {
+      "path": "studio/tests/test_python_runtime.py",
+      "sha256": "99a2ce3162d68296d4b57d1952784a896d822e33c97a23673b3f7049c64e41a9"
+    },
+    {
       "path": "studio/tests/test_studio.py",
-      "sha256": "36da63bd290657bea36c622da76983a2297e8e88f7095e7a248e96753518cdad"
+      "sha256": "3bb162fd63bd47f6a7544e544d4fc52353726febafd09227f439d3d8cbac8662"
     },
     {
       "path": "tools/build-install-kit.py",
@@ -856,7 +876,7 @@
     },
     {
       "path": "tools/build-studio-bundle.py",
-      "sha256": "f5aeaf490b0a5ad75973cd726a736d74e6aee13f1529b56604fe172ffca81c73"
+      "sha256": "56fc870970e7fa3dd96909f7429f76928d1c50b433c596618407cc8d41d07545"
     },
     {
       "path": "tools/build-workbench.py",

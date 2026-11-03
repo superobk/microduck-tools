@@ -20,6 +20,7 @@ import time
 from . import VERSION
 from .helper import atomic, Handoff, UNITS, call
 from .ipc import ROOT
+from .python_runtime import supported_abi, requirements_lock
 
 BASE = Path("/opt/microduck-tools/studio")
 STATE = Path("/var/lib/microduck-studio-install")
@@ -166,9 +167,9 @@ def native_gate():
         or platform.machine() not in ("aarch64", "arm64")
     ):
         raise RuntimeError("真实安装仅Linux ARM64 root；本机请用demo")
-    if sys.version_info[:2] != (3, 11):
+    if not supported_abi():
         raise RuntimeError(
-            "本交付离线wheel仅核对CPython3.11 ARM64；其他版本先重新准备匹配wheel并测试"
+            "本交付支持CPython3.11或3.13 ARM64普通GIL版本；需要匹配的离线wheel和锁文件"
         )
     for tool in ("systemctl", "openssl", "useradd", "usermod"):
         shutil.which(tool) or (_ for _ in ()).throw(RuntimeError("缺少 " + tool))
@@ -271,7 +272,7 @@ def prepare_release(journal, assets, wheels):
         wheels,
         "--require-hashes",
         "-r",
-        ROOT / "studio/requirements-linux-arm64.lock",
+        requirements_lock(),
     )
     run(release / "venv/bin/python", "-c", "import aiohttp, dbus_next, studio.server")
     files = [

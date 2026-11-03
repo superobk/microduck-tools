@@ -965,6 +965,9 @@ asyncio.run(h.take())
                 "grp.getgrnam", return_value=object()
             ), patch.object(
                 manage, "Handoff", return_value=handoff
+            ), patch.object(
+                manage, "requirements_lock",
+                return_value=Path(manage.__file__).with_name("requirements-linux-arm64-py313.lock")
             ):
                 manage.setup(
                     SimpleNamespace(
@@ -978,6 +981,10 @@ asyncio.run(h.take())
                 )
             self.assertEqual(j.data["phase"], "installed")
             release=Path(j.data['release'])
+            pip_calls = [c for c in commands if "pip" in c and "install" in c]
+            self.assertEqual(len(pip_calls), 1)
+            self.assertIn("--require-hashes", pip_calls[0])
+            self.assertEqual(Path(pip_calls[0][-1]).name, "requirements-linux-arm64-py313.lock")
             self.assertFalse((release/'servo_workbench/transport.py').exists())
             import subprocess,sys
             isolated=subprocess.run([sys.executable,'-I','-B','-c',

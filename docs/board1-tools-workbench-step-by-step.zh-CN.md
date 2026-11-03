@@ -1,0 +1,1122 @@
+# 第一块板 Tools + Studio + 舵机工作台：逐条命令、原因与预期结果
+
+日期：2026-11-03（Asia/Shanghai）。目标：root@172.19.8.218，Radxa ZERO 3，Armbian/Debian13、aarch64、glibc2.41，**板端统一使用现有CPython3.13.5**。本文沿用[已完成的0.18.3+calv3指南](/Users/bou/Workspace/Duckduck/docs/robot/zero3w-board1-0183-step-by-step-20261103T063932Z.md)的“单条命令后紧接用途、为什么、结果”格式。
+
+**当前状态：本地材料/代码核验完成后供人工逐条执行；本篇所有板端安装命令均未执行。** 前置0.18.3+calv3的重启验收来自2026-11-03既有报告，不冒充本轮重新SSH核查。板端可先正常关机；完成本地准备并明确开始部署后再开机。不能在离线状态下验证实际服务或ARM64扩展动态加载。
+
+版本分别为：Tools/Studio0.6.0、Servo Workbench0.1.1、robotd0.18.3+calv3。本次新包包含Python3.13安装适配；**不要使用旧cp311归档代替**。Studio的旧3.11限制确实在板端安装门控；本轮已改为支持3.11/3.13普通GIL版本，并按解释器选择独立锁。旧3.11归档/锁不改。普通Web只需标准库；Studio和可选板端代理各建一套3.13 venv隔离依赖，共用已有3.13解释器，不增加3.11。Mac工作台只需Python3.11+，不要求恰好3.11。
+
+先完成一至五。第六是可选板端UART代理；有电脑USB适配器时无需安装它。整个安装不修改官方daemon/current、native/current、robotd启动参数、原用户校正、padd/netpadd维护条件，不启用控制/Camera、不设置开机自启。常驻Web不授root。真实串口连接、EEPROM、Reset Mid及台架动作另行开展，不能因安装通过就执行。
+
+任何一步失败先停在该步，保留错误；不要整页粘贴、不要从头重复、不要使用旧升级菜单再apply0.18.3。
+
+
+**一、只在本地准备完成后，才连接第一板**
+
+**1. 进入本次交付目录（Mac终端）**
+
+```bash
+cd /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103
+```
+
+用途：固定本轮安装材料入口。
+
+为什么：本包是完成0.18.3+calv3后的增量，不重跑机器人升级。
+
+预期结果：目录存在；README、transfer、证据及SHA齐全。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**2. 核对将上传的全部文件（Mac终端）**
+
+```bash
+shasum -a 256 -c transfer-SHA256SUMS
+```
+
+用途：验证源码、资源、3.13依赖及工作台包。
+
+为什么：防止误用旧cp311离线包或传送半成品。
+
+预期结果：所有条目为OK；任何失败都停止，不上传。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**3. 连接已完成升级的第一板（Mac终端）**
+
+```bash
+ssh root@172.19.8.218
+```
+
+用途：进入此前指南的第一板。
+
+为什么：板端本轮可先关机；待本地准备完成再开机，核对主机指纹，不忽略host-key告警。
+
+预期结果：进入该板；若IP变化先确认身份，不试探旧设备。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**4. 确认使用板端原有Python3.13（板端root终端）**
+
+```bash
+/usr/bin/python3.13 --version
+```
+
+用途：确认固定解释器。
+
+为什么：无需另装3.11，也不修改/usr/bin/python3指针。
+
+预期结果：Python3.13.x；此前报告为3.13.5。不存在时停止核对路径。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**5. 检查venv基础模块（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -c 'import venv,ensurepip; print("PASS: Python3.13 venv/ensurepip available")'
+```
+
+用途：确认Studio和可选代理可以创建隔离依赖环境。
+
+为什么：venv是同一3.13解释器下的包隔离，并非另一套3.11。
+
+预期结果：打印PASS；缺模块时先审阅 apt-cache policy python3.13-venv；仅在确认发行版包匹配后安装该包，再重做检查，不安装python3.11。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**6. 核对现有calv3真实版本（板端root终端）**
+
+```bash
+/opt/microduck-tools/native/current/bin/robotctl version --json
+```
+
+用途：确认现有运行基线。
+
+为什么：本流程只安装Tools，不能顺便替换已经验收的robotd。
+
+预期结果：robotd0.18.3，完整revision为b2b0d213-calv3-30452a086d1e。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**7. 确认维护策略状态（板端root终端）**
+
+```bash
+/opt/microduck-tools/native/current/bin/robotctl policy list --json
+```
+
+用途：核对策略保持关闭。
+
+为什么：安装不需要HOME、使能、扭矩或动作；no-policy不能代替实际动力断开。
+
+预期结果：enabled=false、homed=false；不为页面亮绿灯而enable。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**8. 检查本次目录和服务没有既有安装（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -c 'from pathlib import Path; import pwd; names=["/var/lib/microduck-tools-install/board1-20261103","/var/backups/microduck/tools-install-board1-20261103","/opt/microduck-tools/releases/0.6.0-py313-board1-20261103","/opt/microduck-tools/current","/etc/systemd/system/microduck-tools.service","/etc/microduck-tools/plugins.json"]; occupied=[n for n in names if Path(n).exists() or Path(n).is_symlink()]; assert not occupied,occupied; assert not any(p.pw_name=="microduck-tools" for p in pwd.getpwall()),"existing microduck-tools account: inspect first"; print("PASS: new install paths and account are free")'
+```
+
+用途：拒绝覆盖未知的旧Tools或中断状态。
+
+为什么：本篇只适用于该板首次安装这些组件；已有文件时先审查，不从头重复。
+
+预期结果：PASS；发现旧安装时停止，保留材料，按文末恢复表处理。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+
+**二、建立本次安装记录并上传**
+
+**9. 创建独立输入和证据目录（板端root终端）**
+
+```bash
+install -d -m 700 /var/lib/microduck-tools-install/board1-20261103 /var/backups/microduck/tools-install-board1-20261103
+```
+
+用途：分别保存安装输入和本次基线。
+
+为什么：不清理此前升级备份；它仍包含在用的updater-maintenance.toml。
+
+预期结果：两个新目录仅root可访问。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**10. 记录安装前的服务状态（板端root终端）**
+
+```bash
+systemctl show robotd updaterd padd netpadd -p Id -p MainPID -p ActiveState -p ExecStart > /var/backups/microduck/tools-install-board1-20261103/services-before.txt
+```
+
+用途：记录现有daemon和手柄维护状态。
+
+为什么：之后只比较，不根据旧PID硬编码判断成功。
+
+预期结果：文件已保存；原robotd启动项继续含--no-policy，手柄维护条件保留。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**11. 保存当前校正回执（板端root终端）**
+
+```bash
+cp -p /run/robotd/calibration-effective.json /var/backups/microduck/tools-install-board1-20261103/calibration-effective-before.json
+```
+
+用途：保留本次安装前的实际内存参数证据。
+
+为什么：当前calv3已运行但calibration_active=false，不把默认参数当物理校正已完成。
+
+预期结果：原回执保存成功；本流程不创建bus.calibration_path。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**12. 记录既有native链接（板端root终端）**
+
+```bash
+readlink -f /opt/microduck-tools/native/current > /var/backups/microduck/tools-install-board1-20261103/native-current-before.txt
+```
+
+用途：固定当前calv3目录。
+
+为什么：后续只新建Tools自己的current，不能改native/current或官方daemon/current。
+
+预期结果：与原指南的b2b0d213-calv3…-glibc230目录一致。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**13. 上传整套固定材料（Mac另开终端）**
+
+```bash
+scp -rp /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103/transfer root@172.19.8.218:/var/lib/microduck-tools-install/board1-20261103/
+```
+
+用途：一次上传Tools源码、Studio资产、cp313 wheels及工作台包。
+
+为什么：使用本地已核验固定材料，板端无需在线pip下载。
+
+预期结果：上传成功；不发送原板备份、CA私钥或任何凭据。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**14. 进入上传目录（板端root终端）**
+
+```bash
+cd /var/lib/microduck-tools-install/board1-20261103/transfer
+```
+
+用途：在正确位置做相对路径校验。
+
+为什么：sha清单中的路径均相对本transfer目录。
+
+预期结果：目录含tools、runtime-assets、wheels313、workbench及SHA256SUMS。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**15. 核对板端收到的所有字节（板端root终端）**
+
+```bash
+sha256sum -c SHA256SUMS
+```
+
+用途：检查传输后文件完整性。
+
+为什么：Mac通过不代表板端收到的文件也完整。
+
+预期结果：全部OK后才复制安装；任一失败保留目录，不忽略校验。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+
+**三、安装基础Tools Web和只读健康插件**
+
+**16. 确认Web可被3.13加载（板端root终端）**
+
+```bash
+/usr/bin/python3.13 /var/lib/microduck-tools-install/board1-20261103/transfer/tools/microduck-tools-0.6.0/calibration/integration-0.16.3/web/calibration_web.py --help
+```
+
+用途：只解析CLI和加载标准库。
+
+为什么：目录名integration-0.16.3是沿用的宿主路径；实际target会明确选择0.18.3。
+
+预期结果：显示--target、--plugin-config、--robotctl等选项并退出，不连接设备。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**17. 创建独立源码版本目录（板端root终端）**
+
+```bash
+install -d -m 755 /opt/microduck-tools/releases/0.6.0-py313-board1-20261103
+```
+
+用途：放置本轮Python3.13安装支持源码。
+
+为什么：不覆盖旧版本、native二进制或官方release。
+
+预期结果：新目录创建成功；若执行中断后已存在，先核验，不直接重跑本篇。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**18. 复制已校验源码（板端root终端）**
+
+```bash
+cp -a /var/lib/microduck-tools-install/board1-20261103/transfer/tools/microduck-tools-0.6.0/. /opt/microduck-tools/releases/0.6.0-py313-board1-20261103/
+```
+
+用途：安装Python/前端源码。
+
+为什么：基础Web只有标准库依赖，不做系统级pip安装。
+
+预期结果：复制完成；源文件保持root拥有。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**19. 再次核验安装目录源码（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -c 'import hashlib,json; from pathlib import Path; r=Path("/opt/microduck-tools/releases/0.6.0-py313-board1-20261103"); rows=json.loads((r/"RUNTIME-MANIFEST.json").read_text())["files"]; assert all((r/x["path"]).stat().st_size==x["bytes"] and hashlib.sha256((r/x["path"]).read_bytes()).hexdigest()==x["sha256"] for x in rows); print("PASS: runtime files",len(rows))'
+```
+
+用途：验证复制后的实际源码。
+
+为什么：只有校验完成后才建立current指针。
+
+预期结果：打印PASS与文件数。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**20. 确认原生socket访问组（板端root终端）**
+
+```bash
+getent group robot
+```
+
+用途：核对已有robot组。
+
+为什么：沿用已有Unix socket访问控制，不chmod777或开放串口权限。
+
+预期结果：robot组存在；缺失时停止，由初始化会话核对。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**21. 创建普通Web服务账号（板端root终端）**
+
+```bash
+useradd --system --user-group --home-dir /var/lib/microduck-tools --shell /usr/sbin/nologin microduck-tools
+```
+
+用途：建立无登录权限的专用普通账号。
+
+为什么：常驻Web不使用root，不接管舵机串口。
+
+预期结果：账号创建成功；若已存在不重复执行，先核对来源。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**22. 授权读取原生socket（板端root终端）**
+
+```bash
+usermod -a -G robot microduck-tools
+```
+
+用途：只增加robot附加组。
+
+为什么：不覆盖既有组列表，不授任意sudo或串口维护权。
+
+预期结果：新启动的Tools进程带robot附加组。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**23. 创建插件配置目录（板端root终端）**
+
+```bash
+install -d -m 755 /etc/microduck-tools
+```
+
+用途：保存Tools自己的插件宿主设置。
+
+为什么：插件设置不写robotd.toml。
+
+预期结果：目录存在并由root管理。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**24. 创建Web独立状态目录（板端root终端）**
+
+```bash
+install -d -m 700 -o microduck-tools -g microduck-tools /var/lib/microduck-tools
+```
+
+用途：保存健康规则、日志和相机草稿。
+
+为什么：隔离机器人配置、Studio状态和工作台数据库。
+
+预期结果：仅服务账号可以读写。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**25. 安装默认插件配置（板端root终端）**
+
+```bash
+install -m 644 /opt/microduck-tools/releases/0.6.0-py313-board1-20261103/deploy/plugins.example.json /etc/microduck-tools/plugins.json
+```
+
+用途：启用只读servo_health插件。
+
+为什么：模板schema=1且servo_health.enabled=true；这是监测开关，不会写舵机寄存器。
+
+预期结果：文件内容与已核验模板一致。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**26. 建立Tools源码入口（板端root终端）**
+
+```bash
+ln -s /opt/microduck-tools/releases/0.6.0-py313-board1-20261103 /opt/microduck-tools/current
+```
+
+用途：选择本轮Tools源码。
+
+为什么：仅首次创建该链接，不触碰/opt/microduck-tools/native/current。
+
+预期结果：链接指向0.6.0-py313-board1-20261103。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**27. 安装普通Web服务模板（板端root终端）**
+
+```bash
+install -m 644 /opt/microduck-tools/releases/0.6.0-py313-board1-20261103/deploy/microduck-tools.service /etc/systemd/system/microduck-tools.service
+```
+
+用途：使用仓库已有加固模板。
+
+为什么：非root、回环监听、私有临时目录，写入范围限定为自身状态目录。
+
+预期结果：模板安装成功；未知同名unit存在时应在前置核查阶段停止。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**28. 创建本板服务覆盖目录（板端root终端）**
+
+```bash
+install -d -m 755 /etc/systemd/system/microduck-tools.service.d
+```
+
+用途：保存本板的明确解释器和CLI路径。
+
+为什么：不要为选择Python而替换系统默认指针。
+
+预期结果：新目录可用。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**29. 明确使用3.13和现有calv3 CLI（板端root终端）**
+
+```bash
+install -m 644 /var/lib/microduck-tools-install/board1-20261103/transfer/board-config/microduck-tools-py313.conf /etc/systemd/system/microduck-tools.service.d/zzzz-board1-py313.conf
+```
+
+用途：固定服务所用解释器、目标和只读遥测CLI。
+
+为什么：不启用--demo、--allow-inactive、--enable-camera-apply等绕过/应用入口。
+
+预期结果：ExecStart为本板Python3.13；没有改robotd的任何启动参数。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**30. 静态校验unit（板端root终端）**
+
+```bash
+systemd-analyze verify /etc/systemd/system/microduck-tools.service
+```
+
+用途：提前发现unit语法和路径错误。
+
+为什么：unit被systemd接受不等于实际服务启动成功，二者分开验证。
+
+预期结果：无本unit的致命错误；其他依赖告警保留原文审查。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**31. 让systemd读取新服务（板端root终端）**
+
+```bash
+systemctl daemon-reload
+```
+
+用途：重新加载unit及drop-in。
+
+为什么：这条命令不重启robotd，也不启动新服务。
+
+预期结果：执行成功。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**32. 启动Tools Web（板端root终端）**
+
+```bash
+systemctl start microduck-tools
+```
+
+用途：仅启动Tools进程和共享只读监测。
+
+为什么：不启用policy、不自动恢复手柄、不重启robotd。
+
+预期结果：服务启动；首次本流程不设置开机自启。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**33. 查看服务状态和实际解释器（板端root终端）**
+
+```bash
+systemctl show microduck-tools -p ActiveState -p MainPID -p User -p SupplementaryGroups -p ExecStart
+```
+
+用途：检查是否真正运行。
+
+为什么：安装文件存在不能当作服务已经生效。
+
+预期结果：active、非零PID、User=microduck-tools、ExecStart含/usr/bin/python3.13。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**34. 查看插件实际启用状态（板端root终端）**
+
+```bash
+curl --fail --silent --show-error http://127.0.0.1:8765/api/capabilities
+```
+
+用途：检查运行中插件开关，而非只看JSON文件。
+
+为什么：enabled=true仅证明启动了插件；仍要核对数据新鲜度和分析覆盖。
+
+预期结果：servo_health.enabled=true，resolved_target为daemon-v0.18.3；保存权限按普通账户实际显示。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**35. 查看状态与校正边界（板端root终端）**
+
+```bash
+curl --fail --silent --show-error http://127.0.0.1:8765/api/status
+```
+
+用途：查看真实target、遥测和校正回执情况。
+
+为什么：本板尚无自定义校正文件；不要求假造calibration_active=true。
+
+预期结果：demo=false、allow_inactive=false；runtime内calibration_active仍按真实回执。普通账户若被/proc权限阻止核验，runtime_reason保留PermissionError，不能据此认定calv3未安装，更不能放宽系统权限；按文末权限说明复核。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**36. 建立仅本机可见的Web通道（Mac新终端并保持运行）**
+
+```bash
+ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:8765:127.0.0.1:8765 root@172.19.8.218
+```
+
+用途：把板端回环Web转发到Mac。
+
+为什么：不用开放板端0.0.0.0 HTTP端口。
+
+预期结果：终端持续等待；端口冲突应换明确的新本地端口，不关闭未知程序。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**37. 打开基础Web（Mac另开终端）**
+
+```bash
+open http://127.0.0.1:8765/
+```
+
+用途：查看原校正页、相机配置和舵机健康页。
+
+为什么：页面访问不等于授权保存校正、重启相机或执行维护。
+
+预期结果：看到实际0.18.3目标和新鲜监测；本次只浏览，不保存IMU/关节/相机设置。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+
+**四、安装Studio，继续使用板端3.13**
+
+**38. 进入已安装源码目录（板端root终端）**
+
+```bash
+cd /opt/microduck-tools/releases/0.6.0-py313-board1-20261103
+```
+
+用途：使用本次支持3.13的Studio安装器。
+
+为什么：不能从旧0.6.0包复制一个入口就假定也支持3.13。
+
+预期结果：目录为本次校验过的源码。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**39. 先做只读预检（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -m studio.manage doctor --assets /var/lib/microduck-tools-install/board1-20261103/transfer/runtime-assets --wheels /var/lib/microduck-tools-install/board1-20261103/transfer/wheels313
+```
+
+用途：检查板型、3.13 ABI、venv、systemd和10个离线wheel。
+
+为什么：旧cp311包即使文件完整，也必须被3.13的独立锁拒绝。
+
+预期结果：ok=true且所有checks通过；此命令不创建账号、不写unit、不接管手柄。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**40. 预览Studio安装（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -m studio.manage setup --server-ip 172.19.8.218 --assets /var/lib/microduck-tools-install/board1-20261103/transfer/runtime-assets --wheels /var/lib/microduck-tools-install/board1-20261103/transfer/wheels313
+```
+
+用途：展示待执行安装计划。
+
+为什么：未加--apply的预览不会真正做安装；doctor通过仍须审阅目标IP和目录。
+
+预期结果：提示预览，没有修改；IP用于HTTPS证书。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**41. 安装独立Studio（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -m studio.manage setup --server-ip 172.19.8.218 --assets /var/lib/microduck-tools-install/board1-20261103/transfer/runtime-assets --wheels /var/lib/microduck-tools-install/board1-20261103/transfer/wheels313 --apply --confirm EXECUTE
+```
+
+用途：离线创建3.13 venv、普通用户服务、受限助手和证书。
+
+为什么：使用组件自己的安装登记，不手抄/跳过它管理的units。首次创建，未知旧安装会拒绝覆盖。
+
+预期结果：安装成功但尚未启动；controls_enabled=false、camera_enabled=false，不开机自启。若失败，停止并看status，不重复setup撞目录。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**42. 确认Studio隔离环境仍是3.13（板端root终端）**
+
+```bash
+/opt/microduck-tools/studio/releases/0.6.0/venv/bin/python --version
+```
+
+用途：核对实际venv解释器。
+
+为什么：隔离环境不应偷偷依赖另一套Python3.11。
+
+预期结果：Python3.13.x，与本板基础解释器小版本相符。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**43. 核对安装登记和运行开关（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -m studio.manage status --json
+```
+
+用途：验证源码/配置登记哈希以及阶段。
+
+为什么：不手工编辑已登记config.json绕过完整性检查。
+
+预期结果：phase=installed；哈希无漂移，控制/Camera关闭；尚未运行的服务正常显示停止。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**44. 启动独立Studio（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -m studio.manage start --apply --confirm EXECUTE
+```
+
+用途：启动Studio和受限助手。
+
+为什么：仍不恢复padd，不启用机器人动力，也不解除--no-policy。
+
+预期结果：提示已启动，HTTPS端口8443；用status再次确认服务实际状态。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**45. 查看CA证书指纹（板端root终端）**
+
+```bash
+openssl x509 -in /etc/microduck-studio/ca.crt -noout -fingerprint -sha256
+```
+
+用途：取得可信通道中的CA身份。
+
+为什么：证书名称相同不代表内容相同；只复制公开ca.crt，绝不复制ca.key。
+
+预期结果：记录SHA256指纹以便与Mac文件对照。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**46. 只取公开CA证书（Mac终端）**
+
+```bash
+scp root@172.19.8.218:/etc/microduck-studio/ca.crt /Users/bou/Workspace/Duckduck/work/board1-studio-ca-20261103.crt
+```
+
+用途：把公开证书取回Mac。
+
+为什么：本文件须等板端安装后才会存在；它不是本轮本地准备生成的私钥。
+
+预期结果：文件获取成功；不要把任何.key文件放交付包或聊天。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**47. 核对取回CA指纹（Mac终端）**
+
+```bash
+openssl x509 -in /Users/bou/Workspace/Duckduck/work/board1-studio-ca-20261103.crt -noout -fingerprint -sha256
+```
+
+用途：与板端指纹逐字对照。
+
+为什么：一致后再由本人在Mac/手机受信证书设置安装CA；不使用忽略证书错误作为验收。
+
+预期结果：指纹一致。公开CA保存在work，属于后续部署证据；不修改本次封存交付。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**48. 生成一次性网页登录码（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -m studio.manage pair --apply --confirm EXECUTE
+```
+
+用途：为当前显示端生成5分钟登录码。
+
+为什么：这是网页配对，不是蓝牙配对。码不要发到Git、公共截图或聊天日志。
+
+预期结果：使用该码登录一次；另一个显示端需要另发一次。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**49. 打开Studio（Mac终端）**
+
+```bash
+open https://172.19.8.218:8443/studio/
+```
+
+用途：通过可信HTTPS访问手机/桌面Studio。
+
+为什么：先完成CA信任及一次性登录；本次保持控制和Camera关闭。
+
+预期结果：可信HTTPS、实际反馈或明确未知状态；无policy时“控制阻断”是正确结果，不为解除提示而enable。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+
+**五、电脑安装舵机工作台并先演练**
+
+**50. 创建独立工作台运行目录（Mac终端）**
+
+```bash
+mkdir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103
+```
+
+用途：为电脑组件选择独立运行位置。
+
+为什么：交付包不混入venv缓存，真实批次状态以后需要保留。目录已有时先审查，不覆盖。
+
+预期结果：新目录创建成功。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**51. 解开固定工作台包（Mac终端）**
+
+```bash
+tar -xzf /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103/transfer/workbench/microduck-servo-workbench-0.1.1.tar.gz -C /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103
+```
+
+用途：安装电脑端源码和通用pyserial wheel。
+
+为什么：该组件仍为0.1.1，独立于Tools0.6.0；不替换板端daemon。
+
+预期结果：出现microduck-servo-workbench-0.1.1子目录。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**52. 准备电脑隔离环境（Mac终端）**
+
+```bash
+python3 /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1/tools/setup-workbench.py
+```
+
+用途：在电脑组件目录建立.venv-workbench并离线安装pyserial3.5。
+
+为什么：电脑解释器只需3.11+，可为3.13/3.14，不要求恰好3.11；板端统一3.13不强制Mac同版本。
+
+预期结果：提示准备完成，无真实USB/串口访问。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**53. 进入工作台源码目录（Mac终端）**
+
+```bash
+cd /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1
+```
+
+用途：让python -m能找到本地servo_workbench模块。
+
+为什么：venv只安装pyserial，工作台源码没有全局pip安装；绝对解释器路径不会自动改变当前目录。
+
+预期结果：当前目录是microduck-servo-workbench-0.1.1。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**54. 启动完全无硬件演练（Mac终端并保持运行）**
+
+```bash
+/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1/.venv-workbench/bin/python -B -m servo_workbench serve --demo --state-dir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/demo-state --open
+```
+
+用途：打开127.0.0.1:8766模拟向导。
+
+为什么：不需要板端在线，也不启动SSH或打开真实串口。
+
+预期结果：明确显示SIMULATION / NO HARDWARE；保持该终端，停止用Ctrl+C。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**55. 为状态和导出命令进入同一源码目录（Mac另开终端）**
+
+```bash
+cd /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1
+```
+
+用途：让新终端也能加载工作台模块。
+
+为什么：每个新终端的当前目录独立，不能假定继承了运行后端的终端。
+
+预期结果：新终端也位于工作台源码目录，另一个终端的演练保持运行。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**56. 查看正在运行的工作台状态（Mac另开终端）**
+
+```bash
+/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1/.venv-workbench/bin/python -B -m servo_workbench status
+```
+
+用途：读取电脑本机后端状态。
+
+为什么：status不会另起一个串口后台。
+
+预期结果：返回当前模拟批次/连接状态；先在网页建立15关节批次再查看进度。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**57. 导出模拟批次证据（Mac另开终端）**
+
+```bash
+/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1/.venv-workbench/bin/python -B -m servo_workbench export --out /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/demo-report.json
+```
+
+用途：保存可审阅的模拟报告。
+
+为什么：要先在网页建立并操作模拟批次；已有同名导出会拒绝覆盖，需换新文件名。
+
+预期结果：报告明确simulation/historical属性，不能用来证明真实舵机配置通过。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+
+**六、可选：安装板端代理，仅在确实要用板端UART时进行**
+
+**58. 查看robotd实际持有的设备（板端root终端）**
+
+```bash
+ls -l /proc/$(systemctl show robotd -p MainPID --value)/fd
+```
+
+用途：找到与配置对应的真实舵机UART。
+
+为什么：不猜/dev/ttyS2；不能把IMU串口或别的板的端口当舵机总线。
+
+预期结果：人工对照robotd实际配置，记录唯一正确的/dev/...；不清理占用者。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**59. 输入已经核对的UART（板端root终端）**
+
+```bash
+read -r -p '请输入已核对的舵机UART完整路径：' WB_UART
+```
+
+用途：保存唯一尚需现场确认的端口。
+
+为什么：这一项不能提前展开为臆测端口；其他固定路径均按本板写出。
+
+预期结果：变量仅在当前终端有效；值必须为已确认的字符设备绝对路径。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**60. 检查UART确实存在（板端root终端）**
+
+```bash
+test -c "$WB_UART"
+```
+
+用途：避免将普通文件或空值当总线。
+
+为什么：此检查不打开串口，也不证明接线/协议正确。
+
+预期结果：退出0才继续；否则停止。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**61. 解开代理安装材料（板端root终端）**
+
+```bash
+tar -xzf /var/lib/microduck-tools-install/board1-20261103/transfer/workbench/microduck-servo-workbench-0.1.1.tar.gz -C /var/lib/microduck-tools-install/board1-20261103
+```
+
+用途：准备同版本板端代理安装源。
+
+为什么：0.1.1电脑端拒绝0.1.0代理；不混用历史包。
+
+预期结果：生成${B}/microduck-servo-workbench-0.1.1；已有目录先核验，不覆盖。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**62. 预览XL330代理安装（板端root终端）**
+
+```bash
+/usr/bin/python3.13 /var/lib/microduck-tools-install/board1-20261103/microduck-servo-workbench-0.1.1/deploy/workbench/install-agent.py --kind xl330 --port "$WB_UART"
+```
+
+用途：查看固定协议、端口和目标目录。
+
+为什么：当前Microduck默认XL330；若实际维护HD1910，先明确更换专用总线/协议，再将kind改为hd1910，不能套用XL330。
+
+预期结果：preview_only、version0.1.1、robotd_changed=false；不安装也不打开串口。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**63. 安装代理文件和3.13隔离环境（板端root终端）**
+
+```bash
+/usr/bin/python3.13 /var/lib/microduck-tools-install/board1-20261103/microduck-servo-workbench-0.1.1/deploy/workbench/install-agent.py --kind xl330 --port "$WB_UART" --apply
+```
+
+用途：安装代理源码、通用pyserial和固定配置。
+
+为什么：本步骤不会停止robotd、不会启动代理，也不装自启动服务；与真实串口维护分开。
+
+预期结果：/opt/microduck-servo-workbench/current指向0.1.1，autostart=false、robotd_changed=false。失败时保留部分目录，不自动重试。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**64. 验证代理解释器和依赖，不运行代理（板端root终端）**
+
+```bash
+/opt/microduck-servo-workbench/current/.venv-workbench/bin/python -c 'import sys,serial; print(sys.version); print("pyserial",serial.VERSION)'
+```
+
+用途：确认板端代理也使用3.13。
+
+为什么：导入serial不会打开设备；不要在安装验收时运行agent --stdio抢用总线。
+
+预期结果：Python3.13.x、pyserial3.5。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+
+**七、状态、停止与回退；按需要单独选择**
+
+**65. 查看Tools近期错误（板端root终端）**
+
+```bash
+journalctl -u microduck-tools -b -n 80 --no-pager
+```
+
+用途：查看真实错误原文。
+
+为什么：启动失败先查权限、路径、端口和依赖；不通过重启robotd或改变IMU参数解决工具安装问题。
+
+预期结果：无持续崩溃；socket拒绝、/proc权限等按原文排查。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**66. 停止Studio但保留安装（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -m studio.manage stop --apply --confirm EXECUTE
+```
+
+用途：停止Studio及其受限助手。
+
+为什么：不等于回滚robotd，也不自动交还/启动手柄。
+
+预期结果：Studio停止，原daemon和源码/证据保留。命令需在本轮源码目录执行。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**67. Studio安装中断时先查看状态（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -m studio.manage status --json
+```
+
+用途：读取安装阶段和问题。
+
+为什么：不可直接删登记或重复setup；恢复和回退按文末分支。
+
+预期结果：如实显示未安装、安装中或已安装；未知同名unit及漂移必须先处理。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**68. 撤销本次Studio安装（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -m studio.manage rollback --apply --confirm EXECUTE
+```
+
+用途：撤销组件自己登记的服务和配置，保留版本/证据。
+
+为什么：不手删受管理文件；当前无控制交接，若后续出现handoff先单独处理。
+
+预期结果：仅Studio登记撤销，robotd、calv3、Tools链接不变。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**69. 停止基础Tools Web（板端root终端）**
+
+```bash
+systemctl stop microduck-tools
+```
+
+用途：关闭Web和只读遥测订阅。
+
+为什么：不停止robotd，不改变舵机配置。
+
+预期结果：Tools MainPID=0；SSH隧道可在Mac按Ctrl+C结束。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**70. 撤回基础Web前确认只涉及本次文件（板端root终端）**
+
+```bash
+/usr/bin/python3.13 -c 'from pathlib import Path; a=Path("/etc/systemd/system/microduck-tools.service"); b=Path("/etc/systemd/system/microduck-tools.service.d/zzzz-board1-py313.conf"); assert a.read_bytes()==Path("/opt/microduck-tools/releases/0.6.0-py313-board1-20261103/deploy/microduck-tools.service").read_bytes(); assert b.read_bytes()==Path("/var/lib/microduck-tools-install/board1-20261103/transfer/board-config/microduck-tools-py313.conf").read_bytes(); assert Path("/opt/microduck-tools/current").is_symlink() and Path("/opt/microduck-tools/current").readlink()==Path("/opt/microduck-tools/releases/0.6.0-py313-board1-20261103"); assert not any(Path("/var/backups/microduck/tools-install-board1-20261103/"+n).exists() for n in ["tools-current.disabled","tools-service.disabled","tools-dropin.disabled"]); print("PASS: only this installation will be moved")'
+```
+
+用途：检查服务已停止后撤回的文件归属。
+
+为什么：外部修改或重复回退不能被本篇命令覆盖；发现差异先停。
+
+预期结果：PASS；Tools必须已停止，本流程没有enable过Tools。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**71. 留存本轮Tools链接（板端root终端）**
+
+```bash
+mv /opt/microduck-tools/current /var/backups/microduck/tools-install-board1-20261103/tools-current.disabled
+```
+
+用途：撤下本次文件并保留恢复证据。
+
+为什么：不删除源码、状态和回滚材料，也不触碰native/current。
+
+预期结果：只在前一步PASS后执行；目标不存在，不覆盖历史。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**72. 留存本轮Web服务（板端root终端）**
+
+```bash
+mv /etc/systemd/system/microduck-tools.service /var/backups/microduck/tools-install-board1-20261103/tools-service.disabled
+```
+
+用途：撤下本次文件并保留恢复证据。
+
+为什么：不删除源码、状态和回滚材料，也不触碰native/current。
+
+预期结果：只在前一步PASS后执行；目标不存在，不覆盖历史。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**73. 留存本轮服务覆盖（板端root终端）**
+
+```bash
+mv /etc/systemd/system/microduck-tools.service.d/zzzz-board1-py313.conf /var/backups/microduck/tools-install-board1-20261103/tools-dropin.disabled
+```
+
+用途：撤下本次文件并保留恢复证据。
+
+为什么：不删除源码、状态和回滚材料，也不触碰native/current。
+
+预期结果：只在前一步PASS后执行；目标不存在，不覆盖历史。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**74. 让systemd读取Tools撤回结果（板端root终端）**
+
+```bash
+systemctl daemon-reload
+```
+
+用途：完成基础Web服务文件撤回。
+
+为什么：无需重启robotd或整板。
+
+预期结果：Tools已停止，源码/账号/状态仍保留，robotd仍是原0.18.3+calv3。
+
+本次结果：待执行；本轮仅本地核对指引。
+
+**安装后在界面上怎样确认**
+
+基础Web先看目标版本、数据年龄、健康插件是否enabled，再看具体缺失项。当前没有自定义校正文件，configured=false、saved=null、calibration_active=false是已知基线；pending_restart可为null。differences中出现missing_saved_or_active说明缺少保存的自定义校正，不等于本次安装失败。不能伪造一份默认校正让界面“全绿”。
+
+普通Web的/proc权限说明：源码用/proc/PID/exe核验原生身份；跨用户读取可能被Linux拒绝。此时runtime_verified=false、can_save=false应保留明确原因。root终端的robotctl版本、实际/proc/PID/exe SHA与回执PID仍可独立核对。不要chmod /proc、setcap或把常驻Web改成root。需要真正写IMU/关节校正时，另开有时限的维护流程；本篇安装不授权写入。
+
+Studio登录后检查默认controls_enabled=false、camera_enabled=false，保持无policy阻断。只浏览总览、监控、主题和历史报告；无真实反馈时显示未知/冻结，不用模拟画面冒充实机。基础Web的健康配置与Studio控制开关是两个独立配置。
+
+电脑演练依次选型号/布局/预设→建立15关节批次→接入模拟舵机→稳定后确认配置→保存标签→模拟下一只→整组模拟复核→导出。关闭重开保留演练批次。中位、保护参数和台架按钮不包含在默认配置确认中。
+
+**真实USB与SSH模式暂不执行**
+
+电脑USB真实模式在结束演练后、并在工作台源码目录中，用同一.venv-workbench/bin/python -m servo_workbench serve --real --state-dir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/usb-real-state --open；先在网页选适配器并“绑定并只读连接”。必须确认专用总线和电压，避免与仍运行的robotd共同接到同一串口总线；演练库不能当真实库。
+
+板端代理安装完成不代表已连接。后续SSH模式的固定远端命令是sudo -n -- /opt/microduck-servo-workbench/current/agent.sh --stdio；需先核对主机指纹、非交互SSH和唯一命令的权限。不授任意sudo，不在本篇复制SSH私钥或自动写sudoers。确认串口维护交接后，电脑才运行 --ssh 已登记别名；robotd活跃或串口被占用时代理拒绝，不替用户停服务。客户端与代理必须都是0.1.1。
+
+**中断和回退的分支**
+
+| 当前事实 | 正确下一步 |
+|---|---|
+| 当前板端关机或SSH不可达 | 保持本地准备；不探测其他IP、不重复升级 |
+| 输入/源码目录已存在但还没有current | 读取原阶段、核验全部哈希；保留半成品，不当空目录覆盖 |
+| Tools端口/权限错误 | journalctl及实际ExecStart核对；不改robotd/IMU、不放宽socket或/proc权限 |
+| Studio doctor失败 | 按缺项修复3.13模块/对应wheel；不能复制旧cp311 wheel或跳过检查 |
+| Studio setup中断 | 在本轮源码目录先status，再 /usr/bin/python3.13 -m studio.manage recover --apply --confirm EXECUTE；恢复会保留归档证据，之后重新doctor/setup |
+| Studio已装但需撤销 | 用本篇rollback；外部文件漂移会拒绝，先保留并核对 |
+| 要撤掉基础Tools | 先stop；确认首次安装前确无旧current后，将本轮Tools链接、unit及zzzz-board1-py313.conf移动到/var/backups/microduck/tools-install-board1-20261103留存，再daemon-reload；不删除状态/源码，不动native/current |
+| 工作台已运行但需停用 | Ctrl+C停止电脑后端；不删SQLite/WAL/SHM或authority.lock强开第二个后台 |
+| 代理安装中断 | 保留部分release和agent.json，核验current是否已切；不自动重放、不删除重来，不通过启动代理“测试”占用中的总线 |
+
+**重要路径**
+
+| 内容 | 路径 |
+|---|---|
+| 普通Web入口 | http://127.0.0.1:8765/（Mac SSH隧道） |
+| Studio入口 | https://172.19.8.218:8443/studio/（可信局域网HTTPS） |
+| Tools插件宿主 | /etc/microduck-tools/plugins.json |
+| Tools状态 | /var/lib/microduck-tools/ |
+| Studio配置 | /etc/microduck-studio/config.json（由组件CLI管理） |
+| Studio安装登记 | /var/lib/microduck-studio-install/ |
+| Studio源码/3.13 venv | /opt/microduck-tools/studio/releases/0.6.0/ |
+| 本轮Tools源码 | /opt/microduck-tools/releases/0.6.0-py313-board1-20261103 |
+| 已有calv3程序 | /opt/microduck-tools/native/current/bin/（保持原样） |
+| 可选板端代理配置 | /etc/microduck-servo-workbench/agent.json |
+| 可选板端代理权威批次 | /var/lib/microduck-servo-workbench/ |
+| 电脑演练批次 | /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/demo-state/ |
+| 本次输入/备份 | /var/lib/microduck-tools-install/board1-20261103；/var/backups/microduck/tools-install-board1-20261103 |
+
+**证据与验收边界**
+
+本地431项Python、11项Node回归通过，包括9项新增ABI/锁文件测试。pip按CPython3.13 Linux ARM64目标对10个wheel做了离线完整依赖及require-hashes解析；5个cp313扩展文件SHA与PyPI官方文件页对照，5个通用wheel与旧已核验锁一致。原3.11锁和旧冻结包保持原始字节。本机没有安装Linux ARM64 Python3.13，不能把本地Python3.14回归和跨平台解析写成板端动态加载通过；后续真正setup内的import及服务验收仍是上板步骤。
+
+本篇不重做0.18.3升级、不安装真实校正、不设置16.4或猜IMU安装四元数。完整源代码身份、材料SHA、语法检查和后续CI状态以本交付release-record.json、manifest.json及evidence为准。参考风格源文件、旧交付包和既有板端报告保持不变。

@@ -104,3 +104,6 @@ python3 tools/microduck-dryrun.py cycle
 0.4.2补充可靠性审查：中断遗留临时文件不再阻塞恢复，切换前确认测试服务停止/任务结束，拒绝systemd别名和对外依赖联动，Linux验证绑定socket对端PID；包装入口仅允许Web只读monitor。详见[审查与修复](docs/dryrun-review.zh-CN.md)。
 
 PR #7安全复审已升级工作台0.1.1：原始连接固定、回显过滤、ID/速率中断恢复和动作保护，详见[复审说明](docs/servo-workbench-safety-review.zh-CN.md)。从当前0.16.3直接升级并安装Tools的[原生命令指南](docs/native-upgrade-0163-to-0183.zh-CN.md)和[完整回退](docs/native-upgrade-recovery.zh-CN.md)独立提供；板端仍NOT_RUN。
+
+
+Python3.13板端安装：Studio现支持CPython3.11/3.13 Linux ARM64普通GIL版本，各自使用独立锁和wheel。第一板已完成0.18.3+calv3后，按[逐条安装指南](docs/board1-tools-workbench-step-by-step.zh-CN.md)安装Tools、Studio与独立舵机工作台；不需再装Python3.11，不重跑daemon升级。板端安装仍待执行，桌面工作台仅需Python3.11+。
