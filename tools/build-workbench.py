@@ -8,7 +8,7 @@ from pathlib import Path
 import tarfile
 import zipfile
 
-VERSION='0.1.1'
+VERSION='0.1.2'
 WHEEL='pyserial-3.5-py2.py3-none-any.whl'
 SHA='c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0'
 

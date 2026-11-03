@@ -85,7 +85,7 @@ class Engine(Actions):
         return self.status()
 
     def status(self):
-        if not self.active:return dict(session=None,sessions=self.store.list(),component_version="0.1.1")
+        if not self.active:return dict(session=None,sessions=self.store.list(),component_version="0.1.2")
         s=self._s()
         out=clone(s)
         out["observed"]=clone(self.candidate)
@@ -463,7 +463,7 @@ class Engine(Actions):
 
     def report(self):
         s=self._s()
-        report=dict(schema="microduck-servo-workbench/v1",component_version="0.1.1",
+        report=dict(schema="microduck-servo-workbench/v1",component_version="0.1.2",
                     exported_at=time.time(),session=s,events=self.store.events(s["id"]),
                     jobs=[],event_window="first_200; full history in authority SQLite",
                     historical=True,live=False,identity="operator_labels_and_protocol_evidence",

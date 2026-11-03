@@ -69,7 +69,7 @@ class Remote:
                     text=True, bufsize=1)
                 threading.Thread(target=self._reader, args=(self.proc,), daemon=True).start()
             info = self._call('hello', {}, 'connection', timeout=8, connect=False)
-            if info.get('protocol') != PROTOCOL or info.get('component_version') != '0.1.1' or info.get('authority') != 'board':
+            if info.get('protocol') != PROTOCOL or info.get('component_version') != '0.1.2' or info.get('authority') != 'board':
                 self.close()
                 raise Refused('AGENT_VERSION', '板端代理版本不匹配；不会自动部署或升级')
             self.remote_info = info

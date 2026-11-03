@@ -161,7 +161,7 @@ def desired(kind, target, raw, opts):
     p = profile(kind)
     result = {p["id_addr"]: target,p["baud_addr"]:p["baud_code"],p["mode_addr"]:p["mode"]}
     if kind == "xl330":
-        result.update({9:0,62:255,20:(-512 if target in (13,23) else 0) & 0xffffffff})
+        result.update({9:0,10:0,62:255,20:(-512 if target in (13,23) else 0) & 0xffffffff})
         if opts.get("shutdown52"):
             result[63] = 52
     else:
@@ -175,7 +175,7 @@ def desired(kind, target, raw, opts):
 
 
 def public_profiles():
-    return dict(component_version="0.1.1",hardware_acceptance=False,
+    return dict(component_version="0.1.2",hardware_acceptance=False,
                 profiles=[dict(id=k,protocol=v["protocol"],voltage_range=v["voltage_range"],
                     registers={str(a):dict(size=s,name=n) for a,(s,n) in v["registers"].items()})
                     for k,v in PROFILES.items()],

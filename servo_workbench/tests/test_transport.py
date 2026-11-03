@@ -89,6 +89,17 @@ class SerialTests(unittest.TestCase):
         return SerialBus(kind, row, board=board, ports_fn=lambda: [row],
                          serial_factory=lambda **kwargs: self.wire, guard=guard)
 
+    def test_image_config_values_pass_native_allowlist_and_read_back(self):
+        bus=self.bus()
+        for address,size,value in [(7,1,10),(8,1,3),(9,1,0),(10,1,0),
+                                   (11,1,3),(20,4,0xfffffe00),(62,1,255),(63,1,52)]:
+            bus.write(10,1000000,address,size,value)
+            self.assertEqual(bus.read(10,1000000,address,size),value)
+        count=len(self.wire.written)
+        with self.assertRaises(Refused):bus.write(10,1000000,64,1,1)
+        with self.assertRaises(Refused):bus.write(10,1000000,116,4,2048)
+        self.assertEqual(len(self.wire.written),count)
+
     def test_native_read_uses_real_codec_fake_descriptor(self):
         bus = self.bus()
         self.assertEqual(bus.read(1, 1000000, 0, 2), 1200)

@@ -2,7 +2,7 @@
 
 日期：2026-11-03（Asia/Shanghai）。目标：root@172.19.8.218，Radxa ZERO 3，Armbian/Debian13、aarch64、glibc2.41，**板端统一使用现有CPython3.13.5**。本文沿用[已完成的0.18.3+calv3指南](/Users/bou/Workspace/Duckduck/docs/robot/zero3w-board1-0183-step-by-step-20261103T063932Z.md)的“单条命令后紧接用途、为什么、结果”格式。
 
-**当前状态：Mac第1、2步已于2026-11-03实际执行通过。后续板端安装命令均未执行。下一次上板从第3步开始；本次不连接板端。** 前置0.18.3+calv3的重启验收来自2026-11-03既有报告，不冒充本轮重新SSH核查。板端可先正常关机；完成本地准备并明确开始部署后再开机。不能在离线状态下验证实际服务或ARM64扩展动态加载。
+**当前状态：电脑USB工作台0.1.2已安装并启动，正式入口为[本机工作台](http://127.0.0.1:8766/?preset=xl330-image)。Mac第1、2步此前已通过；本轮完成电脑端安装（第50–56步对应操作）。板端Tools/Studio/代理尚未安装，第3–49步和板端代理步骤仍未执行。** 本次用户选择电脑USB适配器与XL330，不需要板端参与，不能将电脑安装写成板端部署完成。
 
 **本轮已经实际核验了什么**
 
@@ -26,6 +26,43 @@
 先完成一至五。第六是可选板端UART代理；有电脑USB适配器时无需安装它。整个安装不修改官方daemon/current、native/current、robotd启动参数、原用户校正、padd/netpadd维护条件，不启用控制/Camera、不设置开机自启。常驻Web不授root。真实串口连接、EEPROM、Reset Mid及台架动作另行开展，不能因安装通过就执行。
 
 任何一步失败先停在该步，保留错误；不要整页粘贴、不要从头重复、不要使用旧升级菜单再apply0.18.3。
+
+
+
+**现在先只配置一只（不执行其余槽位）**
+
+打开[正式USB工作台](http://127.0.0.1:8766/?preset=xl330-image)，选择“使用图示 XL330 预设”。本次安装位置是 `/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-servo-workbench-0.1.2`，真实状态独立保存在同级 `usb-real-state/`。
+
+1. 先仅连接一只、固定且卸除负载，使用符合XL330规格的电源。刷新端口，核对实际USB适配器，点“绑定并只读连接”。不选蓝牙耳机、Bluetooth-Incoming-Port或debug-console。
+2. 选XL330-M288、Microduck、0.18.3，确认Shutdown=52已选。现有按钮“建立15舵机批次”仅建立关节记录，不批量发包；本次只选择目标关节卡片，其他14槽不执行。
+3. 等待稳定，核对实物标签、型号与单只连接声明，展开完整预览。确认本只之后，只写这一只并逐项读回；不自动开启扭矩、不发位置目标。
+4. 只读回通过就停在这里，导出本只已执行证据，不点击“下一只”、整组复核、台架或中位。单只报告保留其余槽位未配置，不能当整组验收通过。
+
+| 参数 / 地址 | 已实现计划 |
+|---|---|
+| ID / 7 | 按本只关节选择：10–14 / 20–24 / 30–34 |
+| Baud Rate / 8 | 3 = 1,000,000 bps |
+| Return Delay / 9 | 0 |
+| Drive Mode / 10 | 0 |
+| Operating Mode / 11 | 3 |
+| Homing Offset / 20 | **按用户最新要求沿用原模板**：ID13/23=-512，其余0；忽略图片的逐颗标定 |
+| PWM Slope / 62 | 255 |
+| Shutdown / 63 | 52 / 0x34；图示预设明确选中 |
+
+完整预览会同时显示“已一致 · 不写入”和“将写入并读回”。Homing Offset模板不代表机械标定完成。Shutdown=52会取消输入电压故障触发关闭扭矩的位，XL330供电仍须3.7–6.0V；[官方寄存器说明](https://emanual.robotis.com/docs/en/dxl/x/xl330-m288/)。
+
+**本次单只目标已确认：ID24（左踝）。** 操作者已确认单只、固定、卸除负载和电源条件，授权先只读。自动检查在打开串口前被现有审计器hardware门控拒绝；没有改门控、没有改用其他入口绕过。请由操作者在正式界面完成只读连接并选择ID24。参数写入仍NOT_RUN，先提供实际8行预览再确认。
+
+本轮安装记录：[installation-result.json](/Users/bou/Workspace/Duckduck/logs/tools-workbench-usb-install-20261103T095404Z/installation-result.json)。115项软件回归通过，浏览器模拟完整8参数预览通过；正式安装核查时状态为LIVE、尚未绑定、尚无真实批次；后续界面状态以实时读数为准。真实舵机写入和运动目前NOT_RUN。原0.1.1包与Tools0.6.0离线payload保留；0.1.2是独立工作台组件版本，不是daemon版本。
+
+**日后重新启动（停止现有后端后再用）**
+
+```bash
+cd /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-servo-workbench-0.1.2
+./workbench.sh serve --real --state-dir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/usb-real-state --open
+```
+
+用途：打开同一真实状态库；不能另起第二个后台或删除锁。预期显示LIVE与本机8766入口。前台运行用Ctrl+C停止后端；网页“停止当前任务”只取消当前操作，不退出后端，也不是物理断电。本轮已后台启动，PID69941；停止前先用 `ps -p 69941 -o command=` 核对其包含本篇usb-real-state绝对路径，再用 `kill -INT 69941`，不能对重用的PID误发信号。状态库不删除，重新启动会只读恢复且旧预览失效。
 
 
 **一、只在本地准备完成后，才连接第一板**
@@ -744,12 +781,12 @@ open https://172.19.8.218:8443/studio/
 本次结果：待执行；本轮仅本地核对指引。
 
 
-**五、电脑安装舵机工作台并先演练**
+**五、电脑安装正式USB舵机工作台**
 
 **50. 创建独立工作台运行目录（Mac终端）**
 
 ```bash
-mkdir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103
+mkdir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103
 ```
 
 用途：为电脑组件选择独立运行位置。
@@ -758,26 +795,26 @@ mkdir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103
 
 预期结果：新目录创建成功。
 
-本次结果：待执行；本轮仅本地核对指引。
+本次结果：**已完成对应安装/校验操作。** 0.1.2正式目录已校验42文件，离线setup通过，LIVE后端PID69941；实际状态与完整输出见本页顶部安装记录。除第52步setup与第56步status外，部分目录/解包/启动操作由等价Python安装器执行，不冒充逐字运行本代码块。
 
 **51. 解开固定工作台包（Mac终端）**
 
 ```bash
-tar -xzf /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103/transfer/workbench/microduck-servo-workbench-0.1.1.tar.gz -C /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103
+tar -xzf /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-board1-install-guide-20261103/packages/microduck-servo-workbench-0.1.2.tar.gz -C /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103
 ```
 
 用途：安装电脑端源码和通用pyserial wheel。
 
-为什么：该组件仍为0.1.1，独立于Tools0.6.0；不替换板端daemon。
+为什么：该组件仍为0.1.2，独立于Tools0.6.0；不替换板端daemon。
 
-预期结果：出现microduck-servo-workbench-0.1.1子目录。
+预期结果：出现microduck-servo-workbench-0.1.2子目录。
 
-本次结果：待执行；本轮仅本地核对指引。
+本次结果：**已完成对应安装/校验操作。** 0.1.2正式目录已校验42文件，离线setup通过，LIVE后端PID69941；实际状态与完整输出见本页顶部安装记录。除第52步setup与第56步status外，部分目录/解包/启动操作由等价Python安装器执行，不冒充逐字运行本代码块。
 
 **52. 准备电脑隔离环境（Mac终端）**
 
 ```bash
-python3 /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1/tools/setup-workbench.py
+python3 /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-servo-workbench-0.1.2/tools/setup-workbench.py
 ```
 
 用途：在电脑组件目录建立.venv-workbench并离线安装pyserial3.5。
@@ -786,80 +823,82 @@ python3 /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/micro
 
 预期结果：提示准备完成，无真实USB/串口访问。
 
-本次结果：待执行；本轮仅本地核对指引。
+本次结果：**已完成对应安装/校验操作。** 0.1.2正式目录已校验42文件，离线setup通过，LIVE后端PID69941；实际状态与完整输出见本页顶部安装记录。除第52步setup与第56步status外，部分目录/解包/启动操作由等价Python安装器执行，不冒充逐字运行本代码块。
 
 **53. 进入工作台源码目录（Mac终端）**
 
 ```bash
-cd /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1
+cd /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-servo-workbench-0.1.2
 ```
 
 用途：让python -m能找到本地servo_workbench模块。
 
 为什么：venv只安装pyserial，工作台源码没有全局pip安装；绝对解释器路径不会自动改变当前目录。
 
-预期结果：当前目录是microduck-servo-workbench-0.1.1。
+预期结果：当前目录是microduck-servo-workbench-0.1.2。
 
-本次结果：待执行；本轮仅本地核对指引。
+本次结果：**已完成对应安装/校验操作。** 0.1.2正式目录已校验42文件，离线setup通过，LIVE后端PID69941；实际状态与完整输出见本页顶部安装记录。除第52步setup与第56步status外，部分目录/解包/启动操作由等价Python安装器执行，不冒充逐字运行本代码块。
 
-**54. 启动完全无硬件演练（Mac终端并保持运行）**
+**54. 启动正式USB向导（初始未绑定设备）（Mac终端并保持运行）**
 
 ```bash
-/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1/.venv-workbench/bin/python -B -m servo_workbench serve --demo --state-dir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/demo-state --open
+/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-servo-workbench-0.1.2/.venv-workbench/bin/python -B -m servo_workbench serve --real --state-dir /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/usb-real-state --open
 ```
 
-用途：打开127.0.0.1:8766模拟向导。
+用途：打开127.0.0.1:8766正式USB向导。
 
-为什么：不需要板端在线，也不启动SSH或打开真实串口。
+为什么：无需板端；启动后尚未绑定设备，必须在界面选择适配器才进入只读连接。
 
-预期结果：明确显示SIMULATION / NO HARDWARE；保持该终端，停止用Ctrl+C。
+预期结果：明确显示LIVE；保持该终端，停止用Ctrl+C。
 
-本次结果：待执行；本轮仅本地核对指引。
+本次结果：**已完成对应安装/校验操作。** 0.1.2正式目录已校验42文件，离线setup通过，LIVE后端PID69941；实际状态与完整输出见本页顶部安装记录。除第52步setup与第56步status外，部分目录/解包/启动操作由等价Python安装器执行，不冒充逐字运行本代码块。
 
 **55. 为状态和导出命令进入同一源码目录（Mac另开终端）**
 
 ```bash
-cd /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1
+cd /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-servo-workbench-0.1.2
 ```
 
 用途：让新终端也能加载工作台模块。
 
 为什么：每个新终端的当前目录独立，不能假定继承了运行后端的终端。
 
-预期结果：新终端也位于工作台源码目录，另一个终端的演练保持运行。
+预期结果：新终端也位于工作台源码目录，另一个终端的正式后端保持运行。
 
-本次结果：待执行；本轮仅本地核对指引。
+本次结果：**已完成对应安装/校验操作。** 0.1.2正式目录已校验42文件，离线setup通过，LIVE后端PID69941；实际状态与完整输出见本页顶部安装记录。除第52步setup与第56步status外，部分目录/解包/启动操作由等价Python安装器执行，不冒充逐字运行本代码块。
 
 **56. 查看正在运行的工作台状态（Mac另开终端）**
 
 ```bash
-/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1/.venv-workbench/bin/python -B -m servo_workbench status
+/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-servo-workbench-0.1.2/.venv-workbench/bin/python -B -m servo_workbench status
 ```
 
 用途：读取电脑本机后端状态。
 
 为什么：status不会另起一个串口后台。
 
-预期结果：返回当前模拟批次/连接状态；先在网页建立15关节批次再查看进度。
+预期结果：返回当前真实连接/批次状态；先在网页建立15关节批次再查看进度。
 
-本次结果：待执行；本轮仅本地核对指引。
+本次结果：**已完成对应安装/校验操作。** 0.1.2正式目录已校验42文件，离线setup通过，LIVE后端PID69941；实际状态与完整输出见本页顶部安装记录。除第52步setup与第56步status外，部分目录/解包/启动操作由等价Python安装器执行，不冒充逐字运行本代码块。
 
-**57. 导出模拟批次证据（Mac另开终端）**
+**57. 本只完成后导出真实批次证据（当前待执行）（Mac另开终端）**
 
 ```bash
-/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/microduck-servo-workbench-0.1.1/.venv-workbench/bin/python -B -m servo_workbench export --out /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.1-20261103/demo-report.json
+/Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/microduck-servo-workbench-0.1.2/.venv-workbench/bin/python -B -m servo_workbench export --out /Users/bou/Workspace/Duckduck/work/board1-workbench-0.1.2-20261103/first-usb-report.json
 ```
 
-用途：保存可审阅的模拟报告。
+用途：保存本只执行和其余未配置槽位的真实报告。
 
-为什么：要先在网页建立并操作模拟批次；已有同名导出会拒绝覆盖，需换新文件名。
+为什么：本只真实读回通过后再导出；已有同名文件拒绝覆盖，不能用模拟结果替代真实写入证据。
 
-预期结果：报告明确simulation/historical属性，不能用来证明真实舵机配置通过。
+预期结果：报告保留本只写入/读回证据，其余14槽位待配置，不能宣称15只整组验收通过。
 
 本次结果：待执行；本轮仅本地核对指引。
 
 
-**六、可选：安装板端代理，仅在确实要用板端UART时进行**
+**六、历史0.1.1板端代理准备（本次USB不执行）**
+
+以下原0.1.1安装命令仍对应冻结transfer包，尚未执行，不可与本次0.1.2电脑端配对。今后改用板端UART时需先准备同版本代理并单独核对部署计划；本轮不安装板端。
 
 **58. 查看robotd实际持有的设备（板端root终端）**
 

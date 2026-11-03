@@ -1,10 +1,10 @@
 {
   "date_local": "2026-11-03",
   "tool_version": "0.6.0",
-  "stage": "existing-guide-mac-execution-record",
+  "stage": "workbench012-usb-install-image-preset",
   "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
   "git_base": "b125823d3a891330732dfa870582cdae0300eaf4",
-  "scope": "Documentation-only follow-up: execute Mac guide steps1/2 and isolated offline command smoke; record actual results in existing guide. All installation commands and released software payload unchanged; board NOT_RUN.",
+  "scope": "Workbench0.1.2 Drive Mode0 and complete image-reference preview; original homing template preserved per user. Desktop USB installed; physical writes pending; board NOT_RUN.",
   "files": [
     {
       "path": ".gitattributes",
@@ -496,11 +496,11 @@
     },
     {
       "path": "deploy/workbench/install-agent.py",
-      "sha256": "bd8b448162ed6c09e9bd0e8d403b70a762f9e4e3431d79a09d3a3e1b37a50756"
+      "sha256": "4fde306075894cc133a35320024f8ec965e8618fd435604400cdc5da6ad15987"
     },
     {
       "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
-      "sha256": "dac7bb4e4d811ed19e1802e7e732bc259977b27fddc9cc46e8770ca3695a1554"
+      "sha256": "76ec9136ef4d01f0a4a01e935ba26414f168665409795969ecc1ff8c3d514880"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -520,7 +520,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "ba26f5f243c814e9cb16ab13476bab17fc985046fc0050d76094daf49b73edd5"
+      "sha256": "a177f015d3e00baea943af9e89d2afd72a2dc461e6eaa714ced5cf261198443e"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -576,7 +576,7 @@
     },
     {
       "path": "docs/servo-workbench-guide.zh-CN.md",
-      "sha256": "dc1883f33a4f9f5aee6399ecc1a83ece4c3b006894e326dc653f04d52835f702"
+      "sha256": "3c6e6d471aa0c7e8b2c2b8b85c5043a4daf5d2951526d6b4815efa59a9f08f57"
     },
     {
       "path": "docs/servo-workbench-recovery.zh-CN.md",
@@ -636,7 +636,7 @@
     },
     {
       "path": "servo_workbench/__init__.py",
-      "sha256": "dad05493f5835543508acff14be93280d771bd5773ff611e73d0f60760670137"
+      "sha256": "f957c52b59818e67fe79807a99e5dd543fed53d4f02cfbc3844ad3fab746d73b"
     },
     {
       "path": "servo_workbench/__main__.py",
@@ -648,15 +648,15 @@
     },
     {
       "path": "servo_workbench/agent.py",
-      "sha256": "895aaa9bd28237a74ff095c1283e19b427fa551ebccdc7b788b9933ccb8d0f62"
+      "sha256": "0b8b925ff3cc1a5445a9d5d51917893d715d7644aef11fe9553a1d38324b9e2c"
     },
     {
       "path": "servo_workbench/engine.py",
-      "sha256": "aa65f3e0d98c34187bda01ef836d2dcfdbd2e8a68575e3dab860b58d1b318fb3"
+      "sha256": "9f12ece4dc5938aded384590f688eb5f8663c28b0954a5b0d44b11831bd4c664"
     },
     {
       "path": "servo_workbench/profiles.py",
-      "sha256": "8a8b14458153980a172a4400805a8770d4e7ff7c4a1fe951876a53f0001fee98"
+      "sha256": "8a751cc42d8a80c414cfe4487ee5d50e2e1e60d21a9a50b12d2e01e669e46e86"
     },
     {
       "path": "servo_workbench/protocol.py",
@@ -664,7 +664,7 @@
     },
     {
       "path": "servo_workbench/remote.py",
-      "sha256": "da2e1d4a5fb64d674a401c5fdd29be346eecfc810922fd532cab8e4f0965cd17"
+      "sha256": "5a20acee0549beaaa6f02bdf79b3eff9d86394951634028ff407eaeaee5d9aad"
     },
     {
       "path": "servo_workbench/reports.py",
@@ -680,7 +680,7 @@
     },
     {
       "path": "servo_workbench/service.py",
-      "sha256": "d861d38af3ab85b41417dd71d74759afe067999db720e9f6b1bd9d7eff2cf3f5"
+      "sha256": "8eefd93908244e562cd53a19a940c8309c618e36dbd3d97f257a2a633e0d7ccf"
     },
     {
       "path": "servo_workbench/simulation.py",
@@ -688,11 +688,11 @@
     },
     {
       "path": "servo_workbench/static/app.js",
-      "sha256": "8e2c23b49ea8dda05c52e78b6eea163f06dc0e4e6aef9636f7268704d7f77649"
+      "sha256": "2bd081a9de49818d5eeffa6f6973a42b37b3429fcbb421eaf5d902ba41cc0ab7"
     },
     {
       "path": "servo_workbench/static/index.html",
-      "sha256": "c363da13552d7fb293feeedd180487237c9ec93863b521879065a18daa4b1c43"
+      "sha256": "1fd9105310b48eb6a9f40e352457f91d27564f5507a7089c5287c7d88d35215a"
     },
     {
       "path": "servo_workbench/static/style.css",
@@ -711,8 +711,12 @@
       "sha256": "d42185c8f9da8e864e469b6c8dc88b050929de997089e838b94e415822071688"
     },
     {
+      "path": "servo_workbench/tests/test_image_preset.py",
+      "sha256": "a372c1b72e2cd2104cc8359729a92a24e1d7ba06a9838222781a23a15e7cb728"
+    },
+    {
       "path": "servo_workbench/tests/test_install.py",
-      "sha256": "c39750386d79a855e84be0a6ae1173b1dabe1c6216c219f8247025f5f84808f7"
+      "sha256": "6739dffd86cdef4d088a76fc98a2b06c54ff7f6d37ee45422c8bc9f95e72f453"
     },
     {
       "path": "servo_workbench/tests/test_recovery.py",
@@ -724,7 +728,7 @@
     },
     {
       "path": "servo_workbench/tests/test_transport.py",
-      "sha256": "fe674a4277fd95abc7359c68141925e07fcec148828ba9f09aa1f37210b34979"
+      "sha256": "20d4c4226fbecaf892f3402cffb3344e27d48853103f373a8fab68d909e24e29"
     },
     {
       "path": "servo_workbench/tests/test_workflow.py",
@@ -732,7 +736,7 @@
     },
     {
       "path": "servo_workbench/transport.py",
-      "sha256": "d36f29af512e0673a7515c576dd3ac666f8c03ef666638f2440268f1a2f0ec59"
+      "sha256": "d6e394317f4b09203dc1fc66692a175a1ca7c6a07ee286c6e54e0e55b5bcd3f8"
     },
     {
       "path": "studio/__init__.py",
@@ -880,7 +884,7 @@
     },
     {
       "path": "tools/build-workbench.py",
-      "sha256": "e513db010d071d472b71bc67e30003ad626cd95782f85b67bac572a47eba8432"
+      "sha256": "f44d77cf16472094221441324d9f882a41be7ccd238e8362e1e32a7de7a0298d"
     },
     {
       "path": "tools/check-native.py",
@@ -927,5 +931,6 @@
       "sha256": "cd7d3c6c67a9727f0bd0a8227f5ad90d370b94c282cc9d14d329f59ccb0afbb1"
     }
   ],
-  "runtime_payload_commit": "36de9bb39c9e3c84c57908efe74f2311585a04d7"
+  "runtime_payload_commit": "36de9bb39c9e3c84c57908efe74f2311585a04d7",
+  "workbench_component_version": "0.1.2"
 }

@@ -97,7 +97,7 @@ class Controller:
         if method=="capabilities":return public_profiles()
         if method=="status":
             out=self.engine.status() if self.engine else dict(session=None,sessions=self.store.list())
-            return {**out,"demo":self.demo,"agent_state":"online","writer_owned":bool(self.engine and self.engine.writer==owner and self.engine.clock()<self.engine.writer_until),"worker_error":getattr(self,"worker_error",None)}
+            return {**out,"demo":self.demo,"agent_state":"online","writer_owned":bool(self.engine and self.engine.writer==owner and self.engine.clock()<self.engine.writer_until),"connected_read_only":bool(self.engine and not self.demo),"worker_error":getattr(self,"worker_error",None)}
         if method=="ports":
             if self.demo:return self.engine.bus.ports() if self.engine else []
             if self.board:return [dict(device=self.board_port,board_uart=True)]
