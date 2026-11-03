@@ -516,7 +516,7 @@
     },
     {
       "path": "docs/board1-tools-workbench-step-by-step.zh-CN.md",
-      "sha256": "fa817775b7bd2829af48a6b916ac08d2fe77e76283e7f7e10c5901a2eb101cc4"
+      "sha256": "51b35741afdf6fae6c96b41485ac83c57d88faf2952c575951e149e5de389fca"
     },
     {
       "path": "docs/compatibility.zh-CN.md",
@@ -536,7 +536,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "28d2c5c5211904ce973a86a96fc8e67494b7b80d9ad9fa11f4a7d872855c5874"
+      "sha256": "826b90af6838c7b9fdd67aa52735163ecd7c0274f72b11e639310c8d306955ee"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",

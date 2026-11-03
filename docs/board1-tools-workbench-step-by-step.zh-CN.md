@@ -33,10 +33,10 @@ cd /var/lib/microduck-tools-install/board1-20261103/studio-lan-http-20261103/mic
 **日常启动、访问码与检查（应用后使用）**
 
 ```bash
-systemctl start microduck-studio-helper microduck-studio
+systemctl start microduck-tools microduck-studio-helper microduck-studio
 ```
 
-用途：启动Studio及其已有受限助手，不启动舵机工作台、不启用控制、不重启robotd，也不设置开机自启。
+用途：启动基础Tools、Studio及其已有受限助手，不启动舵机工作台、不启用控制、不重启robotd，也不设置开机自启。
 
 ```bash
 /opt/microduck-tools/studio/pair-code.sh
@@ -51,7 +51,7 @@ ssh -t root@192.168.1.56 /opt/microduck-tools/studio/pair-code.sh
 ```
 
 ```bash
-systemctl status microduck-studio microduck-studio-helper --no-pager
+systemctl status microduck-tools microduck-studio microduck-studio-helper --no-pager
 ss -lntp 'sport = :8790'
 ```
 

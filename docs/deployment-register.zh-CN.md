@@ -70,3 +70,5 @@ ToF未通过：tofd0.18.3 PID753 active/NRestarts0，曾发现VL53L5CX/0x29并15
 已有Studio用http-configure.sh登记兼容启动器和pair-code.sh，冻结运行包/venv/资产不覆盖，功能开关不变；保持停止，明确start。network-rollback只恢复网络字段/unit，保留独立功能设置，中断和漂移均验证；不触碰robotd/tofd/mediad/工作台。75项Studio回归和本地冻结源码HTTP认证全流程通过；首次夹具失败和审计误判均保留。目标板LAN访问/应用/回退NOT_RUN，ToF未修复。
 
 原逐条指南三份同步，未新增指南；本轮网络源码归档置于既有交付packages/studio-lan-http-20261103，原transfer/旧包保留。验证logs/tools-studio-lan-http-20261103T132518Z/http-smoke.json；审计20261103T132518Z-01cb64a497cc。PR沿用#8并重写说明，不合并。
+
+交付收尾：代码提交95faba5a50dedeffe694b99706630ba992be54e9已推送[PR #8](https://github.com/superobk/microduck-tools/pull/8)，已转待审阅，未合并。[Python安装CI](https://github.com/superobk/microduck-tools/actions/runs/41647543406)和[工作台CI](https://github.com/superobk/microduck-tools/actions/runs/41647543423)通过；142负载网络包哈希68a17d7fd7e69cf1b1327fe1670315a1fc18902c330abe083252c19e873c82fb。交付目录307文件manifest、308条SHA及原176/175传输清单通过。板端仍关闭，LAN应用/回退NOT_RUN。指南日常启动同时列出microduck-tools，供原校正代理使用；不设置开机自启。
