@@ -6,7 +6,7 @@
 
 ## 2026-11-20：PR #9 复审后的使用变化（板端未执行）
 
-最新Tools候选在 /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-api68-0.23.0-20261120-r3；原r2仅作历史候选保留。沿用现有安装、启动和一次性访问码命令，Python3.13、LAN HTTP及默认关闭真实控制/Camera的设置不变。旧0.18.3冻结管理器仍不承担0.23.0升级。
+最新Tools候选在 /Users/bou/Workspace/Duckduck/deliverables/microduck-tools-api68-0.23.0-20261120-r4；原r2仅作历史候选保留。沿用现有安装、启动和一次性访问码命令，Python3.13、LAN HTTP及默认关闭真实控制/Camera的设置不变。旧0.18.3冻结管理器仍不承担0.23.0升级。
 
 - 横装仍为 [0,0,0,1]、raw÷16.4，15关节值保留。0.23.0文件与用户层指针仍采用上节路径，网页不再除一次16.4。
 - daemon重启、PID改变或时间戳回退后，身份会暂时变为“未核验”，等待新数据和新证明；旧结果不能恢复控制权限。

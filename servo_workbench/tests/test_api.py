@@ -170,8 +170,18 @@ class HTTPTests(unittest.TestCase):
 
     def test_preview_is_backup_only_and_never_writes(self):
         self.create()
+        # Probe explicitly in this test; the automatic worker is covered separately.
+        self.controller.stop_event.set()
+        self.controller.worker.join(timeout=3)
+        self.assertFalse(self.controller.worker.is_alive())
         self.call('simulation',dict(op='attach',label='preview-only'))
         for _ in range(3):self.call('detect',{});time.sleep(.26)
+        # BUSY must remain a refusal; do not retry a mutating intent in the product.
+        with self.controller.engine.lock:
+            with self.assertRaises(urllib.error.HTTPError) as busy:
+                self.call('plan',dict(label='physical-label',model_confirmed=True))
+            self.assertEqual(busy.exception.code,409)
+            self.assertEqual(self.controller.engine.bus.sent,[])
         result=self.call('plan',dict(label='physical-label',model_confirmed=True))
         self.assertTrue(result['plan']['changes'])
         self.assertIsNotNone(self.call('status')['slots'][0]['backup'])

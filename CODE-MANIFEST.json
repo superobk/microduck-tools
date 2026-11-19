@@ -564,7 +564,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "08706182897fa944a516036088eadc54a11a4aa466e035dae60b5e6a3fa715fa"
+      "sha256": "30af9bea01ba040830ec8e47d191590eb9bc385450016c7a4bced4480d8941b2"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -640,7 +640,7 @@
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
-      "sha256": "1c8e00250c5a88bdc76da00cdec58cd8bb11e9995d1c5285fbb36571354a9991"
+      "sha256": "99c9e90fe185b09dd26db0f3c72ef111a5890458606758284d219a6c1b56aae7"
     },
     {
       "path": "docs/studio-0.6.0-plan.zh-CN.md",
@@ -648,7 +648,7 @@
     },
     {
       "path": "docs/studio-0.6.0-validation.zh-CN.md",
-      "sha256": "bec28222de84487cba92f7e2226c4b331f21a0544c53ec7c17b9656a6693b956"
+      "sha256": "976b824b6505e7d9633a56ac9e1c334369db8b326f53d384481e37f3339f4364"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -752,7 +752,7 @@
     },
     {
       "path": "servo_workbench/tests/test_api.py",
-      "sha256": "d9a6e8a422d1404995ec7e7bf3dac697edd8d6b5ab71dd9ccb90b18e147a732b"
+      "sha256": "aaf378383d313fe43b2c5ecb137f7a3e8dc442829e17744916bd8a0dbf6df306"
     },
     {
       "path": "servo_workbench/tests/test_image_preset.py",
