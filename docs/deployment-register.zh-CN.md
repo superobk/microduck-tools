@@ -135,3 +135,5 @@ CPython3.13.12与3.11.15各506项全部通过、无跳过（calibration251、Stu
 本轮最终材料为 deliverables/microduck-tools-api68-0.23.0-20261120-r3。原r2和原生候选包保持不变，r3取代r2作为后续Tools部署候选。Tools/Studio仍为0.6.0组件，以源码提交及manifest区分构建。
 
 板端部署、运行库加载、服务交接/重启、实际配对、校正/相机方向实测、回退/断电恢复和CPU/RSS性能均NOT_RUN。没有新增串口查询，也未修改daemon采集频率；受限写入前增加只读hello/进程核查，板端开销仍须测量。
+
+PR #9复审r3交付收尾：载荷源码ae1a79a7c72f687d99db9855c38f9e89216d5853；运行包SHA256 cc2503779b8b55b3fee52f47c809802fae26c75f7a77412c883416082503eb70，Studio Python3.13便携包SHA256 f1d2c88eacbf3238576f4ae1875e015e7ae5b4262e370aade24f5102671e05eb，源码快照SHA256 d7bc59c68afc793a31cd6c52e9bbd539a4c0e28782eb95314257cb9e40fd4fa9。147文件运行包解包后，15项新增Studio复审用例及0.23.0横装/16.4校准检查通过，完整SHA清单通过。归档固定在载荷提交，后续仅文档登记。旧r2 manifest与原daemon包均核对未变；PR9继续等待审阅，不合并、不执行板端。
