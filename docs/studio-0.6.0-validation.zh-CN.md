@@ -2,6 +2,15 @@
 
 2026-11-01；源码基线main `9e0df24e25a75ec77b8085db0deb43ea77bfa6f3`，候选分支 `feat/mobile-studio-0.6.0`。源码SHA、归档和逐文件清单以对应deliverables的最终MANIFEST为准。**本地实现完成，板端全部NOT_RUN。**
 
+## 2026-11-19 API68 增量验证（本地，板端未验收）
+
+- CPython3.13.12及3.11.15/macOS ARM64各运行calibration243、Studio87、installer37、servo_workbench115：各482项全部通过、无跳过，合计964次；官方SDK3.8.4。Node11通过。工作台仅模拟总线/SDK包对比，未启动服务或接触串口。
+- 新增18项：版本/API/revision/进程哈希，官方/定制区别，同PID回执与保存值，用户层及基础文件保留，横装/16.4/15关节迁移，新旧目标拒绝，相机实际UID/PID与PNG方向，原生模式冲突，认证/CSRF，下载助手白名单及手柄隔离。
+- 干净固定源码dry-run及apply通过，8文件与已编译源码逐字节一致，完整diff SHA与发布补丁一致。16个原生候选字节未改；此前540项Rust通过/8项ignored是上一轮证据，不计入本轮数量。
+- 独立本机HTTP演练配对登录；1440×1000和390×844监控页无横向溢出、浏览器错误为空。只证明桌面浏览器与手机尺寸模拟，实际手机IMU/Gamepad、板端画面/运动/性能未验收。
+- 证据：工作区 logs/tools-api68-20261119T150610Z；审计 logging/sessions/20261119T150610Z-8b8ada60a3f2。首次缺依赖、sandbox阻止本地socket及一处测试CLI缺固件确认已纠正，失败记录保留。
+- CPU/RSS、mediad增量、板端运行库、实际更新/回退/中断恢复、IMU动作及实机资源均NOT_RUN。维持原订阅与快照限速，不宣称实测资源达标。
+
 ## 已执行的软件验证
 
 | 项目 | 证据与结果 |

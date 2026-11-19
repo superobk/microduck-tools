@@ -4,6 +4,71 @@
 
 **首次升级并安装Studio推荐[统一安装套件](install-upgrade-simple.zh-CN.md)：一次上传、一个 `sudo ./duck.sh`，按N逐步继续。下文保留独立Studio命令及完整路径说明。**
 
+## 2026-11-19：0.23.0 / API68 离线适配
+
+Tools/Studio组件版本仍为0.6.0，以源码提交区分本次兼容构建；daemon为0.23.0，协议为API68。旧版校正和API47控制支持保留。板端尚未升级。
+
+| 能力 | 0.18.3 / API47 | 0.23.0 / API68 |
+| --- | --- | --- |
+| 状态、15关节、IMU、ToF、健康、policy/手柄 | 保留 | 已审阅固定源码结构；保留5Hz共享状态/1Hz健康 |
+| 校正保存及生效判断 | 匹配calv3及真实回执 | 匹配calv3、进程SHA、用户层、同PID回执及实际值；官方版不能应用自定义校正 |
+| 相机 | 原官方mediad核验 | 固定官方/定制mediad哈希、实际Unix对端PID/UID及API68；PNG由mediad转正，网页不再转一次 |
+| 原生自主/激光/自主足球 | 原功能 | 只读显示；启用或状态非法时禁止网页接管，不自动关闭原生模式 |
+| 下载policy | 原接口 | 新版UID检查由受限助手只代理policy.fetch；不开放系统升级/任意RPC，不自动加载 |
+
+### 横装和 /16.4 的配置与计算
+
+本板已确认插座朝机尾、芯片面朝上。迁移仅改target，保留安装旋转、比例及15关节校正：
+
+~~~toml
+schema = 2
+target_tag = "daemon-v0.23.0"
+imu_mount_wxyz = [0.0, 0.0, 0.0, 1.0]
+imu_module = "bus_imu200"
+gyro_profile = "custom_raw_div_16_4"
+gyro_raw_counts_per_dps = 16.4
+~~~
+
+计算仍为 raw × pi / (180 × 16.4)，再按 [-X,-Y,+Z] 映射。网页不对daemon已换算的rad/s再除一次16.4。完整文件还含15个零位/方向，不能用片段覆盖完整文件。
+
+新文件：/var/lib/robot/calibration/microduck-0.23.0.toml。用户层 /var/lib/robot/robotd.toml 的 [bus].calibration_path 指向它；基础 /etc/robot/robotd.toml 和旧0.18.3校正文件保留。
+
+以下仅在电脑迁移、检查文件，不连接、安装或重启机器人：
+
+~~~sh
+python3 calibration/common/duck_calibrate.py migrate \
+  --source /绝对路径/原microduck-0.18.3.toml \
+  --out /绝对路径/新microduck-0.23.0.toml \
+  --target daemon-v0.23.0 --confirm-same-hardware --confirm-firmware-scale
+python3 calibration/common/duck_calibrate.py check \
+  --target daemon-v0.23.0 --calibration /绝对路径/新microduck-0.23.0.toml
+~~~
+
+两个confirm分别表示硬件未变、固件比例已确认。本板此前已由用户确认，不能推及其他IMU。
+
+### 下次上板怎样安装和验证（全部NOT_RUN）
+
+新交付：/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-api68-0.23.0-20261119，归档及源码提交以MANIFEST为准。daemon/v10/运行库仍取原0.23.0离线候选包，其字节未改。
+
+1. 按原第二/第三板指南核实现场和身份，重新备份当时程序、配置、policy、Tools/Studio安装登记，隔离手柄。旧0.18.3冻结升级器只管理原路径，不能拿它安装0.23.0。
+2. 基础Tools解到独立新runtime目录，保存原 /opt/microduck-tools/current 链接再明确切换。原unit的 --target auto 保留，127.0.0.1:8765供Studio代理，不扩大基础校正入口。
+3. Studio已有安装不能直接setup覆盖。先status核对完整性并保存原登记/source/venv/资产；确认没有未完成手柄交接后，按原rollback步骤撤销旧托管文件，再从新便携包setup预览、明确安装。不能改journal哈希或将新源码塞入冻结目录。
+4. 新包使用普通GIL CPython3.13 Linux ARM64离线wheels，不要求板端另装3.11。setup默认LAN HTTP 0.0.0.0:8790，控制和Camera关闭。实际安装/更新中断恢复仍待板端验收。
+5. 监控页展开“身份、采样与资源”：identity.hello应为0.23.0/API68及匹配revision；identity.verified核验程序，calibration_verified核验配置/回执一致。native_activity和异常中心显示原生模式占用。
+6. “校正与配置”→IMU/陀螺仪：核对目标0.23.0、用户层路径、保存及运行的 [0,0,0,1]、C=16.4、系数0.0010642251536550791。必须runtime_verified=true、pending_restart=false，并核对同PID的 /run/robotd/calibration-effective.json；保存成功不等于生效。普通Tools账号无/proc读取或配置写入权限时保留只读，不放宽系统权限。
+7. policy页核对各槽位实际加载结果、skill和按键绑定。v10文件存在/下载成功不等于模型已加载，更不等于动作已完成。Camera明确开启后再检查画面方向。
+
+安装完成后的日常命令仍为：
+
+~~~sh
+sudo systemctl start microduck-tools microduck-studio-helper microduck-studio
+sudo /opt/microduck-tools/studio/pair-code.sh
+~~~
+
+第一条只启动工具，不接管手柄或启动工作台；第二条显示5分钟单次访问码，勿写入登记/截图。访问 http://实际板端IP:8790/studio/。本轮均未在板端执行。
+
+回退先停止Studio/Tools，按各自原安装登记处理；daemon回退还须整体恢复程序组、systemd覆盖、policy链接及0.18.3校正指针。Tools的rollback不等于daemon回滚。原冻结包及备份独立保留。
+
 ## 先在电脑看演练
 
 在解包后的源码根目录，用Python≥3.11：
@@ -89,7 +154,7 @@ HTTPS仍可选择：新安装setup增加--transport https，默认8790，也可-
 | 层 | 检查 | 应看到 |
 |---|---|---|
 | 安装 | `sudo ./studio.sh status` | installed、哈希一致、Studio/helper active、CPU20%/MemoryHigh64MiB/Max96MiB实际值 |
-| 进程配置 | 网页监控身份 + `systemctl show microduck-studio -p ExecStart -p MainPID` | 独立版本目录、API47/0.18.3实际PID/SHA；真实控制通过identity+calibration_verified |
+| 进程配置 | 网页监控身份 + `systemctl show microduck-studio -p ExecStart -p MainPID` | 独立版本目录、匹配API47/0.18.3或API68/0.23.0的实际PID/SHA；真实控制通过identity+calibration_verified |
 | Studio开关 | 网页控制状态和Camera状态 | 与configure后重启一致；开启不代表现场动作获准 |
 | 校正 | 原校正页运行回执 | 保存值、实际进程、用户层路径、native回执及有效值一致；calv3是自定义构建，非官方功能声明 |
 | Policy/绑定 | 网页“读取实际配置”及任务readback | slot/path/origin/overridden/error、skill和button→skill符合修改 |

@@ -25,6 +25,7 @@ from urllib.parse import urlsplit, parse_qs
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'common'))
 import duck_calibrate as cal
+import daemon_profiles
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 import camera_config
 import servo_health
@@ -38,7 +39,9 @@ NATIVE_0179_BASE='96b89d8613f06722c1d64ce75ab0d7124fed9d8f'
 NATIVE_0179_BUILD='96b89d86-calv3-f76915b8568d'
 NATIVE_0183_BASE='b2b0d213a402caeac492dd662ea891faa17f67c0'
 NATIVE_0183_BUILD='b2b0d213-calv3-30452a086d1e'
-NATIVE_BUILDS={'daemon-v0.17.9':(NATIVE_0179_BASE,NATIVE_0179_BUILD),'daemon-v0.18.3':(NATIVE_0183_BASE,NATIVE_0183_BUILD)}
+NATIVE_0230_BASE=daemon_profiles.profiles()['0.23.0']['base_revision']
+NATIVE_0230_BUILD=daemon_profiles.profiles()['0.23.0']['build_revision']
+NATIVE_BUILDS={'daemon-v0.17.9':(NATIVE_0179_BASE,NATIVE_0179_BUILD),'daemon-v0.18.3':(NATIVE_0183_BASE,NATIVE_0183_BUILD),'daemon-v0.23.0':(NATIVE_0230_BASE,NATIVE_0230_BUILD)}
 
 
 def verify_native_receipt(data, config, target):
@@ -55,10 +58,12 @@ def verify_native_receipt(data, config, target):
         if Path(data['config_path']).resolve()!=Path(config).resolve():raise ValueError('daemon uses another configuration path')
         if data.get('executable')!=os.readlink(f"/proc/{data['pid']}/exe"):
             raise ValueError('calibration executable identity differs')
+        if target=='daemon-v0.23.0' and not daemon_profiles.verify_process(data['pid'],'0.23.0','native','robotd'):
+            raise ValueError('unverified live robotd executable hash')
         values={key:data[key] for key in ('joint_zero_rad','joint_direction','imu_mount_wxyz','gyro_raw_counts_per_dps','imu_module')}
         values.update(schema=2,target_tag=target,gyro_profile='manual')
         cal.check_calibration(values,target)
-        if target=='daemon-v0.18.3':
+        if target in ('daemon-v0.18.3','daemon-v0.23.0'):
             expected=cal.config_layers.user_layer_for(config,target)
             if data['config_layering']!='user-over-base/v1' or data['user_config_path']!=(str(expected) if expected else None):
                 raise ValueError('native user/base configuration layout differs')

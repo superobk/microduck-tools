@@ -884,7 +884,7 @@ def validate_action(op, p):
         ):
             raise Refused("SKILL_NAME", "动作名称非法")
     if op == "bind" and p.get("button") not in ("a", "b", "x", "y", "lb", "rb"):
-        raise Refused("BUTTON", "按键不在0.18.3可绑定列表")
+        raise Refused("BUTTON", "按键不在已核对的可绑定列表")
     if (
         op in ("pair", "forget", "connect", "disconnect")
         and p.get("mac") is not None
@@ -964,6 +964,8 @@ async def action(request):
                 )  # Recheck after scheduling: a disconnected owner cannot leave queued writes.
                 if op in ("scan", "connect", "disconnect"):
                     result = await studio.helper_call(op, **params)
+                elif op == 'fetch' and studio.store.hello.get('daemon_version') == '0.23.0':
+                    result = await studio.helper_call('policy_fetch', params=params, confirm=True)
                 else:
                     methods = {
                         "enable": ("robot", "robot.enable"),

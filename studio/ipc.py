@@ -13,6 +13,7 @@ import sys
 import time
 
 from .core import JOINTS, Refused, compact_tof
+from calibration.common import daemon_profiles
 
 ROOT = Path(__file__).resolve().parents[1]
 SOCKETS = {
@@ -208,18 +209,14 @@ class Identity:
             "arm64",
         ):
             return False, False
-        known = json.loads((ROOT / "deploy/manual-upgrade/inputs.json").read_text())
-        native = hello.get("revision") == known["native_revision"]
-        official = hello.get("revision") == known["base_revision"]
-        if (
-            hello.get("api_version") != 47
-            or hello.get("daemon_version") != "0.18.3"
-            or model.get("joint_names") != JOINTS
-            or not (native or official)
-        ):
+        matched = daemon_profiles.match(hello)
+        if not matched or model.get('joint_names') != JOINTS:
+            self.info = {}
             return False, False
-        expected = known["native" if native else "official"]["robotd"]
-        if not self.executable("robotd.service", expected):
+        known, kind = matched
+        target = 'daemon-v' + known['version']
+        official = kind == 'official'
+        if not self.executable("robotd.service", known[kind]["robotd"]):
             return False, False
         if official:
             # An official daemon cannot apply custom calibration. Never approve a hidden pointer.
@@ -242,13 +239,13 @@ class Identity:
         module = sys.modules["studio_legacy_verify"]
         receipt = json.loads(Path("/run/robotd/calibration-effective.json").read_text())
         config = Path("/etc/robot/robotd.toml")
-        ok, _ = module.verify_native_receipt(receipt, config, "daemon-v0.18.3")
+        ok, _ = module.verify_native_receipt(receipt, config, target)
         active, _ = module.valid_active_file(receipt, demo=False)
-        params = module.cal.config_layers.load(config, "daemon-v0.18.3")
+        params = module.cal.config_layers.load(config, target)
         pointer = params.get("bus", {}).get("calibration_path")
         if not pointer:
             return True, False
-        saved = module.cal.parse_calibration(pointer, "daemon-v0.18.3")
+        saved = module.cal.parse_calibration(pointer, target)
         saved = {**saved, **module.cal.effective_gyro(saved)}
         good = (
             ok
@@ -262,8 +259,12 @@ class Identity:
     def camera(self):
         if not self.local:
             return self.helper_proof("camera_identity").get("verified") is True
-        known = json.loads((ROOT / "deploy/manual-upgrade/inputs.json").read_text())
-        if not self.executable("mediad.service", known["official"]["mediad"]):
+        candidates = [
+            p[kind]['mediad']
+            for p in daemon_profiles.profiles().values()
+            for kind in ('official', 'native') if 'mediad' in p[kind]
+        ]
+        if not any(self.executable('mediad.service', sha) for sha in candidates):
             return False
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
             client.settimeout(2)
@@ -282,7 +283,8 @@ class Identity:
             if pid != self.info["pid"] or uid != actual_uid:
                 return False
             client.sendall(
-                b'{"jsonrpc":"2.0","id":1,"method":"hello","params":{"api_version":47}}\n'
+                (json.dumps(dict(jsonrpc='2.0', id=1, method='hello',
+                                 params=dict(api_version=daemon_profiles.MAX_API))) + '\n').encode()
             )
             raw = bytearray()
             while not raw.endswith(b"\n"):
@@ -292,12 +294,14 @@ class Identity:
                 raw.extend(part)
             data = json.loads(raw)
             hello = data.get("result", {})
-            return (
-                data.get("id") == 1
-                and hello.get("api_version") == 47
-                and hello.get("daemon_version") == "0.18.3"
-                and hello.get("revision") == known["base_revision"]
-            )
+            matched = daemon_profiles.match(hello)
+            if data.get('id') != 1 or data.get('error') is not None or not matched:
+                return False
+            profile, kind = matched
+            expected = profile[kind].get('mediad')
+            return bool(expected and self.executable('mediad.service', expected)
+                        and self.info.get('pid') == pid)
+
 
 
 class Broker:
@@ -341,6 +345,7 @@ class Broker:
                 self.error(service, e)
                 if service == "robot":
                     self.store.identity_verified = False
+                    self.store.calibration_verified = False
                 await asyncio.sleep(2)
 
     async def poll(self):
@@ -349,7 +354,7 @@ class Broker:
         while True:
             start = time.monotonic()
             try:
-                hello = await self.ipc.rpc("robot", "hello", {"api_version": 47})
+                hello = await self.ipc.rpc("robot", "hello", {"api_version": daemon_profiles.MAX_API})
                 if hello != self.last_hello:
                     self.store.reset()
                     self.store.hello = hello
@@ -360,7 +365,7 @@ class Broker:
                 self.store.health = health
                 self.store.health_at = self.store.clock()
                 self.store.policies = await self.ipc.rpc("robot", "robot.policies")
-                if start - last_proof >= 5:
+                if not self.store.identity_verified or start - last_proof >= 5:
                     try:
                         verified, calibration = await asyncio.to_thread(
                             self.identity.robot, hello, self.store.model
@@ -388,6 +393,7 @@ class Broker:
                 raise
             except Exception as e:
                 self.store.identity_verified = False
+                self.store.calibration_verified = False
                 self.error("health", e)
             if start - last_pad >= 2:
                 try:

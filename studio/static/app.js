@@ -582,6 +582,7 @@ function renderData(p) {
       source: p.source,
       epoch: p.epoch,
       identity: p.identity,
+      native_activity: s.native_activity ?? null,
       ages: p.ages,
       calibration: "保存不等于生效；原校正页仍独立核验",
       model: model.asset ?? null,

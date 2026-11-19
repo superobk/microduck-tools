@@ -397,6 +397,36 @@ class Bluetooth:
                 bus.disconnect()
 
 
+async def fetch_policy(ipc, identity, handoff, request):
+    """API68 gates policy.fetch by UID: delegate this one operation, never arbitrary RPC."""
+    import re
+    from calibration.common import daemon_profiles
+    params = request.get('params')
+    if request.get('confirm') is not True or not isinstance(params, dict) or set(params) - {'repo','revision','file'}:
+        raise Refused('POLICY_FETCH_FIELDS', '模型下载需要明确确认和固定字段')
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}', str(params.get('repo',''))):
+        raise Refused('HUB_REPO', '需要明确org/name')
+    if 'revision' in params and not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_./-]{0,127}', str(params['revision'])):
+        raise Refused('HUB_REVISION', '模型revision非法')
+    if 'file' in params and not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\.onnx', str(params['file'])):
+        raise Refused('HUB_FILE', '只允许明确的ONNX文件名')
+    status = await handoff.status()
+    if not status.get('pending') or any(
+        p.get('ActiveState') not in ('inactive', 'failed') or str(p.get('MainPID')) != '0' or p.get('Job')
+        for p in status.get('units', {}).values()
+    ):
+        raise Refused('HANDOFF_REQUIRED', '需要已隔离的手柄服务和明确网页接管')
+    hello = await ipc.rpc('robot', 'hello', {'api_version': daemon_profiles.MAX_API})
+    matched = daemon_profiles.match(hello)
+    if not matched or matched[0]['version'] != '0.23.0':
+        raise Refused('IDENTITY_UNVERIFIED', '只为已审阅API68提供下载助手')
+    model = await ipc.rpc('robot', 'robot.model')
+    verified, calibration = await asyncio.to_thread(identity.robot, hello, model)
+    if not verified or not calibration:
+        raise Refused('IDENTITY_UNVERIFIED', '程序/校正身份未核验')
+    return await ipc.rpc('updater', 'policy.fetch', params, write=True, timeout=65)
+
+
 async def serve():
     if os.geteuid() != 0 or not hasattr(socket, "SO_PEERCRED"):
         raise RuntimeError("helper仅Linux root可启动")
@@ -421,9 +451,11 @@ async def serve():
             if len(raw) > 4096:
                 raise Refused("HELPER_SIZE", "请求过大")
             request = json.loads(raw)
-            if set(request) - {"op", "mac", "confirm"}:
+            if set(request) - {"op", "mac", "confirm", "params"}:
                 raise Refused("HELPER_FIELDS", "请求有额外字段")
             op = request.get("op")
+            if op != "policy_fetch" and "params" in request:
+                raise Refused("HELPER_FIELDS", "此操作不接受params")
             if op in ("take", "park", "return") and request.get("confirm") is not True:
                 raise Refused("HELPER_CONFIRM", "缺少明确交接确认")
             if op == "take":
@@ -435,7 +467,7 @@ async def serve():
             elif op == "status":
                 result = await handoff.status()
             elif op == "identity":
-                hello = await ipc.rpc("robot", "hello", {"api_version": 47})
+                hello = await ipc.rpc("robot", "hello", {"api_version": 68})
                 model = await ipc.rpc("robot", "robot.model")
                 verified, calibration = await asyncio.to_thread(
                     identity.robot, hello, model
@@ -446,6 +478,10 @@ async def serve():
                     hello=hello,
                     process=identity.info,
                 )
+            elif op == "policy_fetch":
+                if set(request) - {'op','confirm','params'}:
+                    raise Refused('HELPER_FIELDS', '模型下载请求有额外字段')
+                result = await fetch_policy(ipc, identity, handoff, request)
             elif op == "camera_identity":
                 result = dict(verified=await asyncio.to_thread(identity.camera))
             elif op in ("scan", "connect", "disconnect"):
@@ -497,7 +533,7 @@ async def call(op, **kwargs):
         )
         writer.write((json.dumps(dict(op=op, **kwargs)) + "\n").encode())
         await writer.drain()
-        raw = await asyncio.wait_for(reader.readline(), 30)
+        raw = await asyncio.wait_for(reader.readline(), 70 if op == "policy_fetch" else 30)
         if len(raw) > 8192:
             raise Refused("HELPER_REPLY", "helper回复过长")
         result = json.loads(raw)

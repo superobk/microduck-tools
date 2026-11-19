@@ -62,7 +62,7 @@ def build(runtime, assets, wheels, out, commit, python_version="3.11"):
         ROOT / "docs/studio-0.6.0-guide.zh-CN.md", bundle / "使用指南.zh-CN.md"
     )
     (bundle / "README.txt").write_text(
-        'Studio 0.6.0 offline add-on / BOARD NOT_RUN\nRead 使用指南.zh-CN.md before any target action.\nPreview: sudo ./studio.sh setup --server-ip ACTUAL_IPV4 --assets "$PWD/runtime-assets" --wheels "$PWD/wheels"\nThis package does not contain or upgrade robotd; retain the frozen 0.5.0 daemon upgrade bundle.\n'
+        'Studio 0.6.0 offline add-on / BOARD NOT_RUN\nRead 使用指南.zh-CN.md before any target action.\nPreview: sudo ./studio.sh setup --server-ip ACTUAL_IPV4 --assets "$PWD/runtime-assets" --wheels "$PWD/wheels"\nThis package does not upgrade robotd. API68 requires the matching 0.23.0 candidate; the frozen 0.18.3 manager remains limited to its original path.\n'
     )
     files = [
         dict(path=str(p.relative_to(bundle)), sha256=sha(p), bytes=p.stat().st_size)
@@ -74,6 +74,7 @@ def build(runtime, assets, wheels, out, commit, python_version="3.11"):
         version="0.6.0",
         source_commit=commit,
         daemon_bundled=False,
+        reviewed_daemons=[dict(version="0.18.3",api=47),dict(version="0.23.0",api=68)],
         hardware_acceptance="NOT_RUN",
         model_sha=manifest["model_sha"],
         wheel_target="CPython" + python_version + " Linux ARM64",

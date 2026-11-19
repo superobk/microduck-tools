@@ -69,6 +69,20 @@ def quaternion(v):
     return [x / norm for x in v] if 0.5 < norm < 1.5 else None
 
 
+def native_activity(s):
+    # API68 omits autonomous=false and absent modes. Malformed present fields stay unknown.
+    autonomous = s.get('autonomous', False)
+    laser = s.get('laser')
+    soccer = s.get('soccer')
+    return dict(
+        autonomous=autonomous if type(autonomous) is bool else None,
+        laser=False if laser is None else True if isinstance(laser, dict) else None,
+        soccer_autonomous=False if soccer is None else (
+            soccer.get('autonomous') if isinstance(soccer, dict) and type(soccer.get('autonomous')) is bool else None),
+        soccer_phase=str(soccer.get('phase', ''))[:100] if isinstance(soccer, dict) else None,
+    )
+
+
 def compact_state(s):
     if not isinstance(s, dict):
         raise Refused("STATE_FORMAT", "状态不是对象")
@@ -91,6 +105,7 @@ def compact_state(s):
         targets=vector(s.get("targets"), 15),
         velocities=vector(s.get("velocities"), 15),
         currents_ma=vector(s.get("currents_ma"), 15),
+        native_activity=native_activity(s),
         head=vector(s.get("head"), 4),
         policy=str(s.get("policy", "unknown"))[:100],
         safety={
@@ -217,7 +232,7 @@ class Store:
     def ready(self, movement=False):
         if not self.identity_verified:
             raise Refused(
-                "IDENTITY_UNVERIFIED", "实际程序、版本或API47身份未核验，真实控制禁用"
+                "IDENTITY_UNVERIFIED", "实际程序、版本或已审阅API身份未核验，真实控制禁用"
             )
         if not self.calibration_verified:
             raise Refused("CALIBRATION_UNVERIFIED", "实际校正/官方配置声明尚未核验")
@@ -249,6 +264,9 @@ class Store:
                 "POLICY_DISABLED",
                 "启动配置未加载policy（可能有--no-policy）；不能网页解除",
             )
+        if any(self.state['native_activity'][k] is not False
+               for k in ('autonomous', 'laser', 'soccer_autonomous')):
+            raise Refused('NATIVE_ACTIVITY', '原生自主/激光/足球控制已启用或状态未知；请先在原生入口明确关闭后再接管')
         if movement:
             if self.policies.get("homed") is not True:
                 raise Refused("NOT_HOMED", "尚未报告完成归位")

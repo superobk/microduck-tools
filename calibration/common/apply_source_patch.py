@@ -10,8 +10,9 @@ import re
 import subprocess
 from pathlib import Path
 
-SUPPORTED = {'daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9', 'daemon-v0.18.3'}
+SUPPORTED = {'daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9', 'daemon-v0.18.3', 'daemon-v0.23.0'}
 EXPECTED_TAG_COMMITS = {
+    'daemon-v0.23.0': '56424efe58b7de40efcf3b2d3a5cd169ee83a182',
     'daemon-v0.16.3': '0b2b82f56ac1e32d69018837ac1cd7d4c687f5a0',
     'daemon-v0.17.8': '942e58e3aa6dbb28e7037203fff11866122c7567',
     'daemon-v0.17.9': '96b89d8613f06722c1d64ce75ab0d7124fed9d8f',
@@ -562,6 +563,23 @@ def run(repo: Path, tag: str, dry_run: bool) -> None:
         raise ValueError(f'{tag} does not point to verified upstream SHA {EXPECTED_TAG_COMMITS[tag]}')
     if head != head_tag:
         raise ValueError(f'HEAD {head[:12]} is not official {tag} at {head_tag[:12]}')
+    if tag == 'daemon-v0.23.0':
+        import hashlib
+        import json
+        directory = Path(__file__).resolve().parents[1] / tag
+        patch = directory / 'native-calibration-v3.patch'
+        known = json.loads((directory / 'native-build.json').read_text())
+        if hashlib.sha256(patch.read_bytes()).hexdigest() != known['patch_sha256']:
+            raise ValueError('published API68 patch hash differs')
+        if subprocess.check_output(['git','status','--porcelain'],cwd=repo,text=True).strip():
+            raise ValueError('API68 source tree must be clean before applying the pinned patch')
+        subprocess.run(['git','apply','--check',str(patch)],cwd=repo,check=True)
+        if not dry_run:
+            subprocess.run(['git','apply',str(patch)],cwd=repo,check=True)
+            # Include new fixtures in the review diff without staging their contents.
+            subprocess.run(['git','add','--intent-to-add','--','robotd-params/tests/calibration_migration.rs','robotd-params/tests/fixtures/board3-0.23.0.toml'],cwd=repo,check=True)
+        print('API68 published patch ' + ('checked only' if dry_run else 'applied') + '; no deployment')
+        return
     paths = [PARAMS, REGISTRY, BUS, IMU, MAIN] + ([EDITOR] if tag in ('daemon-v0.17.9', 'daemon-v0.18.3') else [])
     dirty = subprocess.run(['git', 'status', '--porcelain', '--', *paths], cwd=repo,
                            check=True, capture_output=True, text=True).stdout.strip()

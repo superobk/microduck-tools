@@ -19,14 +19,20 @@ def run(args):
     head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=source,text=True).strip()
     if head!=expected:raise ValueError('source HEAD is not the pinned official target')
     allowed={patcher.PARAMS,patcher.REGISTRY,patcher.BUS,patcher.IMU,patcher.MAIN}
-    if args.target in ('daemon-v0.17.9','daemon-v0.18.3'):allowed.add(patcher.EDITOR)
+    if args.target in ('daemon-v0.17.9','daemon-v0.18.3','daemon-v0.23.0'):allowed.add(patcher.EDITOR)
+    if args.target=='daemon-v0.23.0':
+        allowed.update({'robotd-params/tests/calibration_migration.rs','robotd-params/tests/fixtures/board3-0.23.0.toml'})
     changed=set(subprocess.check_output(['git','diff','HEAD','--name-only'],cwd=source,text=True).splitlines())
     if not changed or changed-allowed:raise ValueError('expected only the reviewed native calibration patch')
     diff=subprocess.check_output(['git','diff','HEAD','--binary'],cwd=source)
-    if args.target in ('daemon-v0.17.9','daemon-v0.18.3') and args.stage in ('host-test','cross-build'):
+    if args.target in ('daemon-v0.17.9','daemon-v0.18.3','daemon-v0.23.0') and args.stage in ('host-test','cross-build'):
         reviewed=Path(__file__).resolve().parents[1]/'calibration'/args.target/'native-calibration-v3.patch'
         if diff!=reviewed.read_bytes():raise ValueError('native diff differs from the published reviewed patch; use the pinned formatter or review/register a new build')
     digest=hashlib.sha256(diff).hexdigest();revision=expected[:8]+'-calv3-'+digest[:12]
+    if args.target=='daemon-v0.23.0':
+        known=json.loads((Path(__file__).resolve().parents[1]/'calibration'/args.target/'native-build.json').read_text())
+        if digest!=known['patch_sha256']:raise ValueError('API68 build requires the exact published patch')
+        revision=known['build_revision']
     env=os.environ.copy();env['DUCK_REVISION']=revision;env['CARGO_TARGET_DIR']=str(out/'target')
     if args.runtime_root:
         runtime=args.runtime_root.resolve()
@@ -45,6 +51,8 @@ def run(args):
         'cross-build':['cargo','zigbuild','--locked','--offline','--release','--target',args.board_target,'-p','robotd','-p','robotctl'],
         'fetch':['cargo','fetch','--locked'],
     }
+    if args.target=='daemon-v0.23.0':
+        commands['cross-build']=['cargo','zigbuild','--locked','--offline','--release','--target',args.board_target,'--workspace']
     command=commands[args.stage];record=dict(stage=args.stage,argv=command,source=str(source),target=args.target,
         base_revision=head,patch_sha256=digest,build_revision=revision,started_at=datetime.now(timezone.utc).isoformat(),hardware_access=False)
     log=out/(args.stage+'.log')

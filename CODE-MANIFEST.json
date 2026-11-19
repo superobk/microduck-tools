@@ -1,10 +1,10 @@
 {
-  "date_local": "2026-11-03",
+  "date_local": "2026-11-19",
   "tool_version": "0.6.0",
-  "stage": "pr8-merged-board1-lan-http-applied",
-  "upstream_base": "b2b0d213a402caeac492dd662ea891faa17f67c0",
-  "git_base": "b125823d3a891330732dfa870582cdae0300eaf4",
-  "scope": "DefaultLAN HTTP8790, installed-release pair helper, managed frozen-runtime network migration/rollback; board off, no deployment or hardware actions this round.",
+  "stage": "offline-api68-ready-board-not-run",
+  "upstream_base": "56424efe58b7de40efcf3b2d3a5cd169ee83a182",
+  "git_base": "167ef86eba85c7658c22fe79976d94a23f73dfe8",
+  "scope": "Tools Web/Studio explicit API68 profile; horizontal IMU /16.4 and legacy functions retained. Offline tests only; no board access.",
   "files": [
     {
       "path": ".gitattributes",
@@ -12,7 +12,7 @@
     },
     {
       "path": ".github/workflows/python-runtime.yml",
-      "sha256": "5d1ee2ff1009a2d1bf8ce479ff67aac216fc91d30091cc91f49419614dc6bd09"
+      "sha256": "26c5fd58d88ea275d5fa076d6c384f3d7a70a7e2993b5b542bf1b48fd7fe6ce6"
     },
     {
       "path": ".github/workflows/servo-workbench.yml",
@@ -24,7 +24,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "1db9b11cad7d56d25e4d88506eb215177ff66ad0547f60660953f633a0a0bf43"
+      "sha256": "bc982dc068d3b4a2ebae96cea156c3623954cf3d065ae77b3f50ab8bd5ae406b"
     },
     {
       "path": "VERSION",
@@ -32,15 +32,19 @@
     },
     {
       "path": "calibration/common/apply_source_patch.py",
-      "sha256": "a8603a51f978d786d4aa6742b8a854792f738da546be0980d7f1311ae07fe8d0"
+      "sha256": "7471f046eba9742de1dac5befd7124c2628c5f67baea2a76f2951de3d37ea264"
     },
     {
       "path": "calibration/common/config_layers.py",
-      "sha256": "238234faed7b2b6f595200047134308b51ef5cfd29334520924371a79728b718"
+      "sha256": "18debfc3dbbb0065051fdeee90650536e8fc6b6c1545a7074e560461a9913022"
+    },
+    {
+      "path": "calibration/common/daemon_profiles.py",
+      "sha256": "643f6031940b5473eb74bd269197d60b444eaa8f3a5f40044de837591915905f"
     },
     {
       "path": "calibration/common/duck_calibrate.py",
-      "sha256": "37e33ecda8ec185ba1273613bfc3dd491802176d12a8adb0194634475ab3991b"
+      "sha256": "9da698e404da7cdfd48bf6853f81bc2d14f2aeaa196ac1f92bded33da31dd6f0"
     },
     {
       "path": "calibration/daemon-v0.16.3/apply_source_patch.py",
@@ -105,6 +109,22 @@
     {
       "path": "calibration/daemon-v0.18.3/raw16.4.example.toml",
       "sha256": "83810d405074e7bc81a29bbcdb5ccfc90321ec8b1ec7867e03d7bbc2ddb436ee"
+    },
+    {
+      "path": "calibration/daemon-v0.23.0/apply_source_patch.py",
+      "sha256": "2786320894f0c2dd029d7c99067acbc179bf1cc56810855b8f10f1a1bcbffe51"
+    },
+    {
+      "path": "calibration/daemon-v0.23.0/native-build.json",
+      "sha256": "176e17c15bb2b1abac2ded57cfaa519f82389da4311f1932caff1ed78f4842d2"
+    },
+    {
+      "path": "calibration/daemon-v0.23.0/native-calibration-v3.patch",
+      "sha256": "e2853f4453b9a0603442959ec12f94ff420d1e53bdb2bf9b29ec1c4968a01d1b"
+    },
+    {
+      "path": "calibration/daemon-v0.23.0/raw16.4.example.toml",
+      "sha256": "2cd2f7f2740a20b72d84af9804288a37189b594d45e0c925e72aa003c9c1c02f"
     },
     {
       "path": "calibration/examples/demo-0.16.3.toml",
@@ -296,7 +316,7 @@
     },
     {
       "path": "calibration/integration-0.16.3/web/calibration_web.py",
-      "sha256": "d732c687b96dd542862382672972418e8128b8cd28ec45e3d978bd9b90b6fdf8"
+      "sha256": "35df5cf0ef4fec0272d21ece5b8a6cef2368a1932e2adb0aa81d9b5bfdc33bea"
     },
     {
       "path": "calibration/integration-0.16.3/web/camera_config.py",
@@ -308,15 +328,15 @@
     },
     {
       "path": "calibration/integration-0.16.3/web/daemon_adapter.py",
-      "sha256": "b6f52e9af9e002fe968de05f0dbdb48403bf5806ae97ed2daa5578f9c0fa2d2d"
+      "sha256": "613f5c17eee4127880b7c23996e209260cb4dd6d9fd347162348cbdf03a9af84"
     },
     {
       "path": "calibration/integration-0.16.3/web/index.html",
-      "sha256": "67ec8cd45e9970bf6acac28b2208557ea4ce57aa061bb027994bf5f285fa79ce"
+      "sha256": "d612bbcc000cd6c723c836ecc61962dbc544ed7180b317aa024cf677f2f8f79a"
     },
     {
       "path": "calibration/integration-0.16.3/web/native_camera.py",
-      "sha256": "7a6208764a8f53eab0b2269f933df2cc896964e26d6b057e01fd143783c1885e"
+      "sha256": "dd9b10185cddf629e9088c0dbd284535fc5cb1104bd09cb3808f2e1d08106cec"
     },
     {
       "path": "calibration/integration-0.16.3/web/servo-health.js",
@@ -363,8 +383,12 @@
       "sha256": "c0b207442d789da330400a11065df29718e76755f1b1e895aaacb33c0d2cec02"
     },
     {
+      "path": "calibration/tests/test_native_0230.py",
+      "sha256": "2fb41bb22f2968c8f9720cb1bd16fb22e011890e4912579b8a3cdc93dac899c8"
+    },
+    {
       "path": "calibration/tests/test_runtime_release.py",
-      "sha256": "cbb3982fb59e5fe3184b7b96d7360c1d50b9e6869ffcc488c715e6aafab63383"
+      "sha256": "86bb82784b679bd98d34084679585a084ab7cf01354eb5e4f20a0c9382478ce4"
     },
     {
       "path": "calibration/tests/test_servo_health.py",
@@ -536,7 +560,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "29806729ad2462c721f35c3a6c1ef5f0171fe8c4651d67853ef8723488b0fdc9"
+      "sha256": "648a2b774702f857ae0b3d77fbeefa405ffe0ff2240b5b7e2670b1975ad2500b"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -612,7 +636,7 @@
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
-      "sha256": "6b6f23fa324e107f349a3ee97b28c5711b39a1440db40aa2821c2e94379cb6b2"
+      "sha256": "7c9ce54609874a4f103885543969dd26fb12c535a0d1fa5e27bb108016ae0b80"
     },
     {
       "path": "docs/studio-0.6.0-plan.zh-CN.md",
@@ -620,7 +644,7 @@
     },
     {
       "path": "docs/studio-0.6.0-validation.zh-CN.md",
-      "sha256": "65e71b52076a177263ba95b3205beb02a3fc6ea0362356bda9ad1fc73383827d"
+      "sha256": "b17369aecc4eb36b58238128d28fcde58b4ae6ac1930edaa4606cc4f5eee4c1e"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -760,19 +784,19 @@
     },
     {
       "path": "studio/core.py",
-      "sha256": "2b2d6ddf37428d9a54125fc2464b7bc90449e589c7858eb6ece0468f25e22880"
+      "sha256": "358b54bd0a9d505a5697de3ad91424c1d8138cec6d90075e4f7b5e395b34d703"
     },
     {
       "path": "studio/diagnostics.py",
-      "sha256": "ac653df7b76718774e672f9c599b25ce4e3aec4db927885d54d8dde2c0e5fa5c"
+      "sha256": "c9dd3b684429483fa5478aa5e3b9b250669b182427844f5ccab0b402b3b91b8c"
     },
     {
       "path": "studio/helper.py",
-      "sha256": "59b57e9d004bb0eb0b260ee303b0dd5342a69ff6a8c49dabdf3a52bc2cc63b67"
+      "sha256": "b20589a5e7b8006c01862804cc2422c37631df12e134f4ceb53f08237fbdd562"
     },
     {
       "path": "studio/ipc.py",
-      "sha256": "c43f3cc5c516105396be0d1f5cc75b0d06b070714574b49df8feedf7943775ee"
+      "sha256": "b27d035d0eaf3cd7c12437598ffa14d97c8c28543eeb90d5fa28eed15ad91321"
     },
     {
       "path": "studio/licenses/onnxruntime-MIT.txt",
@@ -816,11 +840,11 @@
     },
     {
       "path": "studio/server.py",
-      "sha256": "bd2d3120f0685c3b943d0006cba567f10d2ba617026cfe30fe41bb944efa9037"
+      "sha256": "2832d8969aafe0f49b78b8d4fa328664145687bfd61fc333ddfc761fe9979d61"
     },
     {
       "path": "studio/static/app.js",
-      "sha256": "1ae329bfafeff7b59c033c2a2ee88842b4f753666b102b185460abc4f78f7ecd"
+      "sha256": "0f7e6805ef13a47a0a8ade0968a7cd993bc153c9c712aa8889b324fe4d3a14b2"
     },
     {
       "path": "studio/static/calibration-mobile.css",
@@ -879,6 +903,10 @@
       "sha256": "efec18bc8ec3b80012432695f5d8d74891acae76dcc5086e9d96472e759c46b8"
     },
     {
+      "path": "studio/tests/test_api68.py",
+      "sha256": "d4cc8e9296dfc5282576a7bc334e775f6d2a11b1105d56a1279158c7cdd11912"
+    },
+    {
       "path": "studio/tests/test_network.py",
       "sha256": "acea11b30ee9c1c34d57dc7de3be66da0fda3af2a692194f58e499b54d212ada"
     },
@@ -900,7 +928,7 @@
     },
     {
       "path": "tools/build-release.py",
-      "sha256": "1627242acdf5e01cfb74dcb5908eed4b5dff4b19521b3c8e972463c0e9ee9c41"
+      "sha256": "914c8928ac4ee3e2116eb40192673de594e7706a5b80f9ed5a3fa434b62dcbd6"
     },
     {
       "path": "tools/build-studio-assets.py",
@@ -908,7 +936,7 @@
     },
     {
       "path": "tools/build-studio-bundle.py",
-      "sha256": "56fc870970e7fa3dd96909f7429f76928d1c50b433c596618407cc8d41d07545"
+      "sha256": "d29abffd7153a0524ee1bc91afd6c4650f941251078599d9105a0c76a7569536"
     },
     {
       "path": "tools/build-workbench.py",
@@ -916,7 +944,7 @@
     },
     {
       "path": "tools/check-native.py",
-      "sha256": "187c122d88cbab348c9e464842ac2f1a3fe4f57fd8cea7a6ddba1d00726a1546"
+      "sha256": "a23c78ae68e775bfe66921c8f3b54836a9bf175d64297cd12a32a8e52eb43f9e"
     },
     {
       "path": "tools/duck-manager.py",
@@ -961,5 +989,13 @@
   ],
   "runtime_payload_commit": "36de9bb39c9e3c84c57908efe74f2311585a04d7",
   "workbench_component_version": "0.1.2",
-  "main_merge_commit": "c418c8bdfea7eb958c342a09b8d5ad796bd4964c"
+  "main_merge_commit": "c418c8bdfea7eb958c342a09b8d5ad796bd4964c",
+  "hardware_acceptance": false,
+  "python_tests": {
+    "py313": 482,
+    "py311": 482,
+    "failures": 0,
+    "skipped": 0
+  },
+  "node_tests": 11
 }

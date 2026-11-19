@@ -86,3 +86,15 @@ GitHub实查PR #8 merged=true、state=closed，合并时间2026-11-03 22:16:29�
 实际0.0.0.0:8790，http://192.168.1.56:8790/studio/可从Mac直连；Tools127.0.0.1:8765仅经Studio代理使用，mediad8443保留、8766无监听。PID分别2729/2733/2731，Journal files_verified=true、problems=[]；普通服务账号/原slice限额保留，未设开机自启。页面200、未登录401、错误Host/Origin403、码助手/正确配对200、重复码409、缺CSRF403、WS和LIVE15关节新鲜208ms通过。最初缓存帧龄/身份尚未刷新不作最终判定；等待活动订阅后身份verified=true、健康218ms。登录值仅内存，API测试不冒充本人浏览器配对；请本人另生成新码登录。
 
 robotd1007、mediad1232、tofd727前后不变；原生程序/unit/robot配置SHA与校正回执不变，137份冻结运行文件通过。控制/Camera仍false，calibration_verified=false不冒充实物校正；当前ToF仍未收帧，本轮不修复、不重启tofd。不启动工作台、不写舵机或运动；实际网络回退、手机设备及正式资源验收NOT_RUN。实际证据logs/tools-pr8-merged-20261103T150634Z，应用e334b562335845eb、启动a6b7bfdecc2a4911、最后反馈5c37275e74cc4e82、原生保护189cc95b6be04baf。
+
+## 2026-11-19：Tools Web / Studio 0.23.0 API68 离线兼容构建
+
+用户授权离线适配、保留横装+/16.4、测试、更新原指南/交付及提交推送；本轮没有SSH、部署、服务控制、舵机写入或运动。原板端最近实测仍为0.18.3+calv3/API47。
+
+分支 feat/tools-api68-0230 基于main 167ef86eba85c7658c22fe79976d94a23f73dfe8，在独立checkout实施，原repo三项未提交文件保留。新增精确profile、运行回执/进程哈希、用户层路径、API68只读分析、mediad官方/定制身份和旋转语义、原生模式冲突隔离及受限policy.fetch权限适配。原校正、健康/EEPROM、policy/手柄、演练、HTTP/CSRF和冻结管理器保留。
+
+新交付 deliverables/microduck-tools-api68-0.23.0-20261119；旧daemon离线包与回退材料保持。Tools/Studio组件仍0.6.0，以源码提交区分构建；daemon为0.23.0/API68。CPython3.13 ARM64 wheels及原3D资产复用并核验，不向板端发Mac wheel。
+
+Python3.13及3.11各482项全部通过、无跳过；Node11通过；干净源码8文件补丁复现与已编译源码一致；双尺寸浏览器演练通过。证据 logs/tools-api68-20261119T150610Z，审计20261119T150610Z-8b8ada60a3f2。原第二/第三板指南、Studio指南/验收文档原地更新。最终源码/归档SHA和PR见本节交付收尾。
+
+横装 [0,0,0,1]、raw/16.4及15关节值保留。板端更新、运行库、真实Web反馈/权限、相机/控制、版本回退/断电恢复和资源实测仍NOT_RUN。旧0.18.3冻结升级器不因此获得0.23.0升级能力；不设开机自启、不启动工作台。
