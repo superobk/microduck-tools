@@ -109,7 +109,7 @@ class Controller:
         if method=="report-get":
             ident=b.get("id","")
             if len(ident)!=64 or any(c not in "0123456789abcdef" for c in ident):raise Refused("REPORT","报告ID错误")
-            return json.loads((self.report_dir/(ident+".json")).read_text())
+            return json.loads((self.report_dir/(ident+".json")).read_text(encoding="utf-8"))
         if method=="session-create":
             if self.engine and self.engine.writer and self.engine.writer!=owner and self.engine.clock()<self.engine.writer_until:
                 raise Refused("VIEW_ONLY","另一操作端正在使用")
@@ -202,7 +202,7 @@ class Controller:
         ident=digest(result)
         path=self.report_dir/(ident+".json")
         if not path.exists():
-            with open(path.with_suffix(".tmp"),"w") as f:
+            with open(path.with_suffix(".tmp"),"w",encoding="utf-8") as f:
                 json.dump(result,f,ensure_ascii=False,allow_nan=False);f.flush();os.fsync(f.fileno())
             os.replace(path.with_suffix(".tmp"),path)
         return dict(id=ident,historical=True,identity="imported_claim_not_verified")

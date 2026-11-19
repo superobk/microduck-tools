@@ -560,7 +560,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "97e4831feb15aaeee873f6d8279e9021073672d0ee23bfddaa41e612c23b6c0b"
+      "sha256": "febd6a316e8c7c51bb41e010cf4e6889966b1c06378e7a3aa40b8961d1aea073"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -636,7 +636,7 @@
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
-      "sha256": "7c9ce54609874a4f103885543969dd26fb12c535a0d1fa5e27bb108016ae0b80"
+      "sha256": "4d7cb89b4423c6a429058d778119dbb4984800b2fe170fab22056572b3ae6657"
     },
     {
       "path": "docs/studio-0.6.0-plan.zh-CN.md",
@@ -644,7 +644,7 @@
     },
     {
       "path": "docs/studio-0.6.0-validation.zh-CN.md",
-      "sha256": "b17369aecc4eb36b58238128d28fcde58b4ae6ac1930edaa4606cc4f5eee4c1e"
+      "sha256": "baefeb788eba3cb665624ca7a81a80eda295e845566544777daab1a3b19ddb96"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -720,7 +720,7 @@
     },
     {
       "path": "servo_workbench/service.py",
-      "sha256": "8eefd93908244e562cd53a19a940c8309c618e36dbd3d97f257a2a633e0d7ccf"
+      "sha256": "d2f6c58f8ab71e98a54d7efb885f9bcb5d3ad27107c7f35ac2b923334b45b0e9"
     },
     {
       "path": "servo_workbench/simulation.py",
@@ -748,7 +748,7 @@
     },
     {
       "path": "servo_workbench/tests/test_api.py",
-      "sha256": "d42185c8f9da8e864e469b6c8dc88b050929de997089e838b94e415822071688"
+      "sha256": "d9a6e8a422d1404995ec7e7bf3dac697edd8d6b5ab71dd9ccb90b18e147a732b"
     },
     {
       "path": "servo_workbench/tests/test_image_preset.py",
@@ -992,8 +992,8 @@
   "main_merge_commit": "c418c8bdfea7eb958c342a09b8d5ad796bd4964c",
   "hardware_acceptance": false,
   "python_tests": {
-    "py313": 482,
-    "py311": 482,
+    "py313": 483,
+    "py311": 483,
     "failures": 0,
     "skipped": 0
   },

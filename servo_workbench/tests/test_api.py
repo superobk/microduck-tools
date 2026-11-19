@@ -10,6 +10,7 @@ import time
 import unittest
 import urllib.error
 import urllib.request
+from unittest.mock import patch
 from servo_workbench.service import Controller
 from servo_workbench.server import Server, PREFIX
 from servo_workbench.store import Store
@@ -51,8 +52,12 @@ class HTTPTests(unittest.TestCase):
         request = urllib.request.Request(self.origin + PREFIX + name,
                                          data=None if body is None else json.dumps(body).encode(),
                                          headers=headers)
-        with (opener or self.opener).open(request, timeout=3) as response:
-            return json.load(response)
+        try:
+            with (opener or self.opener).open(request, timeout=3) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as error:
+            error.add_note('Workbench response: ' + error.read().decode('utf-8', errors='replace')[:1500])
+            raise
 
     def create(self):
         return self.call('session-create', dict(kind='hd1910', layout='xgo'))
@@ -129,6 +134,28 @@ class HTTPTests(unittest.TestCase):
         self.assertFalse(loaded['live'])
         with self.assertRaises(urllib.error.HTTPError):
             self.call('report-get?id=../../anything')
+
+    def test_report_roundtrip_on_non_utf8_windows_locale(self):
+        import builtins
+        self.create()
+        report = self.call('report')
+        report['session']['operator_note'] = '横装校正完成 · 小鸭🦆'
+        original_open = builtins.open
+        original_read = Path.read_text
+        def locale_open(path, mode='r', *args, **kwargs):
+            if Path(path).parent == self.controller.report_dir and 'b' not in mode:
+                kwargs.setdefault('encoding', 'cp1252')
+            return original_open(path, mode, *args, **kwargs)
+        def locale_read(path, *args, **kwargs):
+            if path.parent == self.controller.report_dir:
+                kwargs.setdefault('encoding', 'cp1252')
+            return original_read(path, *args, **kwargs)
+        with patch('servo_workbench.service.open', side_effect=locale_open, create=True), patch.object(Path, 'read_text', locale_read):
+            result = self.call('report-import', dict(report=report))
+            loaded = self.call('report-get?id=' + result['id'])
+        self.assertEqual(loaded['session']['operator_note'], report['session']['operator_note'])
+        self.assertFalse(loaded['live'])
+        self.assertFalse(loaded['hardware_acceptance'])
 
     def test_arbitrary_native_method_not_exposed(self):
         with self.assertRaises(urllib.error.HTTPError) as error:

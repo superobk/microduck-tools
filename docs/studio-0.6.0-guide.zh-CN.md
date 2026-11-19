@@ -48,7 +48,7 @@ python3 calibration/common/duck_calibrate.py check \
 
 ### 下次上板怎样安装和验证（全部NOT_RUN）
 
-新交付：/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-api68-0.23.0-20261119，归档及源码提交以MANIFEST为准。daemon/v10/运行库仍取原0.23.0离线候选包，其字节未改。
+新交付：/Users/bou/Workspace/Duckduck/deliverables/microduck-tools-api68-0.23.0-20261119-r2，归档及源码提交以MANIFEST为准。daemon/v10/运行库仍取原0.23.0离线候选包，其字节未改。
 
 1. 按原第二/第三板指南核实现场和身份，重新备份当时程序、配置、policy、Tools/Studio安装登记，隔离手柄。旧0.18.3冻结升级器只管理原路径，不能拿它安装0.23.0。
 2. 基础Tools解到独立新runtime目录，保存原 /opt/microduck-tools/current 链接再明确切换。原unit的 --target auto 保留，127.0.0.1:8765供Studio代理，不扩大基础校正入口。

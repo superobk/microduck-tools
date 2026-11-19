@@ -95,7 +95,7 @@ robotd1007、mediad1232、tofd727前后不变；原生程序/unit/robot配置SHA
 
 新交付 deliverables/microduck-tools-api68-0.23.0-20261119；旧daemon离线包与回退材料保持。Tools/Studio组件仍0.6.0，以源码提交区分构建；daemon为0.23.0/API68。CPython3.13 ARM64 wheels及原3D资产复用并核验，不向板端发Mac wheel。
 
-Python3.13及3.11各482项全部通过、无跳过；Node11通过；干净源码8文件补丁复现与已编译源码一致；双尺寸浏览器演练通过。证据 logs/tools-api68-20261119T150610Z，审计20261119T150610Z-8b8ada60a3f2。原第二/第三板指南、Studio指南/验收文档原地更新。最终源码/归档SHA和PR见本节交付收尾。
+Python3.13及3.11各483项全部通过、无跳过；Node11通过；干净源码8文件补丁复现与已编译源码一致；双尺寸浏览器演练通过。证据 logs/tools-api68-20261119T150610Z，审计20261119T150610Z-8b8ada60a3f2。原第二/第三板指南、Studio指南/验收文档原地更新。最终源码/归档SHA和PR见本节交付收尾。
 
 横装 [0,0,0,1]、raw/16.4及15关节值保留。板端更新、运行库、真实Web反馈/权限、相机/控制、版本回退/断电恢复和资源实测仍NOT_RUN。旧0.18.3冻结升级器不因此获得0.23.0升级能力；不设开机自启、不启动工作台。
 
@@ -107,4 +107,6 @@ Python3.13及3.11各482项全部通过、无跳过；Node11通过；干净源码
 | microduck-tools-api68-source.tar.gz | 4f7846d6b173840984f47694ab218c5a7569c167a97c646d9f5743ce8a6a0546 |
 | studio-python313/microduck-studio-0.6.0-portable.tar.gz | 4f8bd694603e79ba7e68f07a2832e2c966f25248a401d81e73439c6e9c47abbe |
 
-新Tools交付的MANIFEST.json及SHA256SUMS已完整复核；147文件运行包解包导入API68模块通过。原daemon归档SHA保持14f4b68d903e3e1b72c78fa106356a038087775f4936c6dccb124705e5cb3475。两个Python版本各482测试无跳过；GitHub首批Python3.11/3.13和Mac/Windows/Linux工作台CI已通过，后续仅登记提交的同组检查另见PR。没有执行板端操作。
+新Tools交付的MANIFEST.json及SHA256SUMS已完整复核；147文件运行包解包导入API68模块通过。原daemon归档SHA保持14f4b68d903e3e1b72c78fa106356a038087775f4936c6dccb124705e5cb3475。两个Python版本各483测试无跳过；GitHub首批Python3.11/3.13和Mac/Windows/Linux工作台CI已通过，后续仅登记提交的同组检查另见PR。没有执行板端操作。
+
+最终候选r2：远端一轮Windows历史报告导入503已补充非UTF8编码回归并修复为明确UTF8读写；新增测试含中文/emoji，修复前失败、修复后通过。工作台各116通过，沿用未改动套件calibration243/Studio87/installer37，共每个Python版本483项无跳过；Node11通过。原失败CI未输出响应正文，精确原错误保留缺口，测试现已增强错误正文。后续交付采用deliverables/microduck-tools-api68-0.23.0-20261119-r2，前版保持不变，仅为历史候选。
