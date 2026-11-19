@@ -98,3 +98,13 @@ robotd1007、mediad1232、tofd727前后不变；原生程序/unit/robot配置SHA
 Python3.13及3.11各482项全部通过、无跳过；Node11通过；干净源码8文件补丁复现与已编译源码一致；双尺寸浏览器演练通过。证据 logs/tools-api68-20261119T150610Z，审计20261119T150610Z-8b8ada60a3f2。原第二/第三板指南、Studio指南/验收文档原地更新。最终源码/归档SHA和PR见本节交付收尾。
 
 横装 [0,0,0,1]、raw/16.4及15关节值保留。板端更新、运行库、真实Web反馈/权限、相机/控制、版本回退/断电恢复和资源实测仍NOT_RUN。旧0.18.3冻结升级器不因此获得0.23.0升级能力；不设开机自启、不启动工作台。
+
+交付收尾：已推送源码 0071a591d782064a71ec52acd26244c08a0db8d2，审阅 [PR #9](https://github.com/superobk/microduck-tools/pull/9)，未合并。运行包/Studio便携包与源码快照固定于该源码提交；本段后续仅登记交付，不改变冻结载荷。
+
+| 归档 | SHA256 |
+| --- | --- |
+| microduck-tools-0.6.0-api68-runtime.tar.gz | b600ffe136f1bbda6ee0b0ea498167147cdda247993a1579e4d9240c89b88b22 |
+| microduck-tools-api68-source.tar.gz | 4f7846d6b173840984f47694ab218c5a7569c167a97c646d9f5743ce8a6a0546 |
+| studio-python313/microduck-studio-0.6.0-portable.tar.gz | 4f8bd694603e79ba7e68f07a2832e2c966f25248a401d81e73439c6e9c47abbe |
+
+新Tools交付的MANIFEST.json及SHA256SUMS已完整复核；147文件运行包解包导入API68模块通过。原daemon归档SHA保持14f4b68d903e3e1b72c78fa106356a038087775f4936c6dccb124705e5cb3475。两个Python版本各482测试无跳过；GitHub首批Python3.11/3.13和Mac/Windows/Linux工作台CI已通过，后续仅登记提交的同组检查另见PR。没有执行板端操作。
