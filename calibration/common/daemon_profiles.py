@@ -2,6 +2,7 @@
 from functools import lru_cache
 import hashlib
 import json
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -32,7 +33,16 @@ def match(hello):
 @lru_cache(maxsize=8)
 def _digest(path, pid, dev, ino, size, mtime_ns, ctime_ns):
     with Path(path).open('rb') as f:
-        return hashlib.file_digest(f, 'sha256').hexdigest()
+        expected = (dev, ino, size, mtime_ns, ctime_ns)
+        def current():
+            st = os.fstat(f.fileno())
+            return st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns
+        if current() != expected:
+            raise ValueError('process executable changed before hashing')
+        result = hashlib.file_digest(f, 'sha256').hexdigest()
+        if current() != expected:
+            raise ValueError('process executable changed while hashing')
+        return result
 
 
 def process_hash(pid):
@@ -40,7 +50,11 @@ def process_hash(pid):
         raise ValueError('invalid process PID')
     path = Path(f'/proc/{pid}/exe')
     st = path.stat()
-    return _digest(str(path), pid, st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+    result = _digest(str(path), pid, st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+    after = path.stat()
+    if (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns) != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+        raise ValueError('process executable changed during verification')
+    return result
 
 
 def verify_process(pid, version, kind, program):

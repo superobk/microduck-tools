@@ -1,10 +1,10 @@
 {
-  "date_local": "2026-11-19",
+  "date_local": "2026-11-20",
   "tool_version": "0.6.0",
-  "stage": "offline-api68-ready-board-not-run",
+  "stage": "pr9-offline-review-fixed-board-not-run",
   "upstream_base": "56424efe58b7de40efcf3b2d3a5cd169ee83a182",
-  "git_base": "167ef86eba85c7658c22fe79976d94a23f73dfe8",
-  "scope": "Tools Web/Studio explicit API68 profile; horizontal IMU /16.4 and legacy functions retained. Offline tests only; no board access.",
+  "git_base": "d2081d52628f5f62b0d59c65b6a00d419932cf21",
+  "scope": "PR9 review: epoch/process-bound identity, safe hash caches, exact calibration activation, camera revisions and UID-gated target-service proofs; no board access.",
   "files": [
     {
       "path": ".gitattributes",
@@ -40,7 +40,7 @@
     },
     {
       "path": "calibration/common/daemon_profiles.py",
-      "sha256": "643f6031940b5473eb74bd269197d60b444eaa8f3a5f40044de837591915905f"
+      "sha256": "81d63b69c262c3dc5ca9249d37900da8e41ec74beb45c248f50b431c18cd005f"
     },
     {
       "path": "calibration/common/duck_calibrate.py",
@@ -316,7 +316,7 @@
     },
     {
       "path": "calibration/integration-0.16.3/web/calibration_web.py",
-      "sha256": "35df5cf0ef4fec0272d21ece5b8a6cef2368a1932e2adb0aa81d9b5bfdc33bea"
+      "sha256": "6754bf54c6d3f5c0c72a7cb4e45c8b71cbf54f67bee69645ca10e96875a36241"
     },
     {
       "path": "calibration/integration-0.16.3/web/camera_config.py",
@@ -332,11 +332,11 @@
     },
     {
       "path": "calibration/integration-0.16.3/web/index.html",
-      "sha256": "d612bbcc000cd6c723c836ecc61962dbc544ed7180b317aa024cf677f2f8f79a"
+      "sha256": "dedbeec61121567fce013853cf4c43796a7171da33304bc91961262255e356d5"
     },
     {
       "path": "calibration/integration-0.16.3/web/native_camera.py",
-      "sha256": "dd9b10185cddf629e9088c0dbd284535fc5cb1104bd09cb3808f2e1d08106cec"
+      "sha256": "06642406e16c5a009fd1cceb10553602ca2020a06b8e05977f3cfd5e732bd8ae"
     },
     {
       "path": "calibration/integration-0.16.3/web/servo-health.js",
@@ -385,6 +385,10 @@
     {
       "path": "calibration/tests/test_native_0230.py",
       "sha256": "2fb41bb22f2968c8f9720cb1bd16fb22e011890e4912579b8a3cdc93dac899c8"
+    },
+    {
+      "path": "calibration/tests/test_pr9_review.py",
+      "sha256": "a3542aeed28e1294dd88c0b10ec72eb6af1e334552fa27aa6767cc120255a52f"
     },
     {
       "path": "calibration/tests/test_runtime_release.py",
@@ -560,7 +564,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "ccf07ec7d63e4178dfb9dff1846c73d3b4f0b097f7be24e6e9423d0ad10776d1"
+      "sha256": "65bf519fec56f674d48ddf37e7442afac79411a83094462e2896b9db63e49d5c"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -636,7 +640,7 @@
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
-      "sha256": "4d7cb89b4423c6a429058d778119dbb4984800b2fe170fab22056572b3ae6657"
+      "sha256": "1c8e00250c5a88bdc76da00cdec58cd8bb11e9995d1c5285fbb36571354a9991"
     },
     {
       "path": "docs/studio-0.6.0-plan.zh-CN.md",
@@ -644,7 +648,7 @@
     },
     {
       "path": "docs/studio-0.6.0-validation.zh-CN.md",
-      "sha256": "baefeb788eba3cb665624ca7a81a80eda295e845566544777daab1a3b19ddb96"
+      "sha256": "bec28222de84487cba92f7e2226c4b331f21a0544c53ec7c17b9656a6693b956"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -792,11 +796,11 @@
     },
     {
       "path": "studio/helper.py",
-      "sha256": "b20589a5e7b8006c01862804cc2422c37631df12e134f4ceb53f08237fbdd562"
+      "sha256": "603b54554b3d6ea1c24d1c33b324cf4dca691d019050dd88339c5e0d6adc7f20"
     },
     {
       "path": "studio/ipc.py",
-      "sha256": "b27d035d0eaf3cd7c12437598ffa14d97c8c28543eeb90d5fa28eed15ad91321"
+      "sha256": "b5ac701ba760d5a5ffdf45f905d1ef38ab4712a4b388b91ed6f438959ba9c9cc"
     },
     {
       "path": "studio/licenses/onnxruntime-MIT.txt",
@@ -840,7 +844,7 @@
     },
     {
       "path": "studio/server.py",
-      "sha256": "2832d8969aafe0f49b78b8d4fa328664145687bfd61fc333ddfc761fe9979d61"
+      "sha256": "cbd5d4c8eb137be606d6dc2f46884326da868b5bd61f8638211c9d8cd57ccbf0"
     },
     {
       "path": "studio/static/app.js",
@@ -904,11 +908,15 @@
     },
     {
       "path": "studio/tests/test_api68.py",
-      "sha256": "d4cc8e9296dfc5282576a7bc334e775f6d2a11b1105d56a1279158c7cdd11912"
+      "sha256": "79137b1b6abebeacd45bd117d4ec86968dfee3f95034cfa28d1a821c39e4b9fd"
     },
     {
       "path": "studio/tests/test_network.py",
       "sha256": "acea11b30ee9c1c34d57dc7de3be66da0fda3af2a692194f58e499b54d212ada"
+    },
+    {
+      "path": "studio/tests/test_pr9_review.py",
+      "sha256": "8de81347380c9c584548cb3b757e9308f95317ed57a9754514460ca71db7ed86"
     },
     {
       "path": "studio/tests/test_python_runtime.py",
@@ -992,8 +1000,8 @@
   "main_merge_commit": "c418c8bdfea7eb958c342a09b8d5ad796bd4964c",
   "hardware_acceptance": false,
   "python_tests": {
-    "py313": 483,
-    "py311": 483,
+    "py313": 506,
+    "py311": 506,
     "failures": 0,
     "skipped": 0
   },

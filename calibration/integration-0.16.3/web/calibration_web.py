@@ -49,6 +49,7 @@ def verify_native_receipt(data, config, target):
     try:
         if data.get('native_calibration_contract')!='microduck-calibration/v2':
             raise ValueError('native calibration contract missing; official daemon remains read-only')
+        if data.get('target_tag')!=target:raise ValueError('native calibration target differs')
         base,build=NATIVE_BUILDS[target]
         if data.get('base_revision')!=base or data.get('daemon_version')!=target.removeprefix('daemon-v'):
             raise ValueError('native calibration base/version differs')
@@ -58,6 +59,8 @@ def verify_native_receipt(data, config, target):
         if Path(data['config_path']).resolve()!=Path(config).resolve():raise ValueError('daemon uses another configuration path')
         if data.get('executable')!=os.readlink(f"/proc/{data['pid']}/exe"):
             raise ValueError('calibration executable identity differs')
+        if target=='daemon-v0.23.0' and type(data.get('calibration_active')) is not bool:
+            raise ValueError('native calibration activation state missing')
         if target=='daemon-v0.23.0' and not daemon_profiles.verify_process(data['pid'],'0.23.0','native','robotd'):
             raise ValueError('unverified live robotd executable hash')
         values={key:data[key] for key in ('joint_zero_rad','joint_direction','imu_mount_wxyz','gyro_raw_counts_per_dps','imu_module')}
@@ -120,6 +123,7 @@ def valid_active_file(data, *, demo=False):
         cmdline=Path(f'/proc/{pid}/cmdline').read_bytes().replace(b'\x00',b' ')
         if b'robotd' not in cmdline:return False,'reported daemon is no longer running'
         main=read_robotd_pid()
+        if data.get('target_tag')=='daemon-v0.23.0' and main is None:return False,'active systemd robotd PID unavailable'
         if main is not None and main!=pid:return False,'runtime PID does not match active systemd robotd'
     except (ValueError,OSError,KeyError):return False,'runtime daemon process not verified'
     return True,'live daemon runtime snapshot verified'
@@ -301,6 +305,7 @@ class Context:
             diffs=state_delta(normalized,runtime)
             pointer,_=self.configured()
             if (pointer or '')!=(runtime.get('calibration_path') or ''):diffs.append('calibration_path')
+            if runtime.get('target_tag')=='daemon-v0.23.0' and pointer and runtime.get('calibration_active') is not True:diffs.append('calibration_active')
         else:diffs=[]
         telem=self.monitor.sample()
         if self.demo and not telem:

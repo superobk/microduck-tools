@@ -38,7 +38,7 @@ class ProfileTests(unittest.TestCase):
                 parse_calibration=MagicMock(return_value={'imu_mount_wxyz':[0,0,0,1],'gyro_raw_counts_per_dps':16.4}),
                 effective_gyro=lambda s: {'gyro_rad_per_raw_count':0.0010642251536550791}),
             state_delta=MagicMock(return_value=[]))
-        receipt=dict(pid=123,calibration_path='/tmp/synthetic-cal.toml')
+        receipt=dict(pid=123,calibration_path='/tmp/synthetic-cal.toml',calibration_active=True)
         with patch('studio.ipc.platform.system',return_value='Linux'),patch('studio.ipc.platform.machine',return_value='aarch64'),patch.object(identity,'executable',return_value=True) as binary,patch.dict(sys.modules,{'studio_legacy_verify':module}),patch('studio.ipc.Path.read_text',return_value=json.dumps(receipt)):
             self.assertEqual(identity.robot(hello(),dict(joint_names=JOINTS)),(True,True))
             binary.assert_called_with('robotd.service',profiles.profiles()['0.23.0']['native']['robotd'])
@@ -93,13 +93,13 @@ class ProfileTests(unittest.TestCase):
 class HelperFetchTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.ipc=SimpleNamespace(rpc=AsyncMock(side_effect=lambda service,method,*a,**k: hello() if method=='hello' else dict(joint_names=JOINTS) if method=='robot.model' else {'accepted':True}))
-        self.identity=SimpleNamespace(robot=MagicMock(return_value=(True,True)))
-        self.handoff=SimpleNamespace(status=AsyncMock(return_value=dict(pending=True,units={'padd.service':dict(ActiveState='inactive',MainPID='0',Job='')})))
+        self.identity=SimpleNamespace(robot=MagicMock(return_value=(True,True)),service_proof=MagicMock(return_value=dict(verified=True,process=dict(pid=333,uid=0))))
+        self.handoff=SimpleNamespace(status=AsyncMock(return_value=dict(pending=True,units={u:dict(ActiveState='inactive',MainPID='0',Job='') for u in ('padd.service','netpadd.service')})))
         self.request=dict(op='policy_fetch',confirm=True,params=dict(repo='pollen-robotics/microduck-policies',revision='v10',file='walk.onnx'))
     async def test_fetch_is_single_allowlisted_download_without_load_or_service_commands(self):
         await fetch_policy(self.ipc,self.identity,self.handoff,self.request)
-        self.assertEqual([c.args[1] for c in self.ipc.rpc.call_args_list],['hello','robot.model','policy.fetch'])
-        self.assertEqual(self.ipc.rpc.call_args.kwargs,dict(write=True,timeout=65))
+        self.assertEqual([c.args[1] for c in self.ipc.rpc.call_args_list],['hello','robot.model','hello','policy.fetch'])
+        self.assertEqual(self.ipc.rpc.call_args.kwargs,dict(write=True,timeout=65,expected_peer=dict(pid=333,uid=0)))
     async def test_invalid_fields_no_confirmation_or_unverified_identity_refuse(self):
         for change in [dict(confirm=False),dict(params={'repo':'../x'}),dict(params={'repo':'a/b','file':'../walk.onnx'}),
                        dict(params={'repo':'a/b','method':'os.apply'}),dict(params={'repo':'a/b','file':'walk.sh'})]:

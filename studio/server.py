@@ -964,8 +964,9 @@ async def action(request):
                 )  # Recheck after scheduling: a disconnected owner cannot leave queued writes.
                 if op in ("scan", "connect", "disconnect"):
                     result = await studio.helper_call(op, **params)
-                elif op == 'fetch' and studio.store.hello.get('daemon_version') == '0.23.0':
-                    result = await studio.helper_call('policy_fetch', params=params, confirm=True)
+                elif op in ('fetch', 'pair', 'forget') and studio.store.hello.get('daemon_version') == '0.23.0':
+                    helper_op = {'fetch':'policy_fetch','pair':'pad_pair','forget':'pad_forget'}[op]
+                    result = await studio.helper_call(helper_op, params=params, confirm=True)
                 else:
                     methods = {
                         "enable": ("robot", "robot.enable"),

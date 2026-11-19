@@ -123,9 +123,10 @@ $('cameraPreviewBtn').onclick=async()=>{try{await previewCamera();notify('相机
 $('cameraSaveBtn').onclick=async()=>{try{const preview=await previewCamera();await cameraPost('save',{rotation:cameraValue(),confirm_save:true,config_revision:preview.config_revision});cameraChanged=false;notify('摄像头方向已保存；尚未重启视频服务。');await refresh(false)}catch(e){notify(e.message,true)}};
 $('cameraApplyBtn').onclick=async()=>{
  if(cameraChanged)return notify('请先保存摄像头方向。',true);
+ const reviewedRevision=remote.camera?.config_revision??null;
  if(!confirm('将只重启 mediad，视频和媒体连接会短暂断开。请先结束遥操作会话；确认现在应用已保存方向？'))return;
  $('cameraApplyBtn').disabled=true;
- try{await cameraPost('apply',{confirm_video_interrupt:true});$('cameraFrame').hidden=true;notify('已请求重启视频服务；等待新快照后核验方向。');await refresh(false)}catch(e){notify(e.message,true);await refresh(false)}
+ try{await cameraPost('apply',{confirm_video_interrupt:true,config_revision:reviewedRevision});$('cameraFrame').hidden=true;notify('已请求重启视频服务；等待新快照后核验方向。');await refresh(false)}catch(e){notify(e.message,true);await refresh(false)}
 };
 $('cameraFrameBtn').onclick=async()=>{
  $('cameraFrameMsg').textContent='正在读取真实相机快照…';
