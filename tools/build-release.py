@@ -23,7 +23,7 @@ def build(root,out):
     files += [p for p in (root/'calibration/integration-0.16.3/web').iterdir() if p.suffix in ('.py','.html','.js')]
     files += [root/'calibration/integration-0.16.3/servo-maintenance.py',root/'calibration/integration-0.16.3/requirements-maintenance.txt']
     files += list((root/'calibration/integration-0.16.3/evidence/demo').glob('*.toml'))
-    for tag in ('daemon-v0.17.9','daemon-v0.18.3'):
+    for tag in ('daemon-v0.17.9','daemon-v0.18.3','daemon-v0.23.0'):
         files += [p for p in (root/'calibration'/tag).iterdir() if p.is_file()]
     entries=[]
     for p in sorted(files):

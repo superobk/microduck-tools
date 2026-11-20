@@ -29,6 +29,7 @@ def register_profile(name, api_versions):
 
 
 register_profile('microduck-state-v1', (41,44,45,47))
+register_profile('microduck-state-api68', (68,))
 
 
 def fingerprint(value):
@@ -52,7 +53,7 @@ def contract(hello, model, target='auto'):
     if revision is not None and (not isinstance(revision,str) or len(revision)>200):raise ValueError('invalid daemon revision')
     profile=next((name for name,versions in PROFILES.items() if api in versions),None)
     topology=model.get('joint_names')==JOINT_NAMES
-    target_match=target=='auto' or version is not None and target=='daemon-v'+version
+    target_match=(target=='auto' or version is not None and target=='daemon-v'+version) and (api!=68 or version=='0.23.0') and (version!='0.23.0' or api==68)
     ready=bool(profile and topology and target_match)
     reason='reviewed read contract; runtime hardware acceptance pending' if ready else (
         'joint topology missing or different' if not topology else

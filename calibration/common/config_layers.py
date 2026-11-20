@@ -1,4 +1,4 @@
-"""The reviewed 0.18.3 user-over-base layout; other targets keep one file."""
+"""Reviewed user-over-base layout for 0.18.3 and 0.23.0."""
 from copy import deepcopy
 from pathlib import Path
 import tomllib
@@ -8,11 +8,11 @@ USER_PATH=Path('/var/lib/robot/robotd.toml')
 
 
 def default_calibration(target):
-    return '/var/lib/robot/calibration/microduck-0.18.3.toml' if target=='daemon-v0.18.3' else '/etc/robot/robot-calibration.toml'
+    return '/var/lib/robot/calibration/microduck-'+target.removeprefix('daemon-v')+'.toml' if target in ('daemon-v0.18.3','daemon-v0.23.0') else '/etc/robot/robot-calibration.toml'
 
 
 def user_layer_for(path,target):
-    return USER_PATH if target=='daemon-v0.18.3' and Path(path)==DEFAULT_PATH else None
+    return USER_PATH if target in ('daemon-v0.18.3','daemon-v0.23.0') and Path(path)==DEFAULT_PATH else None
 
 
 def write_path(path,target):return user_layer_for(path,target) or Path(path)

@@ -6,6 +6,14 @@ from . import VERSION
 
 # code: title, checks, read-only command, expected, manual treatment, verification
 BOOK = {
+    "NATIVE_ACTIVITY": (
+        "原生控制模式占用或状态未知",
+        ["查看autonomous、laser和soccer.autonomous", "网页不会自动关闭原生模式或叠加输入"],
+        "robotctl monitor --hz 5 --json",
+        "新样本中原生自主/激光跟踪/自主足球均关闭",
+        "先在原生控制入口关闭对应模式；确认现场和输入归中，再明确接管Studio",
+        "异常解除并重新接管，核对请求/应用值/实际反馈",
+    ),
     "STATE_STALE": (
         "机器人状态断流",
         [
@@ -239,7 +247,7 @@ BOOK = {
     ),
     "IDENTITY_UNVERIFIED": (
         "程序/校正身份未核验",
-        ["检查实际PID/exe哈希、版本、API47和校正回执", "文件已保存不证明运行时已加载"],
+        ["检查实际PID/exe哈希、版本、已审阅API47或API68和校正回执", "文件已保存不证明运行时已加载"],
         "robotctl version --json",
         "官方固定构建或匹配calv3、用户层及实际回执一致",
         "按既有部署指南审阅，禁止用版本号单独开放控制",
@@ -395,6 +403,9 @@ class Diagnostics:
             if isinstance(slot, dict)
         ) or store.policies.get("change_error"):
             add("POLICY_LOAD", "实际加载报告存在错误", store.policies)
+        activity = s.get('native_activity', {})
+        if any(activity.get(k) is not False for k in ('autonomous','laser','soccer_autonomous')) and s:
+            add('NATIVE_ACTIVITY', '原生控制占用或未知，Studio只显示反馈', activity, 'info')
         if s and s.get("currents_ma") is None:
             add(
                 "CURRENT_UNKNOWN",

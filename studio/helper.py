@@ -397,6 +397,71 @@ class Bluetooth:
                 bus.disconnect()
 
 
+def require_isolated_pads(status):
+    units = status.get('units') if isinstance(status, dict) else None
+    if (not isinstance(units, dict) or set(units) != set(UNITS)
+        or status.get('pending') is not True or any(
+            not isinstance(p, dict) or p.get('ActiveState') not in ('inactive', 'failed')
+            or str(p.get('MainPID')) != '0' or p.get('Job') != '' for p in units.values())):
+        raise Refused('HANDOFF_REQUIRED', '需要两路手柄服务已隔离、状态明确和显式网页接管')
+
+
+async def privileged_action(ipc, identity, handoff, request):
+    """API68 UID-gated operations only. Never accepts a client supplied RPC method."""
+    import re
+    from calibration.common import daemon_profiles
+    actions = {
+        'policy_fetch': ('updater', 'policy.fetch', {'repo','revision','file'}, 65),
+        'pad_pair': ('config', 'pad.pair', {'mac','timeout_seconds'}, 65),
+        'pad_forget': ('config', 'pad.forget', {'mac'}, 12),
+    }
+    op = request.get('op')
+    if op not in actions:
+        raise Refused('HELPER_OPERATION', '操作不在固定白名单')
+    service, method, fields, timeout = actions[op]
+    params = request.get('params')
+    if request.get('confirm') is not True or not isinstance(params, dict) or set(params) - fields:
+        raise Refused('ACTION_FIELDS', '受限操作需要明确确认和固定字段')
+    if op == 'policy_fetch':
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}', str(params.get('repo',''))):
+            raise Refused('HUB_REPO', '需要明确org/name')
+        if 'revision' in params and (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_./-]{0,127}', str(params['revision']))
+                                    or any(p in ('','.','..') for p in str(params['revision']).split('/'))):
+            raise Refused('HUB_REVISION', '模型revision非法')
+        if 'file' in params and not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\.onnx', str(params['file'])):
+            raise Refused('HUB_FILE', '只允许明确的ONNX文件名')
+    else:
+        mac = params.get('mac')
+        if (op == 'pad_forget' or mac is not None) and not re.fullmatch(r'[0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5}', str(mac)):
+            raise Refused('MAC', '需要明确有效的手柄MAC')
+        if 'timeout_seconds' in params and (type(params['timeout_seconds']) is not int or not 1 <= params['timeout_seconds'] <= 60):
+            raise Refused('PAIR_TIMEOUT', '配对窗口须为1–60秒')
+    require_isolated_pads(await handoff.status())
+    hello = await ipc.rpc('robot', 'hello', {'api_version': daemon_profiles.MAX_API})
+    matched = daemon_profiles.match(hello)
+    if not matched or matched[0]['version'] != '0.23.0':
+        raise Refused('IDENTITY_UNVERIFIED', '受限写入只支持已审阅API68')
+    model = await ipc.rpc('robot', 'robot.model')
+    verified, calibration = await asyncio.to_thread(identity.robot, hello, model)
+    if not verified or not calibration:
+        raise Refused('IDENTITY_UNVERIFIED', '程序/校正身份未核验')
+    target_hello = await ipc.rpc(service, 'hello', {'api_version': daemon_profiles.MAX_API})
+    target_match = daemon_profiles.match(target_hello)
+    if not target_match or target_match[0]['version'] != matched[0]['version']:
+        raise Refused('SERVICE_IDENTITY', '目标服务版本/API与robotd不一致')
+    proof = await asyncio.to_thread(identity.service_proof, service, target_hello)
+    process = proof.get('process', {})
+    if proof.get('verified') is not True or process.get('uid') != 0:
+        raise Refused('SERVICE_IDENTITY', '目标服务进程/程序哈希未核验')
+    # Proofs yield to other requests: an explicit hand-back or lost isolation revokes this write.
+    require_isolated_pads(await handoff.status())
+    return await ipc.rpc(service, method, params, write=True, timeout=timeout, expected_peer=process)
+
+
+async def fetch_policy(ipc, identity, handoff, request):
+    return await privileged_action(ipc, identity, handoff, request)
+
+
 async def serve():
     if os.geteuid() != 0 or not hasattr(socket, "SO_PEERCRED"):
         raise RuntimeError("helper仅Linux root可启动")
@@ -421,9 +486,11 @@ async def serve():
             if len(raw) > 4096:
                 raise Refused("HELPER_SIZE", "请求过大")
             request = json.loads(raw)
-            if set(request) - {"op", "mac", "confirm"}:
+            if set(request) - {"op", "mac", "confirm", "params"}:
                 raise Refused("HELPER_FIELDS", "请求有额外字段")
             op = request.get("op")
+            if op not in ("policy_fetch", "pad_pair", "pad_forget") and "params" in request:
+                raise Refused("HELPER_FIELDS", "此操作不接受params")
             if op in ("take", "park", "return") and request.get("confirm") is not True:
                 raise Refused("HELPER_CONFIRM", "缺少明确交接确认")
             if op == "take":
@@ -435,17 +502,13 @@ async def serve():
             elif op == "status":
                 result = await handoff.status()
             elif op == "identity":
-                hello = await ipc.rpc("robot", "hello", {"api_version": 47})
+                hello = await ipc.rpc("robot", "hello", {"api_version": 68})
                 model = await ipc.rpc("robot", "robot.model")
-                verified, calibration = await asyncio.to_thread(
-                    identity.robot, hello, model
-                )
-                result = dict(
-                    verified=verified,
-                    calibration_verified=calibration,
-                    hello=hello,
-                    process=identity.info,
-                )
+                result = await asyncio.to_thread(identity.robot_proof, hello, model)
+            elif op in ("policy_fetch", "pad_pair", "pad_forget"):
+                if set(request) - {'op','confirm','params'}:
+                    raise Refused('HELPER_FIELDS', '模型下载请求有额外字段')
+                result = await privileged_action(ipc, identity, handoff, request)
             elif op == "camera_identity":
                 result = dict(verified=await asyncio.to_thread(identity.camera))
             elif op in ("scan", "connect", "disconnect"):
@@ -497,7 +560,7 @@ async def call(op, **kwargs):
         )
         writer.write((json.dumps(dict(op=op, **kwargs)) + "\n").encode())
         await writer.drain()
-        raw = await asyncio.wait_for(reader.readline(), 30)
+        raw = await asyncio.wait_for(reader.readline(), 90 if op in ("policy_fetch", "pad_pair", "pad_forget") else 30)
         if len(raw) > 8192:
             raise Refused("HELPER_REPLY", "helper回复过长")
         result = json.loads(raw)

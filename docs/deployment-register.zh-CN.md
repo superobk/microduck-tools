@@ -86,3 +86,58 @@ GitHub实查PR #8 merged=true、state=closed，合并时间2026-11-03 22:16:29�
 实际0.0.0.0:8790，http://192.168.1.56:8790/studio/可从Mac直连；Tools127.0.0.1:8765仅经Studio代理使用，mediad8443保留、8766无监听。PID分别2729/2733/2731，Journal files_verified=true、problems=[]；普通服务账号/原slice限额保留，未设开机自启。页面200、未登录401、错误Host/Origin403、码助手/正确配对200、重复码409、缺CSRF403、WS和LIVE15关节新鲜208ms通过。最初缓存帧龄/身份尚未刷新不作最终判定；等待活动订阅后身份verified=true、健康218ms。登录值仅内存，API测试不冒充本人浏览器配对；请本人另生成新码登录。
 
 robotd1007、mediad1232、tofd727前后不变；原生程序/unit/robot配置SHA与校正回执不变，137份冻结运行文件通过。控制/Camera仍false，calibration_verified=false不冒充实物校正；当前ToF仍未收帧，本轮不修复、不重启tofd。不启动工作台、不写舵机或运动；实际网络回退、手机设备及正式资源验收NOT_RUN。实际证据logs/tools-pr8-merged-20261103T150634Z，应用e334b562335845eb、启动a6b7bfdecc2a4911、最后反馈5c37275e74cc4e82、原生保护189cc95b6be04baf。
+
+## 2026-11-19：Tools Web / Studio 0.23.0 API68 离线兼容构建
+
+用户授权离线适配、保留横装+/16.4、测试、更新原指南/交付及提交推送；本轮没有SSH、部署、服务控制、舵机写入或运动。原板端最近实测仍为0.18.3+calv3/API47。
+
+分支 feat/tools-api68-0230 基于main 167ef86eba85c7658c22fe79976d94a23f73dfe8，在独立checkout实施，原repo三项未提交文件保留。新增精确profile、运行回执/进程哈希、用户层路径、API68只读分析、mediad官方/定制身份和旋转语义、原生模式冲突隔离及受限policy.fetch权限适配。原校正、健康/EEPROM、policy/手柄、演练、HTTP/CSRF和冻结管理器保留。
+
+新交付 deliverables/microduck-tools-api68-0.23.0-20261119；旧daemon离线包与回退材料保持。Tools/Studio组件仍0.6.0，以源码提交区分构建；daemon为0.23.0/API68。CPython3.13 ARM64 wheels及原3D资产复用并核验，不向板端发Mac wheel。
+
+Python3.13及3.11各483项全部通过、无跳过；Node11通过；干净源码8文件补丁复现与已编译源码一致；双尺寸浏览器演练通过。证据 logs/tools-api68-20261119T150610Z，审计20261119T150610Z-8b8ada60a3f2。原第二/第三板指南、Studio指南/验收文档原地更新。最终源码/归档SHA和PR见本节交付收尾。
+
+横装 [0,0,0,1]、raw/16.4及15关节值保留。板端更新、运行库、真实Web反馈/权限、相机/控制、版本回退/断电恢复和资源实测仍NOT_RUN。旧0.18.3冻结升级器不因此获得0.23.0升级能力；不设开机自启、不启动工作台。
+
+交付收尾：已推送源码 0071a591d782064a71ec52acd26244c08a0db8d2，审阅 [PR #9](https://github.com/superobk/microduck-tools/pull/9)，未合并。运行包/Studio便携包与源码快照固定于该源码提交；本段后续仅登记交付，不改变冻结载荷。
+
+| 归档 | SHA256 |
+| --- | --- |
+| microduck-tools-0.6.0-api68-runtime.tar.gz | b600ffe136f1bbda6ee0b0ea498167147cdda247993a1579e4d9240c89b88b22 |
+| microduck-tools-api68-source.tar.gz | 4f7846d6b173840984f47694ab218c5a7569c167a97c646d9f5743ce8a6a0546 |
+| studio-python313/microduck-studio-0.6.0-portable.tar.gz | 4f8bd694603e79ba7e68f07a2832e2c966f25248a401d81e73439c6e9c47abbe |
+
+新Tools交付的MANIFEST.json及SHA256SUMS已完整复核；147文件运行包解包导入API68模块通过。原daemon归档SHA保持14f4b68d903e3e1b72c78fa106356a038087775f4936c6dccb124705e5cb3475。两个Python版本各483测试无跳过；GitHub首批Python3.11/3.13和Mac/Windows/Linux工作台CI已通过，后续仅登记提交的同组检查另见PR。没有执行板端操作。
+
+最终候选r2：远端一轮Windows历史报告导入503已补充非UTF8编码回归并修复为明确UTF8读写；新增测试含中文/emoji，修复前失败、修复后通过。工作台各116通过，沿用未改动套件calibration243/Studio87/installer37，共每个Python版本483项无跳过；Node11通过。原失败CI未输出响应正文，精确原错误保留缺口，测试现已增强错误正文。后续交付采用deliverables/microduck-tools-api68-0.23.0-20261119-r2，前版保持不变，仅为历史候选。
+
+r2载荷固定提交7bd5b3f47b7c9b21afd62dd9d75d59e20df68533，运行包SHA256 26b8aa89d918184defac7704703ae13ab493aea3bc22482af5c15faae35afaf3；Studio Python3.13便携包SHA256 0b62bcaaabe632f6bb5690861190d6aaefe099f83dcf67fc932218dd4eff0abe；源码快照SHA256 d86600cb805107c693edf1e4461a9622dd0dc599ca5f52616b2a1101e33533fc。解包运行包API68导入及非UTF8报告HTTP回归通过；最终逐文件清单以r2/MANIFEST.json和SHA256SUMS为准。PR仍为#9，未合并，板端仍NOT_RUN。
+
+## 2026-11-20：PR #9 离线复审与修复
+
+本次审阅基线为 d2081d52628f5f62b0d59c65b6a00d419932cf21；原生0.23.0候选、v10模型及0.18.3回退程序未改动。只修改Tools/Studio与测试，仍没有连接板端。
+
+| 检查项 | 发现与修复 | 验证 |
+| --- | --- | --- |
+| 重启/时间戳回退 | 在途旧身份证明可能重新开放新代次。现丢弃跨epoch/PID结果，重新读取hello/model及新证明；首次model查询短暂失败也会重试 | 强制在证明返回前重置样本；两种重启路径均保持身份/校正未核验 |
+| 进程证明并发 | camera与robotd共用可变process记录。现串行核验，并在同一锁内复制结论与PID/哈希 | 并发相机/机器人证明不得混入另一服务PID |
+| 程序重执行 | stat与open之间换程序，可能将另一文件哈希缓存到旧键。现核对打开FD的inode/尺寸/时间，检查前后稳定后才缓存 | 两套哈希缓存都先复现失败，修复后拒绝且不缓存错误文件 |
+| 原生校正状态 | target_tag未直接核对，未启用校正仍可能显示同步。API68现在要求已知systemd PID，严格区分运行参数与calibration_active | 目标不符拒绝，已保存但未启用显示待生效；Studio不开放控制 |
+| policy及配对权限 | 原下载助手未核对updater进程；API68配对/忘记也受UID限制。现仅代理policy.fetch、pad.pair、pad.forget，核对目标hello/API/revision/程序SHA/UID及实际Unix对端，发送前再检查手柄隔离 | 旧服务、未知哈希、对端PID/UID改变、交还控制、越界字段均不发送写请求；不授予通用系统修改权限 |
+| 相机方向与故障隔离 | 非对象身份JSON会破坏状态页；审阅后配置改变仍可应用。现损坏信息只禁用相机，API68应用必须匹配当前config_revision，并串行执行unit更新/重启 | 损坏JSON不影响其他状态；陈旧修订号不改配置、不重启服务 |
+| 横装与/16.4迁移 | 安装方向和比例无需改变；明确保持传感器到机身旋转与单位换算分离 | 从16.3/17.8/17.9/18.3分别迁移，15个非零零位和正负方向、[0,0,0,1]、16.4与源文件均保持 |
+| 旧版与PNG | API47原路由、老相机客户端和既有界面操作保留；0.23.0 PNG不追加旋转 | 新旧实际HTTP路由对照；有效竖向PNG逐字节转发、缓存只取一帧 |
+
+CPython3.13.12与3.11.15各506项全部通过、无跳过（calibration251、Studio102、installer37、workbench116）；新增23项。Node11项通过，校正页内联JS语法检查通过。此前有效的旧版回归保留；SDK仅在内存模拟包或模拟总线运行。
+
+证据位于工作区 logs/pr9-api68-review-20261120；审计 logging/sessions/20261119T161623Z-9c982078ab27。修复前失败、哈希竞争复现和异步202测试断言修正均保留，不将软件模拟当作硬件验收。
+
+本轮最终材料为 deliverables/microduck-tools-api68-0.23.0-20261120-r4。原r2和原生候选包保持不变，r3取代r2作为后续Tools部署候选。Tools/Studio仍为0.6.0组件，以源码提交及manifest区分构建。
+
+板端部署、运行库加载、服务交接/重启、实际配对、校正/相机方向实测、回退/断电恢复和CPU/RSS性能均NOT_RUN。没有新增串口查询，也未修改daemon采集频率；受限写入前增加只读hello/进程核查，板端开销仍须测量。
+
+PR #9复审r3交付收尾：载荷源码ae1a79a7c72f687d99db9855c38f9e89216d5853；运行包SHA256 cc2503779b8b55b3fee52f47c809802fae26c75f7a77412c883416082503eb70，Studio Python3.13便携包SHA256 f1d2c88eacbf3238576f4ae1875e015e7ae5b4262e370aade24f5102671e05eb，源码快照SHA256 d7bc59c68afc793a31cd6c52e9bbd539a4c0e28782eb95314257cb9e40fd4fa9。147文件运行包解包后，15项新增Studio复审用例及0.23.0横装/16.4校准检查通过，完整SHA清单通过。归档固定在载荷提交，后续仅文档登记。旧r2 manifest与原daemon包均核对未变；PR9继续等待审阅，不合并、不执行板端。
+
+CI收尾补充：一轮macOS工作台预览测试与自动探测竞争，正确收到409 BUSY；另一轮通过。测试现明确停止模拟后台探测后手动推进，再验证持锁时BUSY拒绝、释放后仅备份不写舵机。产品BUSY保护和工作台业务代码未改，两Python版本工作台各116项再次通过。最终整套交付使用20261120-r4，r3保留为上一候选。总数仍每个Python版本506项，新增复审23项。
+
+最终r4交付：源码639230a3f8c8d1baeaac47a2cea4b78bdfdd0c6c；运行包SHA256 c5c0a6fb0a2487c8da093ed418185ba0b450f9f5ba1e54ffb5feba26df685b5a，Studio Python3.13便携包SHA256 d30edb5e8f5947323cc18626e88d8b4fb0d70395f53a444522e7b4603cedd423，源码快照SHA256 65073b0444a88197aa64234f1974485fc3828ff05fb4ad6a7313fe361f9631ca。78份Python/JS/HTML/shell业务运行文件与已通过复审的r3逐字节一致，CI后续只修订了测试时序及文档。r4/MANIFEST.json和SHA256SUMS登记最终全量文件。旧r2/r3、原生候选和回退材料保留；板端全程NOT_RUN。

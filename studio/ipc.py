@@ -11,8 +11,10 @@ import socket
 import struct
 import sys
 import time
+import threading
 
 from .core import JOINTS, Refused, compact_tof
+from calibration.common import daemon_profiles
 
 ROOT = Path(__file__).resolve().parents[1]
 SOCKETS = {
@@ -31,8 +33,8 @@ READS = {
         "robot.skills",
         "pad.bindings",
     },
-    "config": {"pad.status", "system.services", "system.logs"},
-    "updater": {"policy.search", "policy.check"},
+    "config": {"hello", "pad.status", "system.services", "system.logs"},
+    "updater": {"hello", "policy.search", "policy.check"},
 }
 WRITES = {
     "robot": {
@@ -63,7 +65,7 @@ class IPC:
     def __init__(self, paths=None):
         self.paths = {**SOCKETS, **(paths or {})}
 
-    async def rpc(self, service, method, params=None, write=False, timeout=1):
+    async def rpc(self, service, method, params=None, write=False, timeout=1, expected_peer=None):
         if method not in (WRITES if write else READS).get(service, set()):
             raise Refused("RPC_ALLOWLIST", "方法不在当前操作白名单")
         writer = None
@@ -73,6 +75,16 @@ class IPC:
             reader, writer = await asyncio.open_unix_connection(
                 self.paths[service], limit=262145
             )
+            if expected_peer is not None:
+                peer = writer.get_extra_info('socket')
+                if (not isinstance(expected_peer, dict)
+                    or type(expected_peer.get('pid')) is not int or expected_peer['pid'] <= 1
+                    or type(expected_peer.get('uid')) is not int or expected_peer['uid'] < 0
+                    or not hasattr(socket, 'SO_PEERCRED') or peer is None):
+                    raise Refused('RPC_PEER', '无法核对受限操作的Unix对端')
+                pid, uid, _ = struct.unpack('3i', peer.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
+                if (pid, uid) != (expected_peer['pid'], expected_peer['uid']):
+                    raise Refused('RPC_PEER', '服务对端已变化；未发送操作')
             writer.write(
                 (
                     json.dumps(
@@ -147,11 +159,20 @@ class IPC:
                 pass
 
 
+def process_uid(pid):
+    fields = next((line.split() for line in Path(f'/proc/{pid}/status').read_text().splitlines()
+                   if line.startswith('Uid:')), [])
+    if len(fields) < 2 or not fields[1].isdecimal():
+        raise Refused('PROCESS_UID', '进程UID缺失或非法；无法核验服务身份')
+    return int(fields[1])
+
+
 class Identity:
     def __init__(self, local=False):
         self.hashes = {}
         self.info = {}
         self.local = local
+        self._proof_lock = threading.RLock()
 
     def helper_proof(self, op):
         from .helper import SOCKET
@@ -186,17 +207,43 @@ class Identity:
         pid = int(result.stdout.strip())
         path = Path(f"/proc/{pid}/exe")
         info = path.stat()
-        key = (pid, info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+        key = (pid, info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
         if key not in self.hashes:
             with path.open("rb") as f:
-                self.hashes[key] = hashlib.file_digest(f, "sha256").hexdigest()
+                def current():
+                    st = os.fstat(f.fileno())
+                    return pid, st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns
+                if current() != key:
+                    self.info = {}
+                    return False
+                digest = hashlib.file_digest(f, "sha256").hexdigest()
+                if current() != key:
+                    self.info = {}
+                    return False
+            self.hashes[key] = digest
             while len(self.hashes) > 4:
                 self.hashes.pop(next(iter(self.hashes)))
         actual = self.hashes[key]
-        self.info = dict(pid=pid, exe=os.readlink(path), sha256=actual)
+        executable = os.readlink(path)
+        after = path.stat()
+        if key != (pid, after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+            self.info = {}
+            return False
+        self.info = dict(pid=pid, exe=executable, sha256=actual)
         return actual == sha
 
+    def robot_proof(self, hello, model):
+        # Verdict and process record must be captured before another worker verifies mediad.
+        with self._proof_lock:
+            verified, calibration = self.robot(hello, model)
+            return dict(verified=verified, calibration_verified=calibration,
+                        hello=hello, process=dict(self.info))
+
     def robot(self, hello, model):
+        with self._proof_lock:
+            return self._robot(hello, model)
+
+    def _robot(self, hello, model):
         if not self.local:
             proof = self.helper_proof("identity")
             self.info = proof.get("process", {})
@@ -208,18 +255,14 @@ class Identity:
             "arm64",
         ):
             return False, False
-        known = json.loads((ROOT / "deploy/manual-upgrade/inputs.json").read_text())
-        native = hello.get("revision") == known["native_revision"]
-        official = hello.get("revision") == known["base_revision"]
-        if (
-            hello.get("api_version") != 47
-            or hello.get("daemon_version") != "0.18.3"
-            or model.get("joint_names") != JOINTS
-            or not (native or official)
-        ):
+        matched = daemon_profiles.match(hello)
+        if not matched or model.get('joint_names') != JOINTS:
+            self.info = {}
             return False, False
-        expected = known["native" if native else "official"]["robotd"]
-        if not self.executable("robotd.service", expected):
+        known, kind = matched
+        target = 'daemon-v' + known['version']
+        official = kind == 'official'
+        if not self.executable("robotd.service", known[kind]["robotd"]):
             return False, False
         if official:
             # An official daemon cannot apply custom calibration. Never approve a hidden pointer.
@@ -242,28 +285,50 @@ class Identity:
         module = sys.modules["studio_legacy_verify"]
         receipt = json.loads(Path("/run/robotd/calibration-effective.json").read_text())
         config = Path("/etc/robot/robotd.toml")
-        ok, _ = module.verify_native_receipt(receipt, config, "daemon-v0.18.3")
+        ok, _ = module.verify_native_receipt(receipt, config, target)
         active, _ = module.valid_active_file(receipt, demo=False)
-        params = module.cal.config_layers.load(config, "daemon-v0.18.3")
+        params = module.cal.config_layers.load(config, target)
         pointer = params.get("bus", {}).get("calibration_path")
         if not pointer:
             return True, False
-        saved = module.cal.parse_calibration(pointer, "daemon-v0.18.3")
+        saved = module.cal.parse_calibration(pointer, target)
         saved = {**saved, **module.cal.effective_gyro(saved)}
         good = (
             ok
             and active
+            and receipt.get("calibration_active") is True
             and receipt.get("pid") == self.info["pid"]
             and receipt.get("calibration_path") == pointer
             and not module.state_delta(saved, receipt)
         )
         return True, bool(good)
 
+    def service_proof(self, service, hello):
+        with self._proof_lock:
+            matched = daemon_profiles.match(hello)
+            if service not in ('updater', 'config') or not matched or matched[0]['version'] != '0.23.0':
+                return dict(verified=False)
+            profile, kind = matched
+            program = 'updaterd' if service == 'updater' else 'configd'
+            if not self.executable(program + '.service', profile[kind][program]):
+                return dict(verified=False)
+            process = dict(self.info)
+            process['uid'] = process_uid(process['pid'])
+            return dict(verified=process['uid'] == 0, process=process)
+
     def camera(self):
+        with self._proof_lock:
+            return self._camera()
+
+    def _camera(self):
         if not self.local:
             return self.helper_proof("camera_identity").get("verified") is True
-        known = json.loads((ROOT / "deploy/manual-upgrade/inputs.json").read_text())
-        if not self.executable("mediad.service", known["official"]["mediad"]):
+        candidates = [
+            p[kind]['mediad']
+            for p in daemon_profiles.profiles().values()
+            for kind in ('official', 'native') if 'mediad' in p[kind]
+        ]
+        if not any(self.executable('mediad.service', sha) for sha in candidates):
             return False
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
             client.settimeout(2)
@@ -273,16 +338,12 @@ class Identity:
             )
             # Official mediad runs as User=mediad. Bind the endpoint to its actual
             # systemd PID and real UID; root is required for the verifier, not the camera.
-            status = Path(f'/proc/{self.info["pid"]}/status').read_text()
-            actual_uid = int(
-                next(
-                    line for line in status.splitlines() if line.startswith("Uid:")
-                ).split()[1]
-            )
+            actual_uid = process_uid(self.info['pid'])
             if pid != self.info["pid"] or uid != actual_uid:
                 return False
             client.sendall(
-                b'{"jsonrpc":"2.0","id":1,"method":"hello","params":{"api_version":47}}\n'
+                (json.dumps(dict(jsonrpc='2.0', id=1, method='hello',
+                                 params=dict(api_version=daemon_profiles.MAX_API))) + '\n').encode()
             )
             raw = bytearray()
             while not raw.endswith(b"\n"):
@@ -292,12 +353,14 @@ class Identity:
                 raw.extend(part)
             data = json.loads(raw)
             hello = data.get("result", {})
-            return (
-                data.get("id") == 1
-                and hello.get("api_version") == 47
-                and hello.get("daemon_version") == "0.18.3"
-                and hello.get("revision") == known["base_revision"]
-            )
+            matched = daemon_profiles.match(hello)
+            if data.get('id') != 1 or data.get('error') is not None or not matched:
+                return False
+            profile, kind = matched
+            expected = profile[kind].get('mediad')
+            return bool(expected and self.executable('mediad.service', expected)
+                        and self.info.get('pid') == pid)
+
 
 
 class Broker:
@@ -341,6 +404,7 @@ class Broker:
                 self.error(service, e)
                 if service == "robot":
                     self.store.identity_verified = False
+                    self.store.calibration_verified = False
                 await asyncio.sleep(2)
 
     async def poll(self):
@@ -349,22 +413,29 @@ class Broker:
         while True:
             start = time.monotonic()
             try:
-                hello = await self.ipc.rpc("robot", "hello", {"api_version": 47})
+                hello = await self.ipc.rpc("robot", "hello", {"api_version": daemon_profiles.MAX_API})
                 if hello != self.last_hello:
                     self.store.reset()
                     self.store.hello = hello
-                    self.last_hello = hello
                     last_proof = 0
                     self.store.model = await self.ipc.rpc("robot", "robot.model")
+                    self.last_hello = hello
+                poll_epoch = self.store.epoch
                 health = await self.ipc.rpc("robot", "robot.health")
                 self.store.health = health
                 self.store.health_at = self.store.clock()
-                self.store.policies = await self.ipc.rpc("robot", "robot.policies")
-                if start - last_proof >= 5:
+                policies = await self.ipc.rpc("robot", "robot.policies")
+                if self.store.epoch != poll_epoch:
+                    raise Refused('DAEMON_CHANGED', '健康查询期间daemon数据代次变化，请重新核验')
+                self.store.policies = policies
+                if not self.store.identity_verified or start - last_proof >= 5:
                     try:
+                        proof_epoch = self.store.epoch
                         verified, calibration = await asyncio.to_thread(
                             self.identity.robot, hello, self.store.model
                         )
+                        if self.store.epoch != proof_epoch:
+                            raise Refused('DAEMON_CHANGED', '身份核验期间daemon数据代次变化；旧证明已丢弃')
                         pid = self.identity.info.get("pid")
                         if (
                             self.last_pid is not None
@@ -373,21 +444,23 @@ class Broker:
                         ):
                             self.store.reset()
                             self.store.hello = hello
-                            self.store.model = await self.ipc.rpc(
-                                "robot", "robot.model"
-                            )
+                            self.last_pid = pid
+                            raise Refused('DAEMON_CHANGED', 'daemon PID变化，等待新数据与下一次身份核验')
                         self.last_pid = pid
                         self.store.identity_verified = verified
                         self.store.calibration_verified = calibration
                     except Exception as e:
                         self.store.identity_verified = False
                         self.store.calibration_verified = False
+                        if isinstance(e, Refused) and e.code == "DAEMON_CHANGED":self.last_hello = None
                         self.error("identity", e)
                     last_proof = start
             except asyncio.CancelledError:
                 raise
             except Exception as e:
                 self.store.identity_verified = False
+                self.store.calibration_verified = False
+                if isinstance(e, Refused) and e.code == "DAEMON_CHANGED":self.last_hello = None
                 self.error("health", e)
             if start - last_pad >= 2:
                 try:

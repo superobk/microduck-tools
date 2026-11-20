@@ -32,7 +32,7 @@ JOINT_NAMES = (
 )
 JOINT_IDS = (20, 21, 22, 23, 24, 30, 31, 32, 33, 34, 10, 11, 12, 13, 14)
 IMU_STEPS = ('still', 'fwd', 'back', 'left', 'right')
-TARGETS = ('daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9','daemon-v0.18.3')
+TARGETS = ('daemon-v0.16.3', 'daemon-v0.17.8', 'daemon-v0.17.9','daemon-v0.18.3','daemon-v0.23.0')
 S = 2 ** -0.5
 MOUNT_DEFAULT = {'zero3': (S, 0., S, 0.), 'beta': (1., 0., 0., 0.)}
 MIN_SAMPLES = 15
@@ -676,7 +676,7 @@ def parser():
     p.add_argument('--generated',required=True)
     p.add_argument('--target',required=True,choices=TARGETS)
     p.add_argument('--config',default='/etc/robot/robotd.toml')
-    p.add_argument('--dest',help='calibration destination; 0.18.3 defaults to persistent /var/lib/robot/calibration')
+    p.add_argument('--dest',help='calibration destination; 0.18.3/0.23.0 default to persistent /var/lib/robot/calibration')
     p.add_argument('--apply',action='store_true',help='actually write after default dry-run')
     p.set_defaults(fn=cmd_install)
     p=sub.add_parser('remove',help='undo config pointer without changing physical servo')

@@ -12,8 +12,9 @@ import tomllib
 import camera_config
 import config_store
 import duck_calibrate as cal
+import daemon_profiles
 
-REVIEWED_MEDIAD={'0.17.9':'96b89d8613f06722c1d64ce75ab0d7124fed9d8f','0.18.3':'b2b0d213a402caeac492dd662ea891faa17f67c0'}
+REVIEWED_MEDIAD={'0.17.9':'96b89d8613f06722c1d64ce75ab0d7124fed9d8f','0.18.3':'b2b0d213a402caeac492dd662ea891faa17f67c0','0.23.0':daemon_profiles.profiles()['0.23.0']['base_revision']}
 NATIVE_VERSIONS=frozenset(REVIEWED_MEDIAD)
 NATIVE_REVISIONS=frozenset(REVIEWED_MEDIAD.values())
 BINARY='/opt/robot/daemon/current/bin/mediad'
@@ -39,11 +40,19 @@ class Camera(camera_config.Camera):
             raise cal.CalibrationError('unsupported camera plugin configuration schema')
         return camera_config.angle(obj.get('rotation')),config_store.revision(raw)
 
-    def _runtime(self,default):
+    def _identity(self):
         identity=json.loads(self.runtime.read_text())
+        if not isinstance(identity,dict):
+            raise cal.CalibrationError('mediad identity must be an object')
+        return identity
+
+    def _runtime(self,default):
+        identity=self._identity()
         if identity.get('service')!='mediad' or identity.get('version') not in NATIVE_VERSIONS:
             raise cal.CalibrationError('official camera adapter requires a reviewed mediad version')
-        if identity.get('revision')!=REVIEWED_MEDIAD.get(identity.get('version')):
+        revision=identity.get('revision')
+        is_0230_native=identity.get('version')=='0.23.0' and revision==daemon_profiles.profiles()['0.23.0']['build_revision']
+        if revision!=REVIEWED_MEDIAD.get(identity.get('version')) and not is_0230_native:
             raise cal.CalibrationError('unreviewed mediad revision; camera writes disabled')
         if self.target!='auto' and self.target!='daemon-v'+identity['version']:
             raise cal.CalibrationError('mediad version differs from selected target')
@@ -53,6 +62,8 @@ class Camera(camera_config.Camera):
         executable=os.readlink(f'/proc/{pid}/exe')
         if str(pid)!=actual.stdout.strip() or Path(executable).name!='mediad' or identity.get('exe')!=executable:
             raise cal.CalibrationError('mediad identity does not match live service')
+        if identity['version']=='0.23.0' and not daemon_profiles.verify_process(pid,'0.23.0','native' if is_0230_native else 'official','mediad'):
+            raise cal.CalibrationError('unverified live mediad executable hash')
         argv=Path(f'/proc/{pid}/cmdline').read_bytes().rstrip(b'\x00').decode().split('\x00')
         # Apply only to the reviewed vendor command and our optional rotation override.
         # Unknown arguments are kept untouched and require explicit future adapter review.
@@ -60,7 +71,7 @@ class Camera(camera_config.Camera):
         elif len(argv)==3 and argv[1]=='--rotate' and re.fullmatch(r'0|90|180|270',argv[2]):rotation=int(argv[2])
         else:raise cal.CalibrationError('unreviewed mediad arguments; preserve them and review an adapter')
         return dict(pid=pid,rotation_degrees=rotation,version=identity['version'],source='official_mediad_identity_and_cli',
-            picture_verification='requires fresh PNG and manual orientation check')
+            picture_verification='requires fresh PNG and manual orientation check',snapshot_orientation='upright_by_mediad' if identity['version']=='0.23.0' else 'native_frame')
 
     def _unit(self):
         fragment=subprocess.run(['systemctl','show','mediad','-p','FragmentPath','--value'],capture_output=True,text=True,timeout=2,check=True).stdout.strip()
@@ -74,19 +85,20 @@ class Camera(camera_config.Camera):
                 raise cal.CalibrationError('tool drop-in changed externally; review before replacing')
 
     def status(self):
-        saved=None;expected=None;error=None;revision=None;runtime=None;verified=False
+        saved=None;expected=None;error=None;revision=None;runtime=None;verified=False;stage="saved"
         try:
-            saved,revision=self._saved()
+            saved,revision=self._saved();stage="runtime"
             target=self.target
-            if target=='auto' and self.runtime.exists():target='daemon-v'+str(json.loads(self.runtime.read_text()).get('version',''))
+            if target=='auto' and self.runtime.exists():target='daemon-v'+str(self._identity().get('version',''))
             board=cal.config_layers.load(self.config,target).get('board',{}).get('version','zero3')
-            if board not in ('zero3','beta'):raise cal.CalibrationError('unknown board default')
+            if board not in ('zero3','beta') and not (board=='face-board-v1' and target=='daemon-v0.23.0'):raise cal.CalibrationError('unknown board default')
             default=90 if board=='zero3' else 0
             expected=default if saved is None else saved
             if self.demo:raise cal.CalibrationError('DEMO: no live official camera')
             runtime=self._runtime(default);verified=True;reason='official mediad CLI verified; inspect fresh picture for physical orientation'
         except (OSError,ValueError,TypeError,cal.CalibrationError,subprocess.SubprocessError) as exc:
             reason=str(exc)
+            if stage=="saved":error=reason
         writable=verified and error is None
         can_apply=False
         if writable and self.enable_apply:
@@ -117,15 +129,22 @@ class Camera(camera_config.Camera):
         return dict(ok=True,backup=str(backup) if backup else None,message='plugin camera settings saved; native services unchanged')
 
     def apply(self,body):
-        if body.get('confirm_video_interrupt') is not True or not self.status()['can_apply']:
+        status=self.status()
+        if body.get('confirm_video_interrupt') is not True or not status['can_apply']:
             raise cal.CalibrationError('camera apply disabled or official command not verified')
-        rotation,_=self._saved()
+        strict=self.target=='daemon-v0.23.0' or (status.get('runtime') or {}).get('version')=='0.23.0'
+        # Lock order is always unit -> settings. Keep unit changes and the restart serialized.
         with config_store.locked(self.dropin_path):
-            self._unit()
-            raw=dropin(rotation).encode()
-            if self.dropin_path.exists():config_store.replace_checked(self.dropin_path,self.dropin_path.read_bytes(),raw)
-            else:cal.atomic_write(self.dropin_path,raw,0o644)
-        subprocess.run(['systemctl','daemon-reload'],check=True,timeout=10,capture_output=True,text=True)
-        subprocess.run(['systemctl','restart','mediad'],check=True,timeout=20,capture_output=True,text=True)
+            with config_store.locked(self.settings):
+                rotation,revision=self._saved()
+                if (strict or 'config_revision' in body) and (
+                    'config_revision' not in body or body['config_revision']!=revision):
+                    raise cal.CalibrationError('camera configuration conflict: refresh and review before applying')
+                self._unit()
+                raw=dropin(rotation).encode()
+                if self.dropin_path.exists():config_store.replace_checked(self.dropin_path,self.dropin_path.read_bytes(),raw)
+                else:cal.atomic_write(self.dropin_path,raw,0o644)
+            subprocess.run(['systemctl','daemon-reload'],check=True,timeout=10,capture_output=True,text=True)
+            subprocess.run(['systemctl','restart','mediad'],check=True,timeout=20,capture_output=True,text=True)
         return dict(ok=True,restart_requested=True,runtime_verified=False,
             message='mediad restarted; verify new identity/rotation and fresh PNG; robotd untouched')
