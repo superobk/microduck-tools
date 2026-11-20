@@ -1,5 +1,31 @@
 # 部署登记
 
+## 2026-11-20：PR #9已合并，r4升级清单及安装补修
+
+PR #9于2026-11-20合并到main，合并提交de34755a9e44d5299061c13b401bd4e64889ebf0，合并前固定头41a2fecf56da61b2e8b5fded32b44acd7415ac6d，10项CI均SUCCESS。此前记录中的“PR9等待审阅/不合并”是当时状态，本条予以更新，原记录保留。
+
+当前0.18.3+calv3→0.23.0+calv3/API68入口改为[原Studio指南顶部执行清单](studio-0.6.0-guide.zh-CN.md)。工作区原指南 /Users/bou/Workspace/Duckduck/docs/robot/zero3w-board2-board3-microduck-tools-prep-20261104.md 同步原地更新，没有另建指南。每阶段解释命令作用、预期和停止条件，明确保留横装[0,0,0,1]、raw/16.4及15关节校准，并使用升级现场实际旧文件迁移。
+
+| 项目 | 本轮结果 |
+| --- | --- |
+| 原生程序/v10/ORT | 沿用原20261119离线套件；16个ARM64程序已编译，模型及库已有；未重新编译或替换冻结包 |
+| r4 | 沿用20261120-r4原归档及哈希，241项SHA清单复核通过；不改原r4 manifest中的历史PR状态 |
+| 新安装补充件 | deliverables/microduck-0230-r4-execution-20261120；只补Studio安装复制清单及当前原指南/登记/验证证据 |
+| 安装缺陷 | 正式prepare_release原来遗漏API68身份元数据，便携包带有该文件但安装后无法加载profiles；新增3个版本的native-build.json复制项，纳入新STUDIO-RELEASE source/files哈希 |
+| 新回归 | 实际执行临时正式版本复制，加载API47/API68、核对元数据入册及篡改拒绝；修复前FileNotFoundError，修复后通过 |
+| 完整测试 | Python3.13/3.11各507项：calibration251、Studio103、installer37、workbench116，全部通过、无跳过；首次误用解释器/沙箱端口失败日志保留，修正后通过 |
+| 指令验证 | 14组shell语法、归档路径、原生验证器、真实CLI校准迁移/预览/临时安装通过；Mac临时目录3种文件恢复/中断重入演练通过 |
+| 板端边界 | SSH/SCP、ARM64 ldd/ORT加载、systemd交互、GNU tar ACL/xattr、断电恢复、Web/IMU/舵机/相机/模型加载及资源性能均NOT_RUN |
+
+安装补充件在未安装的r4便携源码中替换studio/manage.py，然后由新安装器正常生成完整版本/安装登记；不向已登记正式目录补塞文件、不手改journal哈希。旧Studio先验证/撤销、保存同路径快照，再用3.13重建。默认LAN HTTP0.0.0.0:8790，Tools回环8765，controls/camera关闭，不启动工作台。
+
+清单增加持久hold、完整程序/模型/配置/Tools/Studio/journal快照及原服务状态，首次robotd设置Restart=no并仅放行一次；保留故障材料、回退后先验旧进程及同PID校准。软件回退不撤销原生启动已经写入的舵机寄存器，不冒充EEPROM恢复。手动定制程序切换不伪造updater日记，updaterd/boot-check及遥控入口继续隔离；原生OTA一致性登记另行处理。未新增自启，未恢复padd/netpadd。
+
+证据：/Users/bou/Workspace/Duckduck/logs/pr9-merge-upgrade-20261120/attempt2/tests.json、checklist-validation.json；中央审计logging/sessions/20261120T082016Z-7cd2969659ea。本轮没有任何板端操作，后续执行仍等通知。
+
+
+---
+
 | 工具版本 | 目标 | 准备和软件验证 | 板端状态 |
 |---|---|---|---|
 | 0.6.0 / 2026-11-01 | 固定0.18.3/API47的独立移动Studio | 独立HTTPS/助手/资源组与安装恢复登记；手机/桌面界面、七场景、真实反馈、Policy/手柄、离线Worker语义；40项Studio+236项既有Python、11项Node通过；测试见Studio验收登记；原0.5.0套件冻结 | 所有板端安装/配对/交接/运动/资源与实际设备验收NOT_RUN |

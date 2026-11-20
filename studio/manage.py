@@ -238,6 +238,10 @@ def prepare_release(journal, assets, wheels):
     selections = [
         "studio",
         "calibration/common",
+        # Runtime identity profiles must survive the portable-to-installed copy.
+        "calibration/daemon-v0.17.9/native-build.json",
+        "calibration/daemon-v0.18.3/native-build.json",
+        "calibration/daemon-v0.23.0/native-build.json",
         "calibration/integration-0.16.3",
         "deploy/manual-upgrade/inputs.json",
         "deploy/studio",

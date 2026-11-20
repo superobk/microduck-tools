@@ -1,5 +1,420 @@
 # Studio 0.6.0：安装、看状态、配置、停止与回退
 
+## 0.18.3+calv3 → 0.23.0+calv3 / Tools r4 简明执行清单（2026-11-20）
+
+**准备完成，板端未执行。** PR #9已合并到main：de34755a9e44d5299061c13b401bd4e64889ebf0。本次使用r4，不升级OS、不刷IMU固件、不启动舵机工作台、不执行归位/使能/动作。旧历史记录保留；本节是当前升级入口。
+
+| 顺序 | 操作及意义 | 完成状态 |
+| --- | --- | --- |
+| 1 | Mac校验和上传：确保使用同一批已审阅文件 | 运行内容未改变 |
+| 2 | 板端核实、隔离和完整备份：建立本次回退点 | 旧版可恢复，服务停止 |
+| 3 | 放入候选及运行库：不覆盖旧版本 | 新文件就位，尚未生效 |
+| 4 | 迁移校准、模型和程序路径：避免新旧混跑 | 保留横装、/16.4和15关节值 |
+| 5 | 更新Tools/Studio：重建独立3.13venv及登记 | HTTP8790，控制/Camera关闭 |
+| 6 | 先验证robotd，再启动网页 | 分别确认真实运行和界面 |
+| 失败 | 从本次快照恢复 | 回到升级前0.18.3+calv3 |
+
+**材料是否可用：** 原生包内16个Linux ARM64程序已经编译；r4 Tools为Python源码，Studio带普通GIL CPython3.13 ARM64离线wheels及浏览器资产；v10含10个ONNX文件。无需板端编译或另装Python3.11。离线测试通过，板端运行库加载、服务切换、界面、断电恢复和实机性能仍待验收。calv3是保留自定义校准的派生构建，不是官方签名原版。
+
+### 1．Mac：校验材料，未来通知后再上传
+
+~~~bash
+cd /Users/bou/Workspace/Duckduck
+NATIVE="$PWD/deliverables/microduck-board3-daemon-0.23.0-offline-20261119"
+R4="$PWD/deliverables/microduck-tools-api68-0.23.0-20261120-r4"
+FIX="$PWD/deliverables/microduck-0230-r4-execution-20261120"
+python3 "$NATIVE/verify_offline.py"
+(cd "$R4" && shasum -a 256 -c SHA256SUMS)
+(cd "$FIX" && shasum -a 256 -c SHA256SUMS)
+~~~
+
+作用：验证原生套件哈希、官方来源签名、ARM64格式、校准保留，以及r4全部文件及安装补充件。必须全部通过。旧原生套件中的“Web未适配”是历史状态，由独立r4补齐，不改旧包字节。以下SSH/SCP均为待执行指令，本轮不执行。
+
+~~~bash
+# Mac默认zsh：填写第三板当前地址，核验既有SSH身份。
+read -r "BOARD_IP?第三板当前IPv4: "
+ssh -o StrictHostKeyChecking=yes -o HostKeyAlias=192.168.3.85 "root@$BOARD_IP" \
+  'test ! -e /var/lib/microduck-upgrade/0230-r4 && install -d -m 700 /var/lib/microduck-upgrade/0230-r4'
+scp -r -o StrictHostKeyChecking=yes -o HostKeyAlias=192.168.3.85 \
+  "$NATIVE" "$R4" "$FIX" "root@$BOARD_IP:/var/lib/microduck-upgrade/0230-r4/"
+ssh -t -o StrictHostKeyChecking=yes -o HostKeyAlias=192.168.3.85 "root@$BOARD_IP" bash
+~~~
+
+作用：新建独立阶段目录、上传原生、r4、安装补充件三个目录，再进入root Bash。阶段目录已存在时走末尾“中断恢复”；密钥变化先核实，不关闭身份校验。
+
+### 2．板端：核实 → 隔离 → 备份
+
+**现场前提：机身稳固支撑、输入释放、舵机卸力或动力断开。停/启robotd会接管总线；新版启动可能检查并修正舵机寄存器，不能称为只读。** 本轮不执行这些操作。
+
+以下板端命令沿用同一个root Bash；失败即停止，不跳过报错继续。
+
+~~~bash
+set -euo pipefail
+umask 077
+export S=/var/lib/microduck-upgrade/0230-r4
+export N="$S/microduck-board3-daemon-0.23.0-offline-20261119"
+export T="$S/microduck-tools-api68-0.23.0-20261120-r4"
+export P="$S/microduck-0230-r4-execution-20261120"
+export B="$S/before"
+export NEW=/opt/robot/daemon/releases/0.23.0-calv3-r4
+export TR=/opt/microduck-tools/releases/0.6.0-api68-r4
+export SP="$S/studio/microduck-studio-0.6.0"
+read -r -p '本板网页访问IPv4: ' STUDIO_IP
+export STUDIO_IP
+test "$(uname -m)" = aarch64
+test "$(sha256sum /etc/machine-id | cut -d' ' -f1)" = f96c1ca9913156142defdce965893f69071d1864ce83b1d9123bfdb3516204ee
+/usr/bin/python3.13 -c 'import sys,sysconfig; assert sys.version_info[:2]==(3,13) and not sysconfig.get_config_var("Py_GIL_DISABLED"); print(sys.version)'
+python3 "$N/verify_offline.py"
+(cd "$T" && sha256sum -c SHA256SUMS)
+(cd "$P" && sha256sum -c SHA256SUMS)
+/opt/microduck-tools/native/current/bin/robotctl version --json
+systemctl show robotd -p ExecStart -p MainPID -p DropInPaths
+df -h / /var
+du -sh /opt/robot /opt/microduck-tools /var/lib/robot
+cd /opt/microduck-tools/current
+/usr/bin/python3.13 -B -m studio.manage status --json
+~~~
+
+作用：确认登记的第三板、ARM64、Python3.13，核对当前实际0.18.3/API47、程序覆盖、传输和旧Studio登记。不是该板、版本不符、status有漂移/未完成交接都停止。为备份、候选及失败现场至少预留上述目录总量两倍再加1GiB；空间不足不继续。
+
+<details>
+<summary>展开执行：保存回退路径、增加持久维护条件、停服务和制作快照</summary>
+
+~~~bash
+test ! -e /var/lib/microduck-studio-handoff/phone.pending
+test ! -e /var/lib/microduck-studio-handoff/return.intent
+test ! -e "$B"
+mkdir -m 700 "$B"
+export U="robotd updaterd configd btd padd netpadd mediad tofd nfcd autod mapd duck-gateway robot-boot-check microduck-tools microduck-studio microduck-studio-helper"
+export J="robot-boot-check.timer microduck-studio.slice"
+declare -p S N T P B NEW TR SP STUDIO_IP U J > "$S/session.env"
+systemctl show $U $J -p Id -p ActiveState -p UnitFileState -p ExecStart -p DropInPaths > "$B/services.before.txt"
+printf '%s\n' etc/robot var/lib/robot opt/robot opt/microduck-tools \
+  etc/microduck-tools etc/microduck-studio var/lib/microduck-tools \
+  var/lib/microduck-studio var/lib/microduck-studio-install var/lib/microduck-studio-handoff > "$B/targets.txt"
+for u in $U; do
+  printf 'etc/systemd/system/%s.service\netc/systemd/system/%s.service.d\n' "$u" "$u"
+done >> "$B/targets.txt"
+for u in $J; do printf 'etc/systemd/system/%s\netc/systemd/system/%s.d\n' "$u" "$u"; done >> "$B/targets.txt"
+while IFS= read -r p; do
+  if test -e "/$p" || test -L "/$p"; then printf '%s\0' "$p"; fi
+done < "$B/targets.txt" > "$B/present.nul"
+for u in $U; do
+  install -d -m 755 "/etc/systemd/system/$u.service.d"
+  printf '[Unit]\nConditionPathExists=!%s/hold/%s\n' "$S" "$u" \
+    > "/etc/systemd/system/$u.service.d/zzzzzz-0230-upgrade-hold.conf"
+done
+for u in $J; do
+  install -d -m 755 "/etc/systemd/system/$u.d"
+  printf '[Unit]\nConditionPathExists=!%s/hold/%s\n' "$S" "$u" \
+    > "/etc/systemd/system/$u.d/zzzzzz-0230-upgrade-hold.conf"
+done
+install -d -m 700 "$S/hold"
+for u in $U $J; do touch "$S/hold/$u"; done
+systemctl daemon-reload
+sync
+for u in $U $J; do
+  if test "$(systemctl show "$u" -p LoadState --value)" != not-found; then systemctl stop "$u"; fi
+done
+for u in $U $J; do
+  case "$(systemctl show "$u" -p ActiveState --value)" in inactive|failed) ;; *) echo "未停止: $u"; exit 1;; esac
+done
+systemctl show $U $J -p Id -p Conditions > "$B/maintenance-conditions.txt"
+cat "$B/maintenance-conditions.txt"
+tar --acls --xattrs --exclude='*/zzzzzz-0230-upgrade-hold.conf' \
+  -C / --null -T "$B/present.nul" -cpf "$B/rootfs.tar"
+(cd "$B" && sha256sum rootfs.tar > rootfs.tar.sha256 && sha256sum -c rootfs.tar.sha256)
+tar -tf "$B/rootfs.tar" > "$B/archive-files.txt"
+touch "$B/snapshot.complete"
+printf 'BACKED_UP\n' > "$S/phase"
+sync
+~~~
+
+作用：固定回退清单，保存程序组/链接、全部模型与配置、Tools/Studio源码/venv/journal和各自unit/drop-in；维护条件跨重启保留，不改原enable/disable标志，不操作SSH/网络服务。逐项确认Conditions含对应hold路径，未被其他drop-in清空；不符合就停止。快照包含私有配置，只留私有备份，不上传Git。snapshot.complete出现前不能覆盖程序/配置。
+
+</details>
+
+### 3．放入候选，检查运行库（仍不启动服务）
+
+~~~bash
+test -f "$B/snapshot.complete"
+test ! -e "$NEW" && test ! -e "$TR" && test ! -e "$S/studio"
+test ! -e /opt/robot/runtimes/ort-1.23.2
+test ! -e /opt/robot/runtimes/gst-v3
+test ! -e /opt/robot/policies/releases/v10-r4
+install -d -m 755 "$NEW" "$TR"
+cp -a "$N/candidate/release/." "$NEW/"
+install -d -m 755 /opt/robot/runtimes/ort-1.23.2 /opt/robot/runtimes/gst-v3 /opt/robot/policies/releases/v10-r4
+cp -a "$N/runtimes/onnxruntime-1.23.2-arm64/." /opt/robot/runtimes/ort-1.23.2/
+tar -xzf "$N/runtimes/microduck-gst-plugins-v3-aarch64.tar.gz" --strip-components=1 -C /opt/robot/runtimes/gst-v3
+cp -a "$N/policies/v10/." /opt/robot/policies/releases/v10-r4/
+tar -xzf "$T/microduck-tools-0.6.0-api68-runtime.tar.gz" --strip-components=1 -C "$TR"
+mkdir "$S/studio"
+tar -xzf "$T/studio-python313/microduck-studio-0.6.0-portable.tar.gz" -C "$S/studio"
+for p in "$NEW"/bin/* /opt/robot/runtimes/ort-1.23.2/*.so* /opt/robot/runtimes/gst-v3/*.so; do ldd "$p"; done > "$S/ldd.txt" 2>&1
+if grep -E 'not found|not a dynamic executable' "$S/ldd.txt"; then exit 1; fi
+/usr/bin/python3.13 - <<'PY'
+import ctypes
+lib=ctypes.CDLL("/opt/robot/runtimes/ort-1.23.2/libonnxruntime.so.1.23.2")
+class API(ctypes.Structure):
+    _fields_=[("get_api",ctypes.c_void_p),("get_version",ctypes.CFUNCTYPE(ctypes.c_char_p))]
+lib.OrtGetApiBase.restype=ctypes.POINTER(API)
+v=lib.OrtGetApiBase().contents.get_version().decode()
+assert v=="1.23.2",v
+print("PASS ORT C library",v)
+PY
+"$NEW/bin/robotd" --version
+"$NEW/bin/robotctl" --help
+~~~
+
+作用：安装完整16程序组、v10和r4到新目录；ORT/GStreamer使用私有版本目录，旧全局运行库不动。ldd检查全部程序/插件依赖，再实际dlopen ORT及检查C ABI版本。缺库立即停止；不盲跑会下载默认ORT1.28.0的联网setup。已有候选目录不覆盖，转中断恢复。version/help不打开舵机；库加载通过仍不是模型已加载。
+
+### 4．迁移校准、模型和原生路径
+
+~~~bash
+export CAL="$TR/calibration/common/duck_calibrate.py"
+/usr/bin/python3.13 - <<'PY'
+from pathlib import Path
+import tomllib
+old=Path("/var/lib/robot/calibration/microduck-0.18.3.toml")
+a=tomllib.loads(old.read_text())
+b=tomllib.loads(Path("/etc/robot/robotd.toml").read_text())
+u=tomllib.loads(Path("/var/lib/robot/robotd.toml").read_text())
+assert u.get("bus",{}).get("calibration_path",b.get("bus",{}).get("calibration_path"))==str(old)
+assert a["target_tag"]=="daemon-v0.18.3" and a["imu_mount_wxyz"]==[0,0,0,1]
+assert a["gyro_raw_counts_per_dps"]==16.4 and a["gyro_profile"]=="custom_raw_div_16_4"
+print("PASS current calibration pointer and confirmed horizontal /16.4")
+PY
+/usr/bin/python3.13 "$CAL" migrate --source /var/lib/robot/calibration/microduck-0.18.3.toml \
+  --out "$S/microduck-0.23.0.toml" --target daemon-v0.23.0 \
+  --confirm-same-hardware --confirm-firmware-scale
+/usr/bin/python3.13 "$CAL" check --target daemon-v0.23.0 --calibration "$S/microduck-0.23.0.toml"
+/usr/bin/python3.13 "$CAL" install --target daemon-v0.23.0 --generated "$S/microduck-0.23.0.toml" --confirm-firmware-scale
+/usr/bin/python3.13 "$CAL" install --target daemon-v0.23.0 --generated "$S/microduck-0.23.0.toml" --confirm-firmware-scale --apply
+~~~
+
+作用依次为：复制升级时仍在使用的旧校准，仅改target；检查；预览安装；正式写入。保留15个关节值和IMU参数，旧文件/基础配置不改，仅更新用户层的校准指针，不重启。新路径及必须保留的字段：
+
+~~~toml
+# /var/lib/robot/calibration/microduck-0.23.0.toml；还须保留完整15关节数组
+target_tag = "daemon-v0.23.0"
+imu_mount_wxyz = [0.0, 0.0, 0.0, 1.0]
+gyro_profile = "custom_raw_div_16_4"
+gyro_raw_counts_per_dps = 16.4
+# /var/lib/robot/robotd.toml
+# [bus]
+# calibration_path = "/var/lib/robot/calibration/microduck-0.23.0.toml"
+~~~
+
+方向仍为插座朝机尾、芯片面朝上；映射[-X,-Y,+Z]，角速度系数pi/(180×16.4)=0.0010642251536550791。网页不再次除16.4。旧文件如不是这个方向/比例，停止核实，不能用示例片段覆盖完整校准。
+
+~~~bash
+"$NEW/bin/robotctl" configure
+~~~
+
+作用：用0.23.0原生编辑器保存模型与自主开关到用户层，保留其余配置/绑定/调参，**不接受退出时的重启/重载提示**。本阶段不运行policy load/update，避免活跃模型重载引发归位。
+
+| 编辑项 | 审阅后设置 |
+| --- | --- |
+| board.version、policy.mode | 保持现值；Zero3不能改beta；walk/roller不要互换 |
+| policy.enabled | true，仅加载，不发使能命令 |
+| policy.walk | walk用 /opt/robot/policies/current/velstand.onnx；roller用同目录roller.onnx |
+| policy.stand | none，上述网络自己站立 |
+| policy.sitstand | /opt/robot/policies/current/alpha_sitstand.onnx |
+| policy.ground_pick | walk用同目录alpha_ground_pick.onnx；roller用roller_crouch.onnx |
+| policy.kick_left、policy.kick_right | 同目录ball_kick_left.onnx、ball_kick_right.onnx，输入完整绝对路径 |
+| policy.roulade | /opt/robot/policies/current/roulade.onnx |
+| autonomous.enabled | false，保持自主入口关闭 |
+
+这明确选择v10默认模式；若保持旧alpha_walking+alpha_stand方案，则选v10内同名文件，不能把网络视为相同步态。额外policy.skill保留并检查实际路径。10个文件安装不代表同时加载10个网络。
+
+~~~bash
+test -L /opt/robot/daemon/current
+test -L /opt/microduck-tools/native/current
+test -L /opt/robot/policies/current
+ln -s "$NEW" /opt/robot/daemon/.current-r4
+mv -Tf /opt/robot/daemon/.current-r4 /opt/robot/daemon/current
+ln -s "$NEW" /opt/microduck-tools/native/.current-r4
+mv -Tf /opt/microduck-tools/native/.current-r4 /opt/microduck-tools/native/current
+ln -s /opt/robot/policies/releases/v10-r4 /opt/robot/policies/.current-r4
+mv -Tf /opt/robot/policies/.current-r4 /opt/robot/policies/current
+cp -a "$NEW/systemd/"*.service "$NEW/systemd/"*.timer /etc/systemd/system/
+test -f /etc/systemd/system/robotd.service.d/zzzz-board3-0183.conf
+mv /etc/systemd/system/robotd.service.d/zzzz-board3-0183.conf "$B/robotd-0183-dropin.disabled"
+printf '[Service]\nRestart=no\nEnvironment=ORT_DYLIB_PATH=/opt/robot/runtimes/ort-1.23.2/libonnxruntime.so.1.23.2\n' \
+  > /etc/systemd/system/robotd.service.d/zzzzz-0230-runtime.conf
+printf '[Service]\nEnvironment=GST_PLUGIN_PATH=/opt/robot/runtimes/gst-v3\n' \
+  > /etc/systemd/system/mediad.service.d/zzzzz-0230-runtime.conf
+"$NEW/bin/robotctl" configure --list --json > "$S/config-effective.json" 2> "$S/config-warnings.txt"
+cat "$S/config-warnings.txt"
+~~~
+
+作用：原子切换三个current链接、安装匹配服务，移走已知旧robotd覆盖，保持其他维护/硬件条件及相机JSON；为新robotd/mediad指定私有库；首轮robotd设置Restart=no，失败不循环重试。current若是实体目录、存在其他旧ExecStart/ExecCondition或旧mediad命令行参数，停下审阅，不删除未知覆盖。config警告含忽略字段或用户层拒绝必须解决，退出0不足以证明配置完整生效。
+
+**升级入口边界：** 这是有快照的手动定制程序切换，不运行会自动启服务的官方postinstall，不伪造签名/updater安装日记。updaterd和robot-boot-check.timer继续隔离，暂不启用原生OTA，也不用robotctl rollback；回退用下方快照。后续启用OTA需另行处理定制版本与原生更新器登记一致性。旧0.18.3冻结duck管理器不能安装0.23.0。
+
+### 5．更新Tools/Studio，沿用Python3.13及LAN HTTP
+
+~~~bash
+cd "$TR"
+/usr/bin/python3.13 -B -m studio.manage status --json
+/usr/bin/python3.13 -B -m studio.manage rollback --apply --confirm EXECUTE
+mv /opt/microduck-tools/studio "$B/studio-after-uninstall"
+mv /var/lib/microduck-studio-install "$B/studio-journal-after-uninstall"
+test -L /opt/microduck-tools/current
+ln -s "$TR" /opt/microduck-tools/.current-r4
+mv -Tf /opt/microduck-tools/.current-r4 /opt/microduck-tools/current
+printf '%s\n' '[Service]' 'ExecStart=' \
+  'ExecStart=/usr/bin/python3.13 /opt/microduck-tools/current/calibration/integration-0.16.3/web/calibration_web.py --target auto --listen 127.0.0.1 --port 8765 --plugin-config /etc/microduck-tools/plugins.json --servo-health-dir /var/lib/microduck-tools/servo-health --camera-settings /var/lib/microduck-tools/camera.json --robotctl /opt/microduck-tools/native/current/bin/robotctl' \
+  > /etc/systemd/system/microduck-tools.service.d/zzzzz-api68-r4.conf
+install -m 644 "$P/studio/manage.py" "$SP/source/microduck-tools-0.6.0/studio/manage.py"
+cd "$SP/source/microduck-tools-0.6.0"
+/usr/bin/python3.13 -B -m studio.manage doctor --assets "$SP/runtime-assets" --wheels "$SP/wheels" --json
+/usr/bin/python3.13 -B -m studio.manage setup --server-ip "$STUDIO_IP" --transport lan-http --port 8790 \
+  --assets "$SP/runtime-assets" --wheels "$SP/wheels"
+/usr/bin/python3.13 -B -m studio.manage setup --server-ip "$STUDIO_IP" --transport lan-http --port 8790 \
+  --assets "$SP/runtime-assets" --wheels "$SP/wheels" --apply --confirm EXECUTE
+/usr/bin/python3.13 -B -m studio.manage status --json
+systemctl daemon-reload
+systemctl show robotd microduck-tools microduck-studio microduck-studio-helper -p ExecStart -p DropInPaths -p Conditions
+printf 'STAGED\n' > "$S/phase"
+sync
+~~~
+
+作用：安装补充件仅修复r4安装器遗漏身份元数据的复制清单，在未安装的临时源码上应用，随新STUDIO-RELEASE登记哈希；不改冻结r4归档、不向正式版本补塞文件。先验证/撤销旧Studio托管文件，保留原source/venv/journal和快照，再从r4重建3.13venv及登记。不能覆盖旧0.6.0目录或手改journal哈希。Tools仅换源码及启动参数，插件、Camera方向JSON、健康规则/报告保留。doctor须ok=true，status须phase=installed且files_verified=true；setup预览后才apply，仍不启动。HTTP监听0.0.0.0:8790，基础Tools只在127.0.0.1:8765；控制/Camera保持关闭，8790冲突即停，不抢其他duck端口。旧Studio额外配置由快照保留，按新配置逐项审阅，不能整份覆盖新schema。
+
+### 6．生效验证：原生通过后再开网页
+
+**仍等现场通知。** 有15舵机和IMU才能验收总线与校准回执；无动力时可检查文件和缺失状态，不能记“硬件通过”。启动会运行新版总线初始化；不要执行robot init、enable或动作。
+
+~~~bash
+(
+  trap 'touch "$S/hold/robotd"; sync' EXIT
+  rm "$S/hold/robotd"
+  systemctl start robotd
+)
+"$NEW/bin/robotctl" version --json
+"$NEW/bin/robotctl" health --json
+"$NEW/bin/robotctl" policy list --json
+journalctl -u robotd -b -n 80 --no-pager
+/usr/bin/python3.13 - <<'PY'
+import hashlib,json,math,subprocess,tomllib
+from pathlib import Path
+pid=int(subprocess.check_output(["systemctl","show","robotd","-p","MainPID","--value"]))
+r=json.loads(Path("/run/robotd/calibration-effective.json").read_text())
+old=tomllib.loads(Path("/var/lib/robot/calibration/microduck-0.18.3.toml").read_text())
+cal=tomllib.loads(Path("/var/lib/robot/calibration/microduck-0.23.0.toml").read_text())
+assert pid>0 and r["pid"]==pid
+assert hashlib.sha256(Path(f"/proc/{pid}/exe").read_bytes()).hexdigest()=="d631d2a64f72a937cf3356d435b5a56c8d985e89355e26d52efa7095cafeaddd"
+assert r["target_tag"]=="daemon-v0.23.0" and r["daemon_version"]=="0.23.0"
+assert r["source"]=="robotd:DynamixelIo:live" and r["bus_verified"] is True and r["calibration_active"] is True
+assert r["user_layer_rejected"] is None and r["calibration_path"]=="/var/lib/robot/calibration/microduck-0.23.0.toml"
+assert r["imu_mount_wxyz"]==cal["imu_mount_wxyz"]==old["imu_mount_wxyz"]==[0,0,0,1]
+assert r["gyro_raw_counts_per_dps"]==cal["gyro_raw_counts_per_dps"]==old["gyro_raw_counts_per_dps"]==16.4
+assert math.isclose(r["gyro_rad_per_raw_count"],math.pi/(180*16.4),rel_tol=1e-12)
+for k in ("joint_zero_rad","joint_direction"): assert r[k]==cal[k]==old[k] and len(cal[k])==15
+print("PASS actual PID/exe + live calibration + 15 joints + horizontal /16.4")
+PY
+~~~
+
+作用：仅放行一次启动，随即补回hold（不停止已运行进程），阻止崩溃或重启后自动再启动；核对真实进程0.23.0/API68、56424efe-calv3-offline、exe哈希、各槽加载和同PID现场回执。还须检查health/monitor的IMU就绪、15关节新鲜、无持续总线错误、模型无加载错误、仍held且homed=false。保存成功、active或版本字符串不能代替这些证据。失败先touch对应hold再停robotd，按回退节处理。
+
+~~~bash
+rm "$S/hold/microduck-tools" "$S/hold/microduck-studio" "$S/hold/microduck-studio-helper"
+systemctl start microduck-tools microduck-studio-helper microduck-studio
+curl --fail --silent --show-error http://127.0.0.1:8765/api/status
+curl --silent --output /dev/null --write-out '%{http_code}\n' "http://$STUDIO_IP:8790/studio/"
+cd /opt/microduck-tools/studio/releases/0.6.0
+/usr/bin/python3.13 -B -m studio.manage status --json
+/opt/microduck-tools/studio/pair-code.sh
+~~~
+
+作用：启动网页和受限助手、检查HTTP与登记，最后生成5分钟一次性访问码，**码的输出不要写日志/截图**。访问 http://本板IP:8790/studio/ 并重新配对：
+
+- 监控→身份、采样与资源：hello为0.23.0/API68，实际程序身份正确，不能沿用旧进程缓存。
+- 校正与配置→IMU：保存及运行值均为横装四元数、C=16.4，runtime_verified=true、pending_restart=false，用户层及新校准路径正确。
+- Policy：核对实际路径、加载结果；none是关闭的槽，文件存在不等于已加载。不点使能/动作。
+- Camera JSON不重置，未来启mediad再检查方向；0.23.0正向PNG不再额外转置。相机/遥控及其余原生服务仍隔离。
+
+普通Tools账号可能因/proc权限保持只读，应与上述root证据区分，不扩大权限“变绿”。本轮不恢复padd/netpadd、不新增自启；其余hold仍保留，不能宣称相机、手柄、OTA或整机重启已验收。
+
+### 失败回退：恢复本次快照，先保持服务停止
+
+步骤3后任何失败/中断，默认恢复，不重跑setup。现场再次核实后，在root Bash执行以下展开块。它只恢复快照固定清单，保留失败现场及维护条件。
+
+<details>
+<summary>展开执行：核验快照 → 停止 → 隔离失败文件 → 恢复</summary>
+
+~~~bash
+set -euo pipefail
+source /var/lib/microduck-upgrade/0230-r4/session.env
+test -f "$B/snapshot.complete"
+(cd "$B" && sha256sum -c rootfs.tar.sha256)
+for u in $U $J; do touch "$S/hold/$u"; done
+systemctl daemon-reload
+for u in $U $J; do
+  if test "$(systemctl show "$u" -p LoadState --value)" != not-found; then systemctl stop "$u"; fi
+done
+for u in $U $J; do
+  case "$(systemctl show "$u" -p ActiveState --value)" in inactive|failed) ;; *) exit 1;; esac
+done
+F="$S/failed-$(date -u +%Y%m%dT%H%M%SZ)"
+mkdir -m 700 "$F"
+while IFS= read -r p; do
+  if test -d "/$p" && [[ "$p" == etc/systemd/system/*.d ]]; then
+    mkdir -p "$F/$p"
+    while IFS= read -r -d '' f; do
+      mv -- "$f" "$F/$p/"
+    done < <(find "/$p" -mindepth 1 -maxdepth 1 ! -name zzzzzz-0230-upgrade-hold.conf -print0)
+  elif test -e "/$p" || test -L "/$p"; then
+    mkdir -p "$F/$(dirname "$p")"
+    mv -- "/$p" "$F/$p"
+  fi
+done < "$B/targets.txt"
+tar --acls --xattrs -C / -xpf "$B/rootfs.tar"
+systemctl daemon-reload
+printf 'ROLLED_BACK_FILES_SERVICES_HELD\n' > "$S/phase"
+sync
+~~~
+
+作用：回退同时恢复旧程序组/链接、模型、校准指针、Tools/Studio源码/venv/journal、相机和服务覆盖；新失败文件不删。维护条件未移走，恢复中断或重启仍保持隔离。**这不撤销新版启动已写入的舵机EEPROM/RAM**；本清单不提供EEPROM写回，未做寄存器前后采集就不能声称硬件状态全部恢复。恢复期间不得同时编辑或升级其他机器人文件。
+
+</details>
+
+~~~bash
+(
+  trap 'touch "$S/hold/robotd"; sync' EXIT
+  rm "$S/hold/robotd"
+  systemctl start robotd
+)
+/opt/microduck-tools/native/current/bin/robotctl version --json
+/opt/microduck-tools/native/current/bin/robotctl health --json
+/opt/microduck-tools/native/current/bin/robotctl policy list --json
+cat /run/robotd/calibration-effective.json
+~~~
+
+作用：明确重启旧robotd并确认0.18.3/API47、同PID回执指向旧校准、横装+/16.4与15关节值和快照一致。旧robotd哈希须为f8fcb954492c095e14cb0f354150c174e82984f5992c3edd1c79a837221a7118。旧Studio先用studio.manage status核验原journal/源码/资产，再按步骤6另启网页。其他服务按services.before.txt逐项恢复；遥控交接另行确认，不自动恢复控制输入。
+
+### 中断恢复入口及验收边界
+
+~~~bash
+source /var/lib/microduck-upgrade/0230-r4/session.env
+cat "$S/phase"
+systemctl show robotd microduck-tools microduck-studio -p ActiveState -p MainPID -p ExecStart -p Conditions
+~~~
+
+作用：恢复明确变量，查看停在哪一步及实际服务，不能仅凭文件存在判断成功。
+
+- snapshot.complete之前：程序/配置尚未覆盖，只有维护条件；先补全快照或人工审阅条件，不能运行全量恢复。
+- snapshot.complete之后、未验收：默认走上面的回退，不清journal、不重放安装或覆盖同版本目录。恢复未完成可再次从已核对快照恢复，仍保持hold。
+- 要重试升级：保留本次快照/失败材料，另建唯一阶段目录并重新核验，不能覆盖0230-r4。
+- 恢复后的旧服务、配置及运行证据通过，才算回退完成；恢复文件成功不等于实机功能验收。
+
+本节本地验证覆盖命令语法、归档路径、真实CLI校准迁移和Mac临时目录的文件回退演练（含中断后重入）；GNU tar的ACL/xattr及Linux/systemd语义仍需上板验证。ARM64 ldd/ORT实际加载、原生编辑器交互、systemd启停、掉电恢复、真实Web/模型/相机和运动性能均NOT_RUN；PR合并与离线通过不代表已部署。
+
+
+---
+
 **第一板LAN HTTP已按原指南应用并启动，正式接口配对和真实反馈已验证；本人浏览器需新码登录。其他板部署须单独核对。** Studio是独立附加界面；0.16.3→0.18.3升级继续使用冻结0.5.0包的 [升级脚本](manual-upgrade-0183.zh-CN.md)，不要把新源码替换进旧管理器会话。
 
 **首次升级并安装Studio推荐[统一安装套件](install-upgrade-simple.zh-CN.md)：一次上传、一个 `sudo ./duck.sh`，按N逐步继续。下文保留独立Studio命令及完整路径说明。**

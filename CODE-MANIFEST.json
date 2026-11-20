@@ -1,10 +1,10 @@
 {
   "date_local": "2026-11-20",
   "tool_version": "0.6.0",
-  "stage": "pr9-offline-review-fixed-board-not-run",
+  "stage": "pr9-merged-r4-upgrade-checklist-install-fix-board-not-run",
   "upstream_base": "56424efe58b7de40efcf3b2d3a5cd169ee83a182",
-  "git_base": "d2081d52628f5f62b0d59c65b6a00d419932cf21",
-  "scope": "PR9 review: epoch/process-bound identity, safe hash caches, exact calibration activation, camera revisions and UID-gated target-service proofs; no board access.",
+  "git_base": "de34755a9e44d5299061c13b401bd4e64889ebf0",
+  "scope": "Merged PR9; existing upgrade guides and registry; Studio installed identity metadata copy fix. No board access.",
   "files": [
     {
       "path": ".gitattributes",
@@ -564,7 +564,7 @@
     },
     {
       "path": "docs/deployment-register.zh-CN.md",
-      "sha256": "f3160ef5a5b582b28c3b451e4184623165dcbbb79c5733c84de28a2faa149945"
+      "sha256": "7fff4ebb8b1b9c136030cf9ffac19a9339494d2476d7ffbb904f3d84873cbeca"
     },
     {
       "path": "docs/dryrun-review.zh-CN.md",
@@ -640,7 +640,7 @@
     },
     {
       "path": "docs/studio-0.6.0-guide.zh-CN.md",
-      "sha256": "99c9e90fe185b09dd26db0f3c72ef111a5890458606758284d219a6c1b56aae7"
+      "sha256": "66363db7693ca48e3d4145f134ee48269c7d45c461a6e914515e9d6d74006f90"
     },
     {
       "path": "docs/studio-0.6.0-plan.zh-CN.md",
@@ -648,7 +648,7 @@
     },
     {
       "path": "docs/studio-0.6.0-validation.zh-CN.md",
-      "sha256": "976b824b6505e7d9633a56ac9e1c334369db8b326f53d384481e37f3339f4364"
+      "sha256": "94f49a7b9d898ec52b9bef1c54161fd75eb4eea57a2751bdcd4d3ad015709302"
     },
     {
       "path": "docs/validation-0.3.0.zh-CN.md",
@@ -808,7 +808,7 @@
     },
     {
       "path": "studio/manage.py",
-      "sha256": "6059124fed69cdec1adb2e524475c29ea3ba12c206fd63c0a004bb26e521097b"
+      "sha256": "756ed2b138155e009aeba5493911b8dccc9605735b5f88656f779c36f9d56097"
     },
     {
       "path": "studio/network.py",
@@ -909,6 +909,10 @@
     {
       "path": "studio/tests/test_api68.py",
       "sha256": "79137b1b6abebeacd45bd117d4ec86968dfee3f95034cfa28d1a821c39e4b9fd"
+    },
+    {
+      "path": "studio/tests/test_installed_identity.py",
+      "sha256": "00ae21a6b8a7f4bd4b22bf7c4c012b6ea129cbeb8bb39a3970def7004a059c73"
     },
     {
       "path": "studio/tests/test_network.py",
